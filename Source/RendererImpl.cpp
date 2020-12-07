@@ -1,4 +1,6 @@
+#include "Renderer.h"
 
+#include <cassert>
 #include <fstream>
 
 constexpr auto PI = 3.141592653f;
@@ -116,14 +118,14 @@ bool IsIntersect(const Triangle & t, const Vec3f & r)
 		(side1 < 0.0f && side2 < 0.0f && side3 < 0.0f);
 }
 
-int main()
+Renderer::RenderResult Renderer::RenderResult::Create()
 {
-	const int WIDTH = 800;
-	const int HEIGHT = 600;
 	// Output
-	static unsigned char frameBuffer[HEIGHT][WIDTH][3];
-	static float depthBuffer[HEIGHT][WIDTH] = { 0 };
-	memset(frameBuffer, 100, sizeof(frameBuffer));
+	Renderer::RenderResult output(800, 600);
+
+	unsigned char * pFrameBuffer = (unsigned char *)(output.FrameBuffer());
+
+	memset(pFrameBuffer, 100, output.GetFrameBufferSize());
 
 	// Input
 	Camera cam;
@@ -208,32 +210,27 @@ int main()
 			AABB aabb = GetAABB(t);
 
 			// NDC to Screen
-			int xMin = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * WIDTH );
-			int xMax = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * WIDTH );
-			int yMin = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * HEIGHT );
-			int yMax = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * HEIGHT );
+			int xMin = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * output.Width() );
+			int xMax = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * output.Width() );
+			int yMin = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * output.Height() );
+			int yMax = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * output.Height() );
 			for (int y = yMin; y <= yMax; ++y)
 			{
 				for (int x = xMin; x <= xMax; ++x)
 				{
-					Vec3f r = { static_cast<float>(x) * 2.0f / WIDTH - 1.0f, 1.0f - static_cast<float>(y) * 2.0f / HEIGHT, 100.0f };
+					Vec3f r = { static_cast<float>(x) * 2.0f / output.Width() - 1.0f, 1.0f - static_cast<float>(y) * 2.0f / output.Height(), 100.0f };
 					if (IsIntersect(t, r))
 					{
-						frameBuffer[y][x][0] = static_cast<unsigned char>(t.color.g * 255.0f);
-						frameBuffer[y][x][1] = static_cast<unsigned char>(t.color.b * 255.0f);
-						frameBuffer[y][x][2] = static_cast<unsigned char>(t.color.r * 255.0f);
+						unsigned char * pixel = pFrameBuffer + (y * output.Width() + x) * 3;
+						assert((pixel + 3) <= (pFrameBuffer + output.GetFrameBufferSize()));
+						pixel[0] = static_cast<unsigned char>(t.color.b * 255.0f);
+						pixel[1] = static_cast<unsigned char>(t.color.g * 255.0f);
+						pixel[2] = static_cast<unsigned char>(t.color.r * 255.0f);
 					}
 				}
 			}
 		}
 	}
 
-	std::ofstream ofs;
-	ofs.open("triangle.ppm");
-	ofs << "P6\n" << WIDTH << " " << HEIGHT << "\n255\n";
-	ofs.write(( char* ) frameBuffer, WIDTH * HEIGHT * 3);
-	ofs.close();
-
-
-	return 0;
+	return output;
 }
