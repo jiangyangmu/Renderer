@@ -121,8 +121,9 @@ int main()
 	const int WIDTH = 800;
 	const int HEIGHT = 600;
 	// Output
-	static unsigned char frameBuffer[HEIGHT][WIDTH][3] = { 0 };
+	static unsigned char frameBuffer[HEIGHT][WIDTH][3];
 	static float depthBuffer[HEIGHT][WIDTH] = { 0 };
+	memset(frameBuffer, 100, sizeof(frameBuffer));
 
 	// Input
 	Camera cam;
@@ -206,20 +207,21 @@ int main()
 		{
 			AABB aabb = GetAABB(t);
 
+			// NDC to Screen
 			int xMin = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * WIDTH );
 			int xMax = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * WIDTH );
-			int yMin = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.y + 1.0f ), 1.0f) * HEIGHT );
-			int yMax = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.y + 1.0f ), 1.0f) * HEIGHT );
+			int yMin = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * HEIGHT );
+			int yMax = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * HEIGHT );
 			for (int y = yMin; y <= yMax; ++y)
 			{
 				for (int x = xMin; x <= xMax; ++x)
 				{
-					Vec3f r = { static_cast<float>(x) * 2.0f / WIDTH - 1.0f, static_cast<float>(y) * 2.0f / HEIGHT - 1.0f, 100.0f };
+					Vec3f r = { static_cast<float>(x) * 2.0f / WIDTH - 1.0f, 1.0f - static_cast<float>(y) * 2.0f / HEIGHT, 100.0f };
 					if (IsIntersect(t, r))
 					{
-						frameBuffer[y][x][0] = static_cast<unsigned char>(t.color.r * 255.0f);
-						frameBuffer[y][x][1] = static_cast<unsigned char>(t.color.g * 255.0f);
-						frameBuffer[y][x][2] = static_cast<unsigned char>(t.color.b * 255.0f);
+						frameBuffer[y][x][0] = static_cast<unsigned char>(t.color.g * 255.0f);
+						frameBuffer[y][x][1] = static_cast<unsigned char>(t.color.b * 255.0f);
+						frameBuffer[y][x][2] = static_cast<unsigned char>(t.color.r * 255.0f);
 					}
 				}
 			}
