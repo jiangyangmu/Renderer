@@ -9,7 +9,7 @@ struct RGB
 {
 	float r, g, b;
 };
-struct Vec3f
+struct Vec3
 {
 	float x, y, z;
 };
@@ -23,18 +23,18 @@ struct Matrix4x4
 
 struct Triangle
 {
-	Vec3f a, b, c;
-	RGB color;
+	Vec3 a, b, c;
+	RGB rgbA, rgbB, rgbC;
 };
 
 struct AABB
 {
-	Vec3f min, max;
+	Vec3 min, max;
 };
 
 struct Camera
 {
-	Vec3f pos;
+	Vec3 pos;
 	float near, far;
 	float fov; // in radian
 	float aspectRatio;
@@ -63,7 +63,7 @@ Matrix4x4 PerspectiveFovLH(float fov, float aspectRatio, float near, float far)
 	return m;
 }
 
-Vec3f Multiply(const Vec3f & v, const Matrix4x4 & m)
+Vec3 Multiply(const Vec3 & v, const Matrix4x4 & m)
 {
 	float w = m.f14 * v.x + m.f24 * v.y + m.f34 * v.z + m.f44;
 	float wInv = (w == 0.0f ? 0.0f : 1.0f / w);
@@ -109,12 +109,16 @@ AABB GetAABB(const Triangle & t)
 	};
 }
 
-bool IsIntersect(const Triangle & t, const Vec3f & r)
+inline float EdgeFunction(const Vec3 & a, const Vec3 & b, const Vec3 & c)
+{
+	return ( c.x - a.x ) * ( b.y - a.y ) - ( c.y - a.y ) * ( b.x - a.x );
+}
+bool IsIntersect(const Triangle & t, const Vec3 & r)
 {
 	float side1 = ( r.x - t.a.x ) * ( t.b.y - t.a.y ) - ( r.y - t.a.y ) * ( t.b.x - t.a.x );
 	float side2 = ( r.x - t.b.x ) * ( t.c.y - t.b.y ) - ( r.y - t.b.y ) * ( t.c.x - t.b.x );
 	float side3 = ( r.x - t.c.x ) * ( t.a.y - t.c.y ) - ( r.y - t.c.y ) * ( t.a.x - t.c.x );
-	return (side1 > 0.0f && side2 > 0.0f && side3 > 0.0f) ||
+	return (side1 >= 0.0f && side2 >= 0.0f && side3 >= 0.0f) ||
 		(side1 < 0.0f && side2 < 0.0f && side3 < 0.0f);
 }
 
@@ -132,22 +136,19 @@ Renderer::RenderResult Renderer::RenderResult::Create()
 	cam.pos = { 0.0f, 0.0f, 0.0f };
 	cam.near = 0.1f;
 	cam.far = 1000.0f;
-	cam.fov = DegreeToRadian(120.0f);
+	cam.fov = DegreeToRadian(100.0f);
 	cam.aspectRatio = 4.0f / 3.0f;
 
 	Triangle triangles[] =
 	{
 		{
 			{0.0f, 0.0f, 1.0f},
-			{1.0f, 1.0f, 1.0f},
+			{0.5f, 0.866f, 1.0f},
 			{1.0f, 0.0f, 1.0f},
+
 			{1.0f, 0.0f, 0.0f},
-		},
-		{
-			{0.0f, 0.0f, 1.0f},
-			{1.0f, 1.0f, 1.0f},
-			{0.0f, 1.0f, 1.0f},
 			{0.0f, 1.0f, 0.0f},
+			{0.0f, 0.0f, 1.0f},
 		},
 	};
 	constexpr auto numTriangle = sizeof(triangles) / sizeof(Triangle);
@@ -176,7 +177,9 @@ Renderer::RenderResult Renderer::RenderResult::Create()
 			Multiply(triangles[ i ].a, cameraToNDC),
 			Multiply(triangles[ i ].b, cameraToNDC),
 			Multiply(triangles[ i ].c, cameraToNDC),
-			triangles[ i ].color,
+			triangles[ i ].rgbA,
+			triangles[ i ].rgbB,
+			triangles[ i ].rgbC,
 		};
 	}
 
@@ -207,25 +210,35 @@ Renderer::RenderResult Renderer::RenderResult::Create()
 
 		for ( auto & t : trianglesNDC )
 		{
-			AABB aabb = GetAABB(t);
-
 			// NDC to Screen
+			AABB aabb = GetAABB(t);
 			int xMin = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * output.Width() );
 			int xMax = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * output.Width() );
 			int yMin = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * output.Height() );
 			int yMax = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * output.Height() );
+
 			for (int y = yMin; y <= yMax; ++y)
 			{
 				for (int x = xMin; x <= xMax; ++x)
 				{
-					Vec3f r = { static_cast<float>(x) * 2.0f / output.Width() - 1.0f, 1.0f - static_cast<float>(y) * 2.0f / output.Height(), 100.0f };
+					Vec3 r = { static_cast<float>(x) * 2.0f / output.Width() - 1.0f, 1.0f - static_cast<float>(y) * 2.0f / output.Height(), 100.0f };
+
+
 					if (IsIntersect(t, r))
 					{
+						// Pixel position
 						unsigned char * pixel = pFrameBuffer + (y * output.Width() + x) * 3;
 						assert((pixel + 3) <= (pFrameBuffer + output.GetFrameBufferSize()));
-						pixel[0] = static_cast<unsigned char>(t.color.b * 255.0f);
-						pixel[1] = static_cast<unsigned char>(t.color.g * 255.0f);
-						pixel[2] = static_cast<unsigned char>(t.color.r * 255.0f);
+
+						// Pixel color
+						float area = EdgeFunction(t.a, t.b, t.c);
+						float w0 = EdgeFunction(t.b, t.c, r) / area;
+						float w1 = EdgeFunction(t.c, t.a, r) / area;
+						float w2 = EdgeFunction(t.a, t.b, r) / area;
+
+						pixel[ 0 ] = static_cast< unsigned char >( ( w0 * t.rgbA.b + w1 * t.rgbB.b + w2 * t.rgbC.b ) * 255.0f );
+						pixel[ 1 ] = static_cast< unsigned char >( ( w0 * t.rgbA.g + w1 * t.rgbB.g + w2 * t.rgbC.g ) * 255.0f );
+						pixel[ 2 ] = static_cast< unsigned char >( ( w0 * t.rgbA.r + w1 * t.rgbB.r + w2 * t.rgbC.r ) * 255.0f );
 					}
 				}
 			}
