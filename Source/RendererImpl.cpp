@@ -122,6 +122,156 @@ bool IsIntersect(const Triangle & t, const Vec3 & r)
 		(side1 < 0.0f && side2 < 0.0f && side3 < 0.0f);
 }
 
+namespace GraphicsPipeline
+{
+	class RenderTarget
+	{
+	public:
+		RenderTarget(unsigned int width, unsigned int height, void * backBuffer)
+			: m_width(width)
+			, m_height(height)
+			, m_backBuffer(backBuffer)
+		{
+		}
+
+		unsigned int	Width()
+		{
+			return m_width;
+		}
+		unsigned int	Height()
+		{
+			return m_height;
+		}
+		void		SetPixel(unsigned int x, unsigned int y, int r, int g, int b)
+		{
+			unsigned char * pixel = (unsigned char *)m_backBuffer + (y * m_width + x) * 3;
+			assert((pixel + 3) <= ((unsigned char *)m_backBuffer + m_width * m_height * 3));
+
+			pixel[0] = b;
+			pixel[1] = g;
+			pixel[2] = r;
+		}
+
+	private:
+		unsigned int	m_width;
+		unsigned int	m_height;
+		void *		m_backBuffer;
+	};
+
+	namespace Shader
+	{
+		struct Vertex
+		{
+			Vec3 pos;
+			Vec3 color;
+		};
+
+		struct Pixel
+		{
+			Vec3 pos; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
+			Vec3 color;
+		};
+
+		// Compute lighting
+		class VertexShader
+		{
+		public:
+			struct Input
+			{
+				Vertex v;
+			};
+			struct Output
+			{
+				Vertex v;
+			};
+
+			static Output Shade(Input in)
+			{
+				return {in.v};
+			}
+		};
+
+		class PixelShader
+		{
+		public:
+			struct Input
+			{
+				Pixel p;
+			};
+			struct Output
+			{
+				Vec3 color;
+			};
+
+			static Output Shade(Input in)
+			{
+				return {in.p.color};
+			}
+		};
+	}
+
+	void Rasterize(const Triangle & triNDC,
+		       RenderTarget & output)
+	{
+
+		const unsigned int width = output.Width();
+		const unsigned int height = output.Height();
+
+		// NDC to Screen
+		AABB aabb = GetAABB(triNDC);
+		int xMin = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * width );
+		int xMax = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * width );
+		int yMin = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * height );
+		int yMax = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * height );
+		for (int y = yMin; y <= yMax; ++y)
+		{
+			for (int x = xMin; x <= xMax; ++x)
+			{
+				Vec3 r = { static_cast<float>(x) * 2.0f / width - 1.0f, 1.0f - static_cast<float>(y) * 2.0f / height, 1000.0f };
+
+				if (IsIntersect(triNDC, r))
+				{
+					// Triangle interpolation
+					float area = EdgeFunction(triNDC.a, triNDC.b, triNDC.c);
+					float w0 = EdgeFunction(triNDC.b, triNDC.c, r) / area;
+					float w1 = EdgeFunction(triNDC.c, triNDC.a, r) / area;
+					float w2 = EdgeFunction(triNDC.a, triNDC.b, r) / area;
+
+					Vec3 pos =
+					{
+						(float)x,
+						(float)y,
+						0.0f,
+					};
+					Vec3 color =
+					{
+						w0 * triNDC.rgbA.b + w1 * triNDC.rgbB.b + w2 * triNDC.rgbC.b,
+						w0 * triNDC.rgbA.g + w1 * triNDC.rgbB.g + w2 * triNDC.rgbC.g,
+						w0 * triNDC.rgbA.r + w1 * triNDC.rgbB.r + w2 * triNDC.rgbC.r
+					};
+
+					Shader::PixelShader::Input in =
+					{
+						{
+							pos,
+							color
+						}
+					};
+					Shader::PixelShader::Output out = Shader::PixelShader::Shade(in);
+
+					output.SetPixel(x,
+							y,
+							static_cast< unsigned char >( out.color.x * 255.0f),
+							static_cast< unsigned char >( out.color.y * 255.0f),
+							static_cast< unsigned char >( out.color.z * 255.0f));
+				}
+			}
+		}
+	}
+}
+
+
+
 Renderer::RenderResult Renderer::RenderResult::Create()
 {
 	// Output
@@ -208,40 +358,14 @@ Renderer::RenderResult Renderer::RenderResult::Create()
 			// 1. Z-Test
 		}
 
+		GraphicsPipeline::RenderTarget renderTarget(output.Width(),
+							    output.Height(),
+							    output.FrameBuffer());
+
 		for ( auto & t : trianglesNDC )
 		{
-			// NDC to Screen
-			AABB aabb = GetAABB(t);
-			int xMin = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * output.Width() );
-			int xMax = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * output.Width() );
-			int yMin = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * output.Height() );
-			int yMax = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * output.Height() );
-
-			for (int y = yMin; y <= yMax; ++y)
-			{
-				for (int x = xMin; x <= xMax; ++x)
-				{
-					Vec3 r = { static_cast<float>(x) * 2.0f / output.Width() - 1.0f, 1.0f - static_cast<float>(y) * 2.0f / output.Height(), 100.0f };
-
-
-					if (IsIntersect(t, r))
-					{
-						// Pixel position
-						unsigned char * pixel = pFrameBuffer + (y * output.Width() + x) * 3;
-						assert((pixel + 3) <= (pFrameBuffer + output.GetFrameBufferSize()));
-
-						// Pixel color
-						float area = EdgeFunction(t.a, t.b, t.c);
-						float w0 = EdgeFunction(t.b, t.c, r) / area;
-						float w1 = EdgeFunction(t.c, t.a, r) / area;
-						float w2 = EdgeFunction(t.a, t.b, r) / area;
-
-						pixel[ 0 ] = static_cast< unsigned char >( ( w0 * t.rgbA.b + w1 * t.rgbB.b + w2 * t.rgbC.b ) * 255.0f );
-						pixel[ 1 ] = static_cast< unsigned char >( ( w0 * t.rgbA.g + w1 * t.rgbB.g + w2 * t.rgbC.g ) * 255.0f );
-						pixel[ 2 ] = static_cast< unsigned char >( ( w0 * t.rgbA.r + w1 * t.rgbB.r + w2 * t.rgbC.r ) * 255.0f );
-					}
-				}
-			}
+			GraphicsPipeline::Rasterize(t,
+						    renderTarget);
 		}
 	}
 

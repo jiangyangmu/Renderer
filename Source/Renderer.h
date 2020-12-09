@@ -2,6 +2,8 @@
 
 namespace Renderer
 {
+	// TODO: split FrameBuffer to FrontBuffer and BackBuffer
+	// TODO: manage buffers (front, back, depth): create, resize, destroy
 	class RenderResult
 	{
 	public:
@@ -29,4 +31,6 @@ namespace Renderer
 		unsigned int	m_frameBufferSize;
 		void *		m_frameBuffer;
 	};
+
+	// TODO: buffer classes: width/height, element size, element [i], reshape
 }
