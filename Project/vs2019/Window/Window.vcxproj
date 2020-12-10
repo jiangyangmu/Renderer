@@ -148,15 +148,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Renderer.h" />
-    <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="Window.h" />
+    <ClInclude Include="Win32App.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Renderer.cpp" />
     <ClCompile Include="..\..\..\Source\RendererImpl.cpp" />
-    <ClCompile Include="Window.cpp" />
+    <ClCompile Include="Win32App.cpp" />
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Window.rc" />
