@@ -277,9 +277,10 @@ Renderer::RenderResult Renderer::RenderResult::Create()
 	// Output
 	Renderer::RenderResult output(800, 600);
 
-	unsigned char * pFrameBuffer = (unsigned char *)(output.FrameBuffer());
+	Renderer::Buffer & backBuffer = output.BackBuffer();
+	Renderer::Buffer & depthBuffer = output.DepthBuffer();
 
-	memset(pFrameBuffer, 100, output.GetFrameBufferSize());
+	memset(backBuffer.Data(), 100, backBuffer.SizeInBytes());
 
 	// Input
 	Camera cam;
@@ -360,7 +361,7 @@ Renderer::RenderResult Renderer::RenderResult::Create()
 
 		GraphicsPipeline::RenderTarget renderTarget(output.Width(),
 							    output.Height(),
-							    output.FrameBuffer());
+							    backBuffer.Data());
 
 		for ( auto & t : trianglesNDC )
 		{
@@ -368,6 +369,8 @@ Renderer::RenderResult Renderer::RenderResult::Create()
 						    renderTarget);
 		}
 	}
+
+	output.SwapBuffer();
 
 	return output;
 }

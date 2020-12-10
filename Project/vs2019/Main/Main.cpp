@@ -11,7 +11,7 @@ int main()
 	std::ofstream ofs;
 	ofs.open("output.ppm");
 	ofs << "P6\n" << rr.Width() << " " << rr.Height() << "\n255\n";
-	ofs.write(( char* ) rr.GetFrameBuffer(), rr.GetFrameBufferSize());
+	ofs.write(( char* ) rr.GetFrontBuffer(), rr.Width() * rr.Height() * 3);
 	ofs.close();
 
 	return 0;

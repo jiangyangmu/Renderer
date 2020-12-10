@@ -216,7 +216,7 @@ int ShowBitmap(HWND hWnd, HDC hdcWindow)
 				0,
 				0,
 				rr.Height(),
-				( void * ) rr.GetFrameBuffer(),
+				( void * ) rr.GetFrontBuffer(),
 				( BITMAPINFO * ) &bi,
 				DIB_RGB_COLORS) )
 	{
