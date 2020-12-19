@@ -2,10 +2,8 @@
 
 #include "Win32App.h"
 
-int	ShowBitmap(HWND hWnd, HDC hdcWindow)
+int	ShowBitmap(HWND hWnd, HDC hdcWindow, Renderer::RenderResult & rr)
 {
-	Renderer::RenderResult rr = Renderer::RenderResult::Create();
-
 	BITMAPINFOHEADER bi;
 	bi.biSize = sizeof(BITMAPINFOHEADER);
 	bi.biWidth = rr.Width();
@@ -45,13 +43,30 @@ namespace win32
 	public:
 		using Window::Window;
 
-		void	OnWndPaint(HDC hdc) override
+		void		OnWndPaint(HDC hdc) override
 		{
-			ShowBitmap(GetHWND(), hdc);
+			if ( !m_renderResult )
+			{
+				m_renderResult = Renderer::RenderResult::Create();
+				m_renderResult->Draw();
+			}
+			ShowBitmap(GetHWND(), hdc, *m_renderResult);
+		}
+		virtual void    OnMouseLButtonDown(int pixelX, int pixelY, DWORD flags) override
+		{
+			if ( m_renderResult )
+			{
+				m_renderResult->SetDebugPixel(pixelX, pixelY);
+				m_renderResult->Draw();
+				//if ( !UpdateWindow(GetHWND()) )
+				//{
+				//	MessageBox(GetHWND(), L"UpdateWindow has failed", L"Failed", MB_OK);
+				//}
+			}
 		}
 
 	private:
-		bool	m_draw = true;
+		std::unique_ptr<Renderer::RenderResult>	m_renderResult;
 	};
 }
 

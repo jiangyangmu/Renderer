@@ -235,6 +235,7 @@ namespace win32
 
 			case WM_LBUTTONDOWN:
 				{
+					OnMouseLButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), (DWORD)wParam);
 				}
 				return 0;
 

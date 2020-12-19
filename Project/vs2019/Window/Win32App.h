@@ -53,6 +53,9 @@ namespace win32
 		virtual void    OnMouseMove(int pixelX, int pixelY, DWORD flags)
 		{
 		}
+		virtual void    OnMouseLButtonDown(int pixelX, int pixelY, DWORD flags)
+		{
+		}
 		virtual void    OnKeyDown(WPARAM virtualKeyCode)
 		{
 		}

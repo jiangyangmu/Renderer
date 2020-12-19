@@ -2,13 +2,14 @@
 
 #include <algorithm>
 #include <cassert>
+#include <malloc.h> // _aligned_malloc
 
 namespace Renderer
 {
 	RenderResult::RenderResult(unsigned int width, unsigned int height)
 		: m_frontId(0)
 		, m_backId(1)
-		, m_depthBuffer(width, height, 4)
+		, m_depthBuffer(width, height, 4, 4)
 	{
 		m_swapBuffer[ 0 ] = Buffer(width, height, 3);
 		m_swapBuffer[ 1 ] = Buffer(width, height, 3);
@@ -59,18 +60,27 @@ namespace Renderer
 		return m_depthBuffer;
 	}
 
-	Buffer::Buffer(unsigned int width, unsigned int height, unsigned int elementSize)
+	Buffer::Buffer(unsigned int width, unsigned int height, unsigned int elementSize, unsigned int alignment)
 		: m_width(width)
 		, m_height(height)
 		, m_elementSize(elementSize)
 		, m_sizeInBytes(0)
 		, m_data(nullptr)
 	{
-		m_data = new Byte[ width * height * elementSize ];
+		m_data = ( Byte * ) _aligned_malloc(width * height * elementSize, alignment);
 		if ( m_data )
 		{
 			m_sizeInBytes = width * height * elementSize;
 		}
+	}
+
+	Buffer::~Buffer()
+	{
+		if ( m_data )
+		{
+			_aligned_free(m_data);
+		}
+		m_data = nullptr;
 	}
 
 	Buffer::Buffer(Buffer && other)
@@ -93,13 +103,12 @@ namespace Renderer
 		return *this;
 	}
 
-	Buffer::~Buffer()
+	void Buffer::SetAll(Byte value)
 	{
 		if ( m_data )
 		{
-			delete[] m_data;
+			memset(m_data, value, m_sizeInBytes);
 		}
-		m_data = nullptr;
 	}
 
 	void Buffer::Reshape(unsigned int width, unsigned int height)
@@ -123,6 +132,11 @@ namespace Renderer
 	unsigned int Buffer::SizeInBytes() const
 	{
 		return m_sizeInBytes;
+	}
+
+	unsigned int Buffer::ElementCount() const
+	{
+		return m_width * m_height;
 	}
 
 	unsigned int Buffer::ElementSize() const

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 namespace Renderer
 {
 	typedef unsigned char Byte;
@@ -8,7 +10,7 @@ namespace Renderer
 	{
 	public:
 		Buffer() = default;
-		Buffer(unsigned int width, unsigned int height, unsigned int elementSize);
+		Buffer(unsigned int width, unsigned int height, unsigned int elementSize, unsigned int alignment = 1);
 		~Buffer();
 
 		Buffer(const Buffer &) = delete;
@@ -18,6 +20,7 @@ namespace Renderer
 
 		// Operations
 
+		void		SetAll(Byte value);
 		void		Reshape(unsigned int width, unsigned int height);
 
 		// Properties
@@ -25,6 +28,7 @@ namespace Renderer
 		unsigned int	Width() const;
 		unsigned int	Height() const;
 		unsigned int	SizeInBytes() const;
+		unsigned int	ElementCount() const;
 		unsigned int	ElementSize() const;
 		void *		Data();
 		void *		At(unsigned int row, unsigned int col);
@@ -40,7 +44,8 @@ namespace Renderer
 	class RenderResult
 	{
 	public:
-		static RenderResult Create();
+		static std::unique_ptr<RenderResult> Create();
+
 		~RenderResult() = default;
 
 		RenderResult(const RenderResult &) = delete;
@@ -50,7 +55,9 @@ namespace Renderer
 
 		// Operations
 
+		void		Draw();
 		void		SwapBuffer();
+		void		SetDebugPixel(int pixelX, int pixelY);
 
 		// Properties
 

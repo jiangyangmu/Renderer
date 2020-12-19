@@ -6,7 +6,10 @@ using namespace Renderer;
 
 int main()
 {
-	RenderResult rr = RenderResult::Create();
+	auto renderResult = RenderResult::Create();
+	RenderResult & rr = *renderResult;
+
+	rr.Draw();
 
 	std::ofstream ofs;
 	ofs.open("output.ppm");
