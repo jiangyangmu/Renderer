@@ -1,6 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <string>
+#include <vector>
+
+namespace Gdiplus
+{
+	class Bitmap;
+}
 
 namespace Renderer
 {
@@ -39,6 +46,25 @@ namespace Renderer
 		unsigned int	m_elementSize;
 		unsigned int	m_sizeInBytes;
 		Byte *		m_data;
+	};
+
+	class Texture2D
+	{
+	public:
+		Texture2D();
+		~Texture2D();
+
+		Texture2D(const Texture2D &) = delete;
+		Texture2D(Texture2D && other) = delete;
+		Texture2D & operator = (const Texture2D &) = delete;
+		Texture2D & operator = (Texture2D && other) = delete;
+
+		void LoadFromFile(std::wstring filePath);
+
+		void Sample(float u, float v, float * r, float * g, float * b);
+
+	private:
+		Gdiplus::Bitmap * m_bitmap;
 	};
 
 	class RenderResult

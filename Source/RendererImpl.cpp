@@ -90,18 +90,18 @@ struct Matrix4x4
 
 		return m;
 	}
-	static Matrix4x4 PerspectiveFovLH(float fov, float aspectRatio, float near, float far)
+	static Matrix4x4 PerspectiveFovLH(float fov, float aspectRatio, float zNear, float zFar)
 	{
 		float height = 1.0f / tanf(0.5f * fov);
 		float width = height / aspectRatio;
-		float fRange = far / ( far - near );
+		float fRange = zFar / ( zFar - zNear );
 
 		Matrix4x4 m =
 		{
 			width, 0.0f, 0.0f, 0.0f,
 			0.0f, height, 0.0f, 0.0f,
 			0.0f, 0.0f, fRange, 1.0f,
-			0.0f, 0.0f, -fRange * near, 0.0f
+			0.0f, 0.0f, -fRange * zNear, 0.0f
 		};
 
 		return m;
@@ -127,7 +127,7 @@ struct AABB
 struct Camera
 {
 	Vec3 pos;
-	float near, far;
+	float zNear, zFar;
 	float fov; // in radian
 	float aspectRatio;
 };
@@ -187,14 +187,14 @@ AABB GetAABB(const Triangle & triNDC)
 }
 Vec3 GetPixelRay(const Camera & camera, int width, int height, int pixelX, int pixelY)
 {
-	float nearPlaneYMax = camera.near * tanf(0.5f * camera.fov);
+	float nearPlaneYMax = camera.zNear * tanf(0.5f * camera.fov);
 	float nearPlaneXMax = camera.aspectRatio * nearPlaneYMax;
 
 	Vec3 ray =
 	{
 		nearPlaneXMax * ( pixelX * 2.0f / width - 1.0f ),
 		nearPlaneYMax * ( 1.0f - pixelY * 2.0f / height ),
-		camera.near
+		camera.zNear
 	};
 
 	return ray;
@@ -256,8 +256,8 @@ namespace GraphicsPipeline
 			m_worldToCamera = Matrix4x4::Identity();
 			m_cameraToNDC	= Matrix4x4::PerspectiveFovLH(camera.fov,
 								      camera.aspectRatio,
-								      camera.near,
-								      camera.far);
+								      camera.zNear,
+								      camera.zFar);
 		}
 
 		Vec3 WorldToCamera(const Vec3 & v) const
@@ -316,7 +316,6 @@ namespace GraphicsPipeline
 	private:
 		Triangle	m_triangle[3]; // origin(world), camera, NDC
 	};
-
 
 	class RenderTarget
 	{
@@ -492,6 +491,13 @@ namespace GraphicsPipeline
 		pixelIterator.ForEachPixel(
 			[&] (int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric)
 			{
+				static Renderer::Texture2D * texture = nullptr;
+				if ( !texture )
+				{
+					texture = new Renderer::Texture2D();
+					texture->LoadFromFile(L"Resources/duang.bmp");
+				}
+
 				// Properties
 				RGB color;
 				{
@@ -505,10 +511,17 @@ namespace GraphicsPipeline
 						barycentric.a * cA.g + barycentric.b * cB.g + barycentric.c * cC.g,
 						barycentric.a * cA.b + barycentric.b * cB.b + barycentric.c * cC.b
 					};
+					
+					float r, g, b;
+
+					// TODO: use tex coord
+					texture->Sample(color.g, color.b, &r, &g, &b);
+
+					color = { r, g, b };
 				}
 
 				// Position
-				float depthNDC = ( distance - camera.near ) / ( camera.far - camera.near ); // FIXIT: this is not perspective correct
+				float depthNDC = ( distance - camera.zNear ) / ( camera.zFar - camera.zNear ); // FIXIT: this is not perspective correct
 
 				Vec3 pos =
 				{
@@ -612,6 +625,32 @@ struct TriangleSet
 			}
 		};
 	}
+	static std::vector<Triangle> TextureTest()
+	{
+		return
+		{
+			Triangle
+			{
+				{0.0f, 0.0f, 1.0f},
+				{1.0f, 0.0f, 1.0f},
+				{0.0f, 1.0f, 1.0f},
+
+				{0.0f, 0.0f, 0.0f},
+				{0.0f, 1.0f, 0.0f},
+				{0.0f, 0.0f, 1.0f},
+			},
+			Triangle
+			{
+				{1.0f, 1.0f, 1.0f},
+				{0.0f, 1.0f, 1.0f},
+				{1.0f, 0.0f, 1.0f},
+
+				{0.0f, 1.0f, 1.0f},
+				{0.0f, 0.0f, 1.0f},
+				{0.0f, 1.0f, 0.0f},
+			},
+		};
+	}
 };
 
 void Renderer::RenderResult::Draw()
@@ -623,12 +662,12 @@ void Renderer::RenderResult::Draw()
 	// Input
 	Camera camera;
 	camera.pos = { 0.0f, 0.0f, 0.0f };
-	camera.near = 0.1f;
-	camera.far = 1000.0f; // use smaller value for better depth test.
+	camera.zNear = 0.1f;
+	camera.zFar = 1000.0f; // use smaller value for better depth test.
 	camera.fov = DegreeToRadian(90.0f);
 	camera.aspectRatio = 4.0f / 3.0f;
 
-	auto triangleList = TriangleSet::TwoIntersect();
+	auto triangleList = TriangleSet::TextureTest();
 
 	// Projection & Clipping
 	GraphicsPipeline::Transform transform(camera);
@@ -660,11 +699,6 @@ void Renderer::RenderResult::Draw()
 							    }
 							    *pOldDepth = newDepth;
 
-							    //renderTarget.SetPixel(pixelX,
-										 // pixelY,
-										 // static_cast< unsigned char >( pos.z * 255.0f ),
-										 // static_cast< unsigned char >( pos.z * 255.0f ),
-										 // static_cast< unsigned char >( pos.z * 255.0f ));
 							    renderTarget.SetPixel(pixelX,
 										  pixelY,
 										  static_cast< unsigned char >( color.r * 255.0f ),

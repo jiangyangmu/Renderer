@@ -1,6 +1,10 @@
-#include "../../../Source/Renderer.h"
+#include <cassert>
+
+#include <Windows.h>
+#include <Gdiplus.h>
 
 #include "Win32App.h"
+#include "../../../Source/Renderer.h"
 
 int	ShowBitmap(HWND hWnd, HDC hdcWindow, Renderer::RenderResult & rr)
 {
@@ -70,6 +74,8 @@ namespace win32
 	};
 }
 
+
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		      _In_opt_ HINSTANCE hPrevInstance,
 		      _In_ LPWSTR lpCmdLine,
@@ -79,7 +85,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	UNREFERENCED_PARAMETER(nCmdShow);
 
-	win32::RendererWindow wnd(L"My Renderer", hInstance);
+	// Initialize GDI+
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	auto status = Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	assert(status == Gdiplus::Ok);
+
+	int ret;
+	{
+		win32::RendererWindow wnd(L"My Renderer", hInstance);
+		ret = win32::Application::Run(wnd);
+	}
+
+	// Uninitialize GDI+
+	Gdiplus::GdiplusShutdown(gdiplusToken);
 	
-	return win32::Application::Run(wnd);
+	return ret;
 }

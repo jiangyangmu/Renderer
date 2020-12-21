@@ -4,6 +4,9 @@
 #include <cassert>
 #include <malloc.h> // _aligned_malloc
 
+#include <Windows.h>
+#include <Gdiplus.h> // Gdiplus::Bitmap
+
 namespace Renderer
 {
 	RenderResult::RenderResult(unsigned int width, unsigned int height)
@@ -153,6 +156,51 @@ namespace Renderer
 	{
 		assert(m_data);
 		return m_data + (row * m_width + col) * m_elementSize;
+	}
+
+	Texture2D::Texture2D()
+		: m_bitmap(nullptr)
+	{
+	}
+
+	Texture2D::~Texture2D()
+	{
+		if (m_bitmap)
+		{
+			delete m_bitmap;
+			m_bitmap = nullptr;
+		}
+	}
+
+	void Texture2D::LoadFromFile(std::wstring filePath)
+	{
+		if (!m_bitmap)
+		{
+			m_bitmap = Gdiplus::Bitmap::FromFile(filePath.c_str(), false);
+			assert(m_bitmap);
+		}
+	}
+
+	void Texture2D::Sample(float u, float v, float * r, float * g, float * b)
+	{
+		assert(0.0f <= u && u <= 1.0f);
+		assert(0.0f <= v && v <= 1.0f);
+		assert(u + v <= 2.0f);
+
+		LONG width = m_bitmap->GetWidth();
+		LONG height = m_bitmap->GetHeight();
+
+		LONG col = static_cast< LONG >( width * u );
+		LONG row = static_cast< LONG >( height * (1.0f - v) );
+
+		Gdiplus::Color color;
+		
+		if (m_bitmap->GetPixel(col, row, &color) == Gdiplus::Ok)
+		{
+			*r = static_cast< float >( color.GetR() ) / 255.f;
+			*g = static_cast< float >( color.GetG() ) / 255.f;
+			*b = static_cast< float >( color.GetB() ) / 255.f;
+		}
 	}
 
 }
