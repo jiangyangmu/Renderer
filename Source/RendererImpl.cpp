@@ -114,6 +114,11 @@ struct Triangle
 	RGB rgbA, rgbB, rgbC;
 };
 
+struct BarycentricCoordinate
+{
+	float a, b, c;
+};
+
 struct AABB
 {
 	Vec3 min, max;
@@ -127,24 +132,7 @@ struct Camera
 	float aspectRatio;
 };
 
-float DegreeToRadian(float d)
-{
-	// 0 < d < 180
-	return d * PI / 180.0f;
-}
-
-Vec3 Multiply(const Vec3 & v, const Matrix4x4 & m)
-{
-	float w = m.f14 * v.x + m.f24 * v.y + m.f34 * v.z + m.f44;
-	float wInv = (w == 0.0f ? 0.0f : 1.0f / w);
-	return
-	{
-		( m.f11 * v.x + m.f21 * v.y + m.f31 * v.z + m.f41 ) * wInv,
-		( m.f12 * v.x + m.f22 * v.y + m.f32 * v.z + m.f42 ) * wInv,
-		( m.f13 * v.x + m.f23 * v.y + m.f33 * v.z + m.f43 ) * wInv,
-	};
-}
-
+// Utilities
 inline float Min(float a, float b, float c)
 {
 	return	a < b
@@ -161,7 +149,26 @@ inline float Bound(float min, float value, float max)
 {
 	return value < min ? min : (value > max ? max : value);
 }
+float DegreeToRadian(float d)
+{
+	// 0 < d < 180
+	return d * PI / 180.0f;
+}
 
+// Vec & Matrix
+Vec3 Multiply(const Vec3 & v, const Matrix4x4 & m)
+{
+	float w = m.f14 * v.x + m.f24 * v.y + m.f34 * v.z + m.f44;
+	float wInv = (w == 0.0f ? 0.0f : 1.0f / w);
+	return
+	{
+		( m.f11 * v.x + m.f21 * v.y + m.f31 * v.z + m.f41 ) * wInv,
+		( m.f12 * v.x + m.f22 * v.y + m.f32 * v.z + m.f42 ) * wInv,
+		( m.f13 * v.x + m.f23 * v.y + m.f33 * v.z + m.f43 ) * wInv,
+	};
+}
+
+// Helper
 AABB GetAABB(const Triangle & triNDC)
 {
 	return
@@ -178,24 +185,21 @@ AABB GetAABB(const Triangle & triNDC)
 		},
 	};
 }
-inline float EdgeFunction(const Vec3 & a, const Vec3 & b, const Vec3 & c)
+Vec3 GetPixelRay(const Camera & camera, int width, int height, int pixelX, int pixelY)
 {
-	return ( c.x - a.x ) * ( b.y - a.y ) - ( c.y - a.y ) * ( b.x - a.x );
-}
-Vec3 GetBarycentricCoordinates(const Vec3 & rayNDC, const Triangle & triNDC)
-{
-	float area = EdgeFunction(triNDC.a, triNDC.b, triNDC.c);
-	float invArea = (area == 0.0f ? 0.0f : 1.0f / area);
+	float nearPlaneYMax = camera.near * tanf(0.5f * camera.fov);
+	float nearPlaneXMax = camera.aspectRatio * nearPlaneYMax;
 
-	return
+	Vec3 ray =
 	{
-		EdgeFunction(triNDC.b, triNDC.c, rayNDC) * invArea,
-		EdgeFunction(triNDC.c, triNDC.a, rayNDC) * invArea,
-		EdgeFunction(triNDC.a, triNDC.b, rayNDC) * invArea
+		nearPlaneXMax * ( pixelX * 2.0f / width - 1.0f ),
+		nearPlaneYMax * ( 1.0f - pixelY * 2.0f / height ),
+		camera.near
 	};
-}
 
-bool RayTriangleIntersection(const Vec3 & ray, const Triangle & tri, Vec3 * tuv)
+	return ray;
+}
+bool RayTriangleIntersection(const Vec3 & ray, const Triangle & tri, float * pDistance, BarycentricCoordinate * pBarycentric)
 {
 	const Vec3 & p0 = tri.a;
 	const Vec3 & p1 = tri.b;
@@ -234,26 +238,12 @@ bool RayTriangleIntersection(const Vec3 & ray, const Triangle & tri, Vec3 * tuv)
 
 	float t	= f * Vec3::Dot(e2, r);
 
-	tuv->x = t;
-	tuv->y = u;
-	tuv->z = v;
+	*pDistance	= t;
+	pBarycentric->a = 1.0f - u - v;
+	pBarycentric->b	= u;
+	pBarycentric->c = v;
 
 	return true;
-}
-
-Vec3 GetPixelRay(const Camera & camera, int width, int height, int pixelX, int pixelY)
-{
-	float nearPlaneYMax = camera.near * tanf(0.5f * camera.fov);
-	float nearPlaneXMax = camera.aspectRatio * nearPlaneYMax;
-
-	Vec3 ray =
-	{
-		nearPlaneXMax * ( pixelX * 2.0f / width - 1.0f ),
-		nearPlaneYMax * ( 1.0f - pixelY * 2.0f / height ),
-		camera.near
-	};
-
-	return ray;
 }
 
 namespace GraphicsPipeline
@@ -417,7 +407,7 @@ namespace GraphicsPipeline
 	class RasterizerPixelIterator
 	{
 	public:
-		using PixelProc		= void (int pixelX, int pixelY, float z);
+		using PixelProc		= void (int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric);
 		using PixelCallback	= std::function<PixelProc>;
 
 		RasterizerPixelIterator(unsigned int width,
@@ -460,13 +450,14 @@ namespace GraphicsPipeline
 						}
 					}
 
-					Vec3 ray = GetPixelRay(m_camera, m_width, m_height, x, y);
-					Vec3 tuv = { 0.0f, 0.0f, 0.0f };
-
-					const Triangle & triCam = m_transTriangle.GetCameraSpace();
-					if ( RayTriangleIntersection(ray, triCam, &tuv) )
+					float distance;
+					BarycentricCoordinate barycentric;
+					if ( RayTriangleIntersection(GetPixelRay(m_camera, m_width, m_height, x, y),
+								     m_transTriangle.GetCameraSpace(),
+								     &distance,
+								     &barycentric) )
 					{
-						pixelCB(x, y, tuv.x);
+						pixelCB(x, y, distance, barycentric);
 					}
 				}
 			}
@@ -481,7 +472,7 @@ namespace GraphicsPipeline
 		int			m_pixelYRange[2];
 	};
 
-	using RasterizerProc = void (int pixelX, int pixelY, const Vec3 & pos, const Vec3 & color);
+	using RasterizerProc = void (int pixelX, int pixelY, const Vec3 & pos, const RGB & color);
 	using RasterizerCallback = std::function<RasterizerProc>;
 
 	void Rasterize(const unsigned int width,
@@ -499,39 +490,31 @@ namespace GraphicsPipeline
 						      transTriangle);
 
 		pixelIterator.ForEachPixel(
-			[&] (int pixelX, int pixelY, float z)
+			[&] (int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric)
 			{
 				// Properties
-				Vec3 color;
+				RGB color;
 				{
-					const Triangle & triNDC = transTriangle.GetNDCSpace();
-					
-					Vec3 rayNDC =
-					{
-						static_cast<float>(pixelX) * 2.0f / width - 1.0f,
-						1.0f - static_cast<float>(pixelY) * 2.0f / height,
-						1000.0f
-					};
+					const RGB & cA = transTriangle.GetWorldSpace().rgbA;
+					const RGB & cB = transTriangle.GetWorldSpace().rgbB;
+					const RGB & cC = transTriangle.GetWorldSpace().rgbC;
 
-					// Triangle interpolation
-					Vec3 baryCood = GetBarycentricCoordinates(rayNDC, triNDC);
-					
 					color =
 					{
-						baryCood.x * triNDC.rgbA.b + baryCood.y * triNDC.rgbB.b + baryCood.z * triNDC.rgbC.b,
-						baryCood.x * triNDC.rgbA.g + baryCood.y * triNDC.rgbB.g + baryCood.z * triNDC.rgbC.g,
-						baryCood.x * triNDC.rgbA.r + baryCood.y * triNDC.rgbB.r + baryCood.z * triNDC.rgbC.r
+						barycentric.a * cA.r + barycentric.b * cB.r + barycentric.c * cC.r,
+						barycentric.a * cA.g + barycentric.b * cB.g + barycentric.c * cC.g,
+						barycentric.a * cA.b + barycentric.b * cB.b + barycentric.c * cC.b
 					};
 				}
 
 				// Position
-				float depth = ( z - camera.near ) / ( camera.far - camera.near ); // FIXIT: this is not perspective correct
+				float depthNDC = ( distance - camera.near ) / ( camera.far - camera.near ); // FIXIT: this is not perspective correct
 
 				Vec3 pos =
 				{
 					static_cast<float>(pixelX),
 					static_cast<float>(pixelY),
-					depth
+					depthNDC
 				};
 
 				// Draw pixel
@@ -613,9 +596,9 @@ struct TriangleSet
 				{0.5f, 0.0f, 0.5f},
 				{-1.0f, 0.5f, 1.0f},
 
-				{1.0f, 0.0f, 0.0f},
-				{0.0f, 1.0f, 0.0f},
 				{0.0f, 0.0f, 1.0f},
+				{0.0f, 1.0f, 0.0f},
+				{1.0f, 0.0f, 0.0f},
 			},
 			Triangle
 			{
@@ -623,9 +606,9 @@ struct TriangleSet
 				{1.0f, 0.5f, 1.0f},
 				{-0.5f, 0.0f, 0.5f},
 
-				{1.0f, 0.0f, 0.0f},
-				{0.0f, 1.0f, 0.0f},
 				{0.0f, 0.0f, 1.0f},
+				{0.0f, 1.0f, 0.0f},
+				{1.0f, 0.0f, 0.0f},
 			}
 		};
 	}
@@ -663,7 +646,7 @@ void Renderer::RenderResult::Draw()
 						    camera,
 						    triangle,
 						    transform,
-						    [&] (int pixelX, int pixelY, const Vec3 & pos, const Vec3 & color)
+						    [&] (int pixelX, int pixelY, const Vec3 & pos, const RGB & color)
 						    {
 							    // Depth test
 							    float * pOldDepth	= reinterpret_cast<float *>(depthBuffer.At(pixelY, pixelX));
@@ -684,9 +667,9 @@ void Renderer::RenderResult::Draw()
 										 // static_cast< unsigned char >( pos.z * 255.0f ));
 							    renderTarget.SetPixel(pixelX,
 										  pixelY,
-										  static_cast< unsigned char >( color.x * 255.0f ),
-										  static_cast< unsigned char >( color.y * 255.0f ),
-										  static_cast< unsigned char >( color.z * 255.0f ));
+										  static_cast< unsigned char >( color.r * 255.0f ),
+										  static_cast< unsigned char >( color.g * 255.0f ),
+										  static_cast< unsigned char >( color.b * 255.0f ));
 						    });
 		}
 	}
