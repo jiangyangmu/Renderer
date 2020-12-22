@@ -13,6 +13,10 @@ struct RGB
 {
 	float r, g, b;
 };
+struct Vec2
+{
+	float x, y;
+};
 struct Vec3
 {
 	float x, y, z;
@@ -112,6 +116,7 @@ struct Triangle
 {
 	Vec3 a, b, c;
 	RGB rgbA, rgbB, rgbC;
+	Vec2 uvA, uvB, uvC;
 };
 
 struct BarycentricCoordinate
@@ -288,6 +293,9 @@ namespace GraphicsPipeline
 				triangle.rgbA,
 				triangle.rgbB,
 				triangle.rgbC,
+				triangle.uvA,
+				triangle.uvB,
+				triangle.uvC,
 			};
 			m_triangle[2] =
 			{
@@ -297,6 +305,9 @@ namespace GraphicsPipeline
 				triangle.rgbA,
 				triangle.rgbB,
 				triangle.rgbC,
+				triangle.uvA,
+				triangle.uvB,
+				triangle.uvC,
 			};
 		}
 
@@ -363,6 +374,7 @@ namespace GraphicsPipeline
 		{
 			Vec3 pos; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
 			Vec3 color;
+			Vec2 tex;
 		};
 
 		// Compute lighting
@@ -403,56 +415,110 @@ namespace GraphicsPipeline
 		};
 	}
 
-	class RasterizerPixelIterator
+	class Rasterizer
 	{
 	public:
-		using PixelProc		= void (int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric);
-		using PixelCallback	= std::function<PixelProc>;
 
-		RasterizerPixelIterator(unsigned int width,
-					unsigned int height,
-					const Camera & camera,
-					TransformTriangle & transTriangle)
-			: m_width(width)
-			, m_height(height)
-			, m_camera(camera)
-			, m_transTriangle(transTriangle)
-			, m_pixelXRange()
-			, m_pixelYRange()
+		using RasterizerProc = void(int pixelX, int pixelY, const Vec3 & pos, const RGB & color);
+		using RasterizerCallback = std::function<RasterizerProc>;
+
+		static void Rasterize(const unsigned int width,
+			       const unsigned int height,
+			       const Camera & camera,
+			       const Triangle & triangle,
+			       const Transform & transform,
+			       RasterizerCallback rasterizerCB)
 		{
+			TransformTriangle transTriangle(transform, triangle);
+
+			ForEachPixel(
+				width,
+				height,
+				camera,
+				transTriangle,
+				[&] (int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric)
+				{
+					static Renderer::Texture2D * texture = nullptr;
+					if ( !texture )
+					{
+						texture = new Renderer::Texture2D();
+						texture->LoadFromFile(L"Resources/duang.bmp");
+					}
+
+					// Properties
+					RGB color;
+					{
+						const Vec2 & tA = transTriangle.GetWorldSpace().uvA;
+						const Vec2 & tB = transTriangle.GetWorldSpace().uvB;
+						const Vec2 & tC = transTriangle.GetWorldSpace().uvC;
+
+						float u = barycentric.a * tA.x + barycentric.b * tB.x + barycentric.c * tC.x;
+						float v = barycentric.a * tA.y + barycentric.b * tB.y + barycentric.c * tC.y;
+
+						float r, g, b;
+
+						texture->Sample(u, v, &r, &g, &b);
+
+						color = { r, g, b };
+					}
+
+					// Position
+					Vec3 pos;
+					{
+						float depthNDC = ( distance - camera.zNear ) / ( camera.zFar - camera.zNear ); // FIXIT: this is not perspective correct
+
+						pos =
+						{
+							static_cast< float >( pixelX ),
+							static_cast< float >( pixelY ),
+							depthNDC
+						};
+					}
+
+					// Draw pixel
+					rasterizerCB(pixelX, pixelY, pos, color);
+				});
 		}
 
-		void ForEachPixel(PixelCallback pixelCB)
+	private:
+		using PixelProc = void(int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric);
+		using PixelCallback = std::function<PixelProc>;
+
+		static void ForEachPixel(unsigned int width, unsigned int height, const Camera & camera, TransformTriangle & transTriangle, PixelCallback pixelCB)
 		{
 			// Pick pixels with AABB and ray-triangle intersection test.
 
-			AABB aabb = GetAABB(m_transTriangle.GetNDCSpace());
-			m_pixelXRange[ 0 ] = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * m_width );
-			m_pixelXRange[ 1 ] = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * m_width );
-			m_pixelYRange[ 0 ] = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * m_height );
-			m_pixelYRange[ 1 ] = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * m_height );
+			AABB aabb = GetAABB(transTriangle.GetNDCSpace());
 
-			for ( int y = m_pixelYRange[ 0 ]; y <= m_pixelYRange[ 1 ]; ++y )
+
+			int pixelXRange[ 2 ];
+			int pixelYRange[ 2 ];
+			pixelXRange[ 0 ] = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * width );
+			pixelXRange[ 1 ] = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * width );
+			pixelYRange[ 0 ] = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * height );
+			pixelYRange[ 1 ] = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * height );
+
+			for ( int y = pixelYRange[ 0 ]; y <= pixelYRange[ 1 ]; ++y )
 			{
-				for ( int x = m_pixelXRange[ 0 ]; x <= m_pixelXRange[ 1 ]; ++x )
+				for ( int x = pixelXRange[ 0 ]; x <= pixelXRange[ 1 ]; ++x )
 				{
-					if (GlbDebugPixel[0] >= 0)
+					if ( GlbDebugPixel[ 0 ] >= 0 )
 					{
-						if (x != GlbDebugPixel[0] || y != GlbDebugPixel[1])
+						if ( x != GlbDebugPixel[ 0 ] || y != GlbDebugPixel[ 1 ] )
 						{
 							continue;
 						}
 						else
 						{
 							// Set break point here.
-							GlbDebugPixel[0] = GlbDebugPixel[1] = -1;
+							GlbDebugPixel[ 0 ] = GlbDebugPixel[ 1 ] = -1;
 						}
 					}
 
 					float distance;
 					BarycentricCoordinate barycentric;
-					if ( RayTriangleIntersection(GetPixelRay(m_camera, m_width, m_height, x, y),
-								     m_transTriangle.GetCameraSpace(),
+					if ( RayTriangleIntersection(GetPixelRay(camera, width, height, x, y),
+								     transTriangle.GetCameraSpace(),
 								     &distance,
 								     &barycentric) )
 					{
@@ -461,79 +527,8 @@ namespace GraphicsPipeline
 				}
 			}
 		}
-
-	private:
-		const unsigned int	m_width;
-		const unsigned int	m_height;
-		const Camera &		m_camera;
-		TransformTriangle &	m_transTriangle;
-		int			m_pixelXRange[2];
-		int			m_pixelYRange[2];
 	};
 
-	using RasterizerProc = void (int pixelX, int pixelY, const Vec3 & pos, const RGB & color);
-	using RasterizerCallback = std::function<RasterizerProc>;
-
-	void Rasterize(const unsigned int width,
-		       const unsigned int height,
-		       const Camera & camera,
-		       const Triangle & triangle,
-		       const Transform & transform,
-		       RasterizerCallback rasterizerCB)
-	{
-		TransformTriangle transTriangle(transform, triangle);
-
-		RasterizerPixelIterator pixelIterator(width,
-						      height,
-						      camera,
-						      transTriangle);
-
-		pixelIterator.ForEachPixel(
-			[&] (int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric)
-			{
-				static Renderer::Texture2D * texture = nullptr;
-				if ( !texture )
-				{
-					texture = new Renderer::Texture2D();
-					texture->LoadFromFile(L"Resources/duang.bmp");
-				}
-
-				// Properties
-				RGB color;
-				{
-					const RGB & cA = transTriangle.GetWorldSpace().rgbA;
-					const RGB & cB = transTriangle.GetWorldSpace().rgbB;
-					const RGB & cC = transTriangle.GetWorldSpace().rgbC;
-
-					color =
-					{
-						barycentric.a * cA.r + barycentric.b * cB.r + barycentric.c * cC.r,
-						barycentric.a * cA.g + barycentric.b * cB.g + barycentric.c * cC.g,
-						barycentric.a * cA.b + barycentric.b * cB.b + barycentric.c * cC.b
-					};
-					
-					float r, g, b;
-
-					// TODO: use tex coord
-					texture->Sample(color.g, color.b, &r, &g, &b);
-
-					color = { r, g, b };
-				}
-
-				// Position
-				float depthNDC = ( distance - camera.zNear ) / ( camera.zFar - camera.zNear ); // FIXIT: this is not perspective correct
-
-				Vec3 pos =
-				{
-					static_cast<float>(pixelX),
-					static_cast<float>(pixelY),
-					depthNDC
-				};
-
-				// Draw pixel
-				rasterizerCB(pixelX, pixelY, pos, color);
-			});
-	}
 }
 
 std::unique_ptr<Renderer::RenderResult> Renderer::RenderResult::Create()
@@ -631,23 +626,31 @@ struct TriangleSet
 		{
 			Triangle
 			{
-				{0.0f, 0.0f, 1.0f},
+				{0.0f, 0.0f, 1.0f}, // Position
 				{1.0f, 0.0f, 1.0f},
 				{0.0f, 1.0f, 1.0f},
 
-				{0.0f, 0.0f, 0.0f},
+				{0.0f, 0.0f, 0.0f}, // Color
 				{0.0f, 1.0f, 0.0f},
 				{0.0f, 0.0f, 1.0f},
+
+				{0.0f, 0.0f}, // Texture Coordinate
+				{1.0f, 0.0f},
+				{0.0f, 1.0f},
 			},
 			Triangle
 			{
-				{1.0f, 1.0f, 1.0f},
+				{1.0f, 1.0f, 1.0f}, // Position
 				{0.0f, 1.0f, 1.0f},
 				{1.0f, 0.0f, 1.0f},
 
-				{0.0f, 1.0f, 1.0f},
+				{0.0f, 1.0f, 1.0f}, // Color
 				{0.0f, 0.0f, 1.0f},
 				{0.0f, 1.0f, 0.0f},
+
+				{1.0f, 1.0f}, // Texture Coordinate
+				{0.0f, 1.0f},
+				{1.0f, 0.0f},
 			},
 		};
 	}
@@ -680,31 +683,32 @@ void Renderer::RenderResult::Draw()
 
 		for ( auto & triangle : triangleList )
 		{
-			GraphicsPipeline::Rasterize(renderTarget.Width(),
-						    renderTarget.Height(),
-						    camera,
-						    triangle,
-						    transform,
-						    [&] (int pixelX, int pixelY, const Vec3 & pos, const RGB & color)
-						    {
-							    // Depth test
-							    float * pOldDepth	= reinterpret_cast<float *>(depthBuffer.At(pixelY, pixelX));
+			GraphicsPipeline::Rasterizer::Rasterize(
+				renderTarget.Width(),
+				renderTarget.Height(),
+				camera,
+				triangle,
+				transform,
+				[&] (int pixelX, int pixelY, const Vec3 & pos, const RGB & color)
+				{
+					// Depth test
+					float * pOldDepth = reinterpret_cast< float * >( depthBuffer.At(pixelY, pixelX) );
 
-							    float oldDepth	= *pOldDepth;
-							    float newDepth	= pos.z;
+					float oldDepth = *pOldDepth;
+					float newDepth = pos.z;
 
-							    if (oldDepth <= newDepth)
-							    {
-								    return;
-							    }
-							    *pOldDepth = newDepth;
+					if ( oldDepth <= newDepth )
+					{
+						return;
+					}
+					*pOldDepth = newDepth;
 
-							    renderTarget.SetPixel(pixelX,
-										  pixelY,
-										  static_cast< unsigned char >( color.r * 255.0f ),
-										  static_cast< unsigned char >( color.g * 255.0f ),
-										  static_cast< unsigned char >( color.b * 255.0f ));
-						    });
+					renderTarget.SetPixel(pixelX,
+							      pixelY,
+							      static_cast< unsigned char >( color.r * 255.0f ),
+							      static_cast< unsigned char >( color.g * 255.0f ),
+							      static_cast< unsigned char >( color.b * 255.0f ));
+				});
 		}
 	}
 
