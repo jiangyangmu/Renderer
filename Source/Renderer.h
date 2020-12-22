@@ -1,15 +1,13 @@
 #pragma once
 
 #include <memory>
-#include <string>
-#include <vector>
 
-namespace Gdiplus
+namespace win32
 {
 	class Bitmap;
 }
 
-namespace Renderer
+namespace Rendering
 {
 	typedef unsigned char Byte;
 
@@ -51,37 +49,33 @@ namespace Renderer
 	class Texture2D
 	{
 	public:
-		Texture2D();
-		~Texture2D();
+		// Constructors
 
-		Texture2D(const Texture2D &) = delete;
-		Texture2D(Texture2D && other) = delete;
-		Texture2D & operator = (const Texture2D &) = delete;
-		Texture2D & operator = (Texture2D && other) = delete;
-
-		void LoadFromFile(std::wstring filePath);
-
-		void Sample(float u, float v, float * r, float * g, float * b);
-
-	private:
-		Gdiplus::Bitmap * m_bitmap;
-	};
-
-	class RenderResult
-	{
-	public:
-		static std::unique_ptr<RenderResult> Create();
-
-		~RenderResult() = default;
-
-		RenderResult(const RenderResult &) = delete;
-		RenderResult(RenderResult && other) = default;
-		RenderResult & operator = (const RenderResult & other) = delete;
-		RenderResult & operator = (RenderResult && other) = default;
+		static Texture2D FromBitmap(const win32::Bitmap * bitmap);
 
 		// Operations
 
-		void		Draw();
+		void Sample(float u, float v, float * rgb) const;
+
+	private:
+		const win32::Bitmap *	m_bitmap;
+	};
+
+	class HardcodedRenderer
+	{
+	public:
+		static std::unique_ptr<HardcodedRenderer> Create();
+
+		~HardcodedRenderer() = default;
+
+		HardcodedRenderer(const HardcodedRenderer &) = delete;
+		HardcodedRenderer(HardcodedRenderer && other) = default;
+		HardcodedRenderer & operator = (const HardcodedRenderer & other) = delete;
+		HardcodedRenderer & operator = (HardcodedRenderer && other) = default;
+
+		// Operations
+
+		void		Draw(float milliSeconds);
 		void		SwapBuffer();
 		void		SetDebugPixel(int pixelX, int pixelY);
 
@@ -94,7 +88,7 @@ namespace Renderer
 		const void *	GetDepthBuffer();
 
 	private:
-		RenderResult(unsigned int width, unsigned int height);
+		HardcodedRenderer(unsigned int width, unsigned int height);
 		Buffer &	FrontBuffer();
 		Buffer &	BackBuffer();
 		Buffer &	DepthBuffer();

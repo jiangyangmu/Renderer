@@ -1,12 +1,10 @@
 #include "Win32App.h"
-
-#include <strsafe.h>
-#include <cassert>
+#include "Common.h"
 
 #include <WindowsX.h>
+#include <Gdiplus.h>
 
-#define ENSURE_NOT_NULL(e) assert((e) != NULL)
-#define ENSURE_TRUE(e) assert((e))
+#include <strsafe.h>
 
 namespace win32
 {
@@ -62,6 +60,20 @@ namespace win32
 			hInstance,
 			lpParam
 		);
+	}
+
+	ULONG_PTR InitializeGdiplus()
+	{
+		Gdiplus::GdiplusStartupInput input;
+		ULONG_PTR token;
+		ENSURE_GDIPLUS_OK(
+			Gdiplus::GdiplusStartup(&token, &input, NULL));
+		return token;
+	}
+
+	void UninitializeGdiplus(ULONG_PTR token)
+	{
+		Gdiplus::GdiplusShutdown(token);
 	}
 
 	static inline HINSTANCE GetCurrentInstance()
@@ -270,6 +282,47 @@ namespace win32
 		return DefWindowProc(m_hWnd, uMsg, wParam, lParam);
 	}
 
+	std::unique_ptr<Bitmap> Bitmap::FromFile(LPCWSTR lpFilePath)
+	{
+		Gdiplus::Bitmap * gdiplusBitmap = Gdiplus::Bitmap::FromFile(lpFilePath, false);
+		ENSURE_NOT_NULL(gdiplusBitmap);
+
+		std::unique_ptr<Bitmap> bitmap(new Bitmap());
+		bitmap->m_impl = (LPVOID)gdiplusBitmap;
+
+		return bitmap;
+	}
+
+	LONG Bitmap::GetWidth() const
+	{
+		return static_cast< Gdiplus::Bitmap * >( m_impl )->GetWidth();
+	}
+
+	LONG Bitmap::GetHeight() const
+	{
+		return static_cast<Gdiplus::Bitmap *>(m_impl)->GetHeight();
+	}
+
+	void Bitmap::GetPixel(LONG x, LONG y, DWORD * bgra) const
+	{
+		Gdiplus::Bitmap * gdiplusBitmap = static_cast<Gdiplus::Bitmap *>(m_impl);
+
+		Gdiplus::Color color;
+		gdiplusBitmap->GetPixel(x, y, &color);
+
+		*bgra = color.GetValue();
+	}
+
+	Application::Application()
+	{
+		m_gdiplusToken = InitializeGdiplus();
+	}
+
+	Application::~Application()
+	{
+		UninitializeGdiplus(m_gdiplusToken);
+	}
+
 	int Application::Run(Window & mainWnd)
 	{
 		mainWnd.Show();
@@ -293,5 +346,4 @@ namespace win32
 
 		return ( int ) msg.wParam;
 	}
-
 }

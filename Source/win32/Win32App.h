@@ -1,13 +1,17 @@
 #pragma once
 
-#include <functional>
-
 #include <Windows.h>
+
+#include <memory>
 
 namespace win32
 {
 	// Window
 	HWND                CreateDesktopWindow(HINSTANCE hInstance, LPCWSTR lpWndTitle, int width, int height, WNDPROC lpfnWndProc, LPVOID lpParam);
+
+	// GDI+
+	ULONG_PTR           InitializeGdiplus();
+	void                UninitializeGdiplus(ULONG_PTR token);
 
 	class Window
 	{
@@ -74,9 +78,30 @@ namespace win32
 		int             m_height;
 	};
 
+	class Bitmap
+	{
+	public:
+		static std::unique_ptr<Bitmap> FromFile(LPCWSTR lpFilePath);
+
+		// Properties
+
+		LONG		GetWidth() const;
+		LONG		GetHeight() const;
+		void		GetPixel(LONG x, LONG y, DWORD * bgra) const;
+
+	private:
+		LPVOID		m_impl;
+	};
+
 	class Application
 	{
 	public:
-		static int      Run(Window & mainWnd);
+		Application();
+		~Application();
+
+		int		Run(Window & mainWnd);
+
+	private:
+		ULONG_PTR	m_gdiplusToken;
 	};
 }

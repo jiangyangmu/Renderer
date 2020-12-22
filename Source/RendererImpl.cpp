@@ -1,13 +1,12 @@
 #include "Renderer.h"
+#include "Common.h"
+#include "win32/Win32App.h"
 
 #include <algorithm>
-#include <cassert>
-#include <fstream>
 #include <functional>
 #include <vector>
 
 constexpr auto PI = 3.141592653f;
-static int GlbDebugPixel[2] = {-1, -1};
 
 struct RGB
 {
@@ -160,7 +159,7 @@ float DegreeToRadian(float d)
 	return d * PI / 180.0f;
 }
 
-// Vec & Matrix
+// Vec3 & Matrix
 Vec3 Multiply(const Vec3 & v, const Matrix4x4 & m)
 {
 	float w = m.f14 * v.x + m.f24 * v.y + m.f34 * v.z + m.f44;
@@ -249,6 +248,134 @@ bool RayTriangleIntersection(const Vec3 & ray, const Triangle & tri, float * pDi
 	pBarycentric->c = v;
 
 	return true;
+}
+
+namespace DB
+{
+	static int GlbDebugPixel[ 2 ] = { -1, -1 };
+	
+	struct Triangles
+	{
+		static std::vector<Triangle> One()
+		{
+			return
+			{
+				Triangle
+				{
+					{0.0f, 0.0f, 1.0f},
+					{1.0f, 0.0f, 1.0f},
+					{0.5f, 0.866f, 1.0f},
+
+					{1.0f, 0.0f, 0.0f},
+					{0.0f, 1.0f, 0.0f},
+					{0.0f, 0.0f, 1.0f},
+				}
+			};
+		}
+		static std::vector<Triangle> Two()
+		{
+			return
+			{
+				Triangle
+				{
+					{0.0f, 0.0f, 1.0f},
+					{1.0f, 0.0f, 1.0f},
+					{0.5f, 0.866f, 1.0f},
+
+					{1.0f, 0.0f, 0.0f},
+					{0.0f, 1.0f, 0.0f},
+					{0.0f, 0.0f, 1.0f},
+				},
+				Triangle
+				{
+					{-1.0f, 0.0f, 1.0f},
+					{0.0f, 0.0f, 1.0f},
+					{-0.5f, 0.866f, 1.0f},
+
+					{1.0f, 0.0f, 0.0f},
+					{0.0f, 1.0f, 0.0f},
+					{0.0f, 0.0f, 1.0f},
+				}
+			};
+		}
+		static std::vector<Triangle> TwoIntersect()
+		{
+			return
+			{
+				Triangle
+				{
+					{-1.0f, -0.5f, 1.0f},
+					{0.5f, 0.0f, 0.5f},
+					{-1.0f, 0.5f, 1.0f},
+
+					{0.0f, 0.0f, 1.0f},
+					{0.0f, 1.0f, 0.0f},
+					{1.0f, 0.0f, 0.0f},
+				},
+				Triangle
+				{
+					{1.0f, -0.5f, 1.0f},
+					{1.0f, 0.5f, 1.0f},
+					{-0.5f, 0.0f, 0.5f},
+
+					{0.0f, 0.0f, 1.0f},
+					{0.0f, 1.0f, 0.0f},
+					{1.0f, 0.0f, 0.0f},
+				}
+			};
+		}
+		static std::vector<Triangle> TextureTest()
+		{
+			return
+			{
+				Triangle
+				{
+					{0.0f, 0.0f, 1.0f}, // Position
+					{1.0f, 0.0f, 1.0f},
+					{0.0f, 1.0f, 1.0f},
+
+					{0.0f, 0.0f, 0.0f}, // Color
+					{0.0f, 1.0f, 0.0f},
+					{0.0f, 0.0f, 1.0f},
+
+					{0.0f, 0.0f}, // Texture Coordinate
+					{1.0f, 0.0f},
+					{0.0f, 1.0f},
+				},
+				Triangle
+				{
+					{1.0f, 1.0f, 1.0f}, // Position
+					{0.0f, 1.0f, 1.0f},
+					{1.0f, 0.0f, 1.0f},
+
+					{0.0f, 1.0f, 1.0f}, // Color
+					{0.0f, 0.0f, 1.0f},
+					{0.0f, 1.0f, 0.0f},
+
+					{1.0f, 1.0f}, // Texture Coordinate
+					{0.0f, 1.0f},
+					{1.0f, 0.0f},
+				},
+			};
+		}
+	};
+
+	struct Textures
+	{
+		static const Rendering::Texture2D & Duang()
+		{
+			static std::unique_ptr<win32::Bitmap> pWin32Bitmap;
+			static Rendering::Texture2D texture;
+			
+			if (!pWin32Bitmap)
+			{
+				pWin32Bitmap = win32::Bitmap::FromFile(L"Resources/duang.bmp");
+				texture = Rendering::Texture2D::FromBitmap(pWin32Bitmap.get());
+			}
+
+			return texture;
+		}
+	};
 }
 
 namespace GraphicsPipeline
@@ -349,7 +476,7 @@ namespace GraphicsPipeline
 		void		SetPixel(unsigned int x, unsigned int y, int r, int g, int b)
 		{
 			unsigned char * pixel = (unsigned char *)m_backBuffer + (y * m_width + x) * 3;
-			assert((pixel + 3) <= ((unsigned char *)m_backBuffer + m_width * m_height * 3));
+			ASSERT((pixel + 3) <= ((unsigned char *)m_backBuffer + m_width * m_height * 3));
 
 			pixel[0] = b;
 			pixel[1] = g;
@@ -423,11 +550,11 @@ namespace GraphicsPipeline
 		using RasterizerCallback = std::function<RasterizerProc>;
 
 		static void Rasterize(const unsigned int width,
-			       const unsigned int height,
-			       const Camera & camera,
-			       const Triangle & triangle,
-			       const Transform & transform,
-			       RasterizerCallback rasterizerCB)
+				      const unsigned int height,
+				      const Camera & camera,
+				      const Triangle & triangle,
+				      const Transform & transform,
+				      RasterizerCallback rasterizerCB)
 		{
 			TransformTriangle transTriangle(transform, triangle);
 
@@ -438,14 +565,7 @@ namespace GraphicsPipeline
 				transTriangle,
 				[&] (int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric)
 				{
-					static Renderer::Texture2D * texture = nullptr;
-					if ( !texture )
-					{
-						texture = new Renderer::Texture2D();
-						texture->LoadFromFile(L"Resources/duang.bmp");
-					}
-
-					// Properties
+					// Compute pixel properties
 					RGB color;
 					{
 						const Vec2 & tA = transTriangle.GetWorldSpace().uvA;
@@ -455,14 +575,10 @@ namespace GraphicsPipeline
 						float u = barycentric.a * tA.x + barycentric.b * tB.x + barycentric.c * tC.x;
 						float v = barycentric.a * tA.y + barycentric.b * tB.y + barycentric.c * tC.y;
 
-						float r, g, b;
-
-						texture->Sample(u, v, &r, &g, &b);
-
-						color = { r, g, b };
+						float rgb[3];
+						DB::Textures::Duang().Sample(u, v, rgb);
+						color = { rgb[0], rgb[1], rgb[2] };
 					}
-
-					// Position
 					Vec3 pos;
 					{
 						float depthNDC = ( distance - camera.zNear ) / ( camera.zFar - camera.zNear ); // FIXIT: this is not perspective correct
@@ -502,6 +618,7 @@ namespace GraphicsPipeline
 			{
 				for ( int x = pixelXRange[ 0 ]; x <= pixelXRange[ 1 ]; ++x )
 				{
+					using DB::GlbDebugPixel;
 					if ( GlbDebugPixel[ 0 ] >= 0 )
 					{
 						if ( x != GlbDebugPixel[ 0 ] || y != GlbDebugPixel[ 1 ] )
@@ -531,186 +648,82 @@ namespace GraphicsPipeline
 
 }
 
-std::unique_ptr<Renderer::RenderResult> Renderer::RenderResult::Create()
+namespace Rendering
 {
-	std::unique_ptr<Renderer::RenderResult> output(new Renderer::RenderResult(800, 600));
+	std::unique_ptr<HardcodedRenderer> HardcodedRenderer::Create()
+	{
+		std::unique_ptr<HardcodedRenderer> output(new HardcodedRenderer(800, 600));
 	
-	output->BackBuffer().SetAll(100);
+		output->BackBuffer().SetAll(100);
 
-	std::fill_n(reinterpret_cast<float *>(output->DepthBuffer().Data()),
-		    output->DepthBuffer().ElementCount(),
-		    1.0f);
+		std::fill_n(reinterpret_cast<float *>(output->DepthBuffer().Data()),
+			    output->DepthBuffer().ElementCount(),
+			    1.0f);
 
-	return output;
-}
-
-void Renderer::RenderResult::SetDebugPixel(int pixelX, int pixelY)
-{
-	GlbDebugPixel[0] = pixelX;
-	GlbDebugPixel[1] = pixelY;
-}
-
-struct TriangleSet
-{
-	static std::vector<Triangle> One()
-	{
-		return
-		{
-			Triangle
-			{
-				{0.0f, 0.0f, 1.0f},
-				{1.0f, 0.0f, 1.0f},
-				{0.5f, 0.866f, 1.0f},
-
-				{1.0f, 0.0f, 0.0f},
-				{0.0f, 1.0f, 0.0f},
-				{0.0f, 0.0f, 1.0f},
-			}
-		};
+		return output;
 	}
-	static std::vector<Triangle> Two()
+
+	void HardcodedRenderer::SetDebugPixel(int pixelX, int pixelY)
 	{
-		return
-		{
-			Triangle
-			{
-				{0.0f, 0.0f, 1.0f},
-				{1.0f, 0.0f, 1.0f},
-				{0.5f, 0.866f, 1.0f},
-
-				{1.0f, 0.0f, 0.0f},
-				{0.0f, 1.0f, 0.0f},
-				{0.0f, 0.0f, 1.0f},
-			},
-			Triangle
-			{
-				{-1.0f, 0.0f, 1.0f},
-				{0.0f, 0.0f, 1.0f},
-				{-0.5f, 0.866f, 1.0f},
-
-				{1.0f, 0.0f, 0.0f},
-				{0.0f, 1.0f, 0.0f},
-				{0.0f, 0.0f, 1.0f},
-			}
-		};
+		using DB::GlbDebugPixel;
+		GlbDebugPixel[0] = pixelX;
+		GlbDebugPixel[1] = pixelY;
 	}
-	static std::vector<Triangle> TwoIntersect()
+
+	void HardcodedRenderer::Draw(float milliSeconds)
 	{
-		return
+		// Output
+		Buffer & backBuffer = BackBuffer();
+		Buffer & depthBuffer = DepthBuffer();
+
+		// Input
+		Camera camera;
+		camera.pos = { 0.0f, 0.0f, 0.0f };
+		camera.zNear = 0.1f;
+		camera.zFar = 1000.0f; // use smaller value for better depth test.
+		camera.fov = DegreeToRadian(90.0f);
+		camera.aspectRatio = 4.0f / 3.0f;
+
+		auto triangleList = DB::Triangles::TextureTest();
+
+		// Projection & Clipping
+		GraphicsPipeline::Transform transform(camera);
+
+		// Rasterization
 		{
-			Triangle
+			GraphicsPipeline::RenderTarget renderTarget(Width(),
+								    Height(),
+								    backBuffer.Data());
+
+			for ( auto & triangle : triangleList )
 			{
-				{-1.0f, -0.5f, 1.0f},
-				{0.5f, 0.0f, 0.5f},
-				{-1.0f, 0.5f, 1.0f},
-
-				{0.0f, 0.0f, 1.0f},
-				{0.0f, 1.0f, 0.0f},
-				{1.0f, 0.0f, 0.0f},
-			},
-			Triangle
-			{
-				{1.0f, -0.5f, 1.0f},
-				{1.0f, 0.5f, 1.0f},
-				{-0.5f, 0.0f, 0.5f},
-
-				{0.0f, 0.0f, 1.0f},
-				{0.0f, 1.0f, 0.0f},
-				{1.0f, 0.0f, 0.0f},
-			}
-		};
-	}
-	static std::vector<Triangle> TextureTest()
-	{
-		return
-		{
-			Triangle
-			{
-				{0.0f, 0.0f, 1.0f}, // Position
-				{1.0f, 0.0f, 1.0f},
-				{0.0f, 1.0f, 1.0f},
-
-				{0.0f, 0.0f, 0.0f}, // Color
-				{0.0f, 1.0f, 0.0f},
-				{0.0f, 0.0f, 1.0f},
-
-				{0.0f, 0.0f}, // Texture Coordinate
-				{1.0f, 0.0f},
-				{0.0f, 1.0f},
-			},
-			Triangle
-			{
-				{1.0f, 1.0f, 1.0f}, // Position
-				{0.0f, 1.0f, 1.0f},
-				{1.0f, 0.0f, 1.0f},
-
-				{0.0f, 1.0f, 1.0f}, // Color
-				{0.0f, 0.0f, 1.0f},
-				{0.0f, 1.0f, 0.0f},
-
-				{1.0f, 1.0f}, // Texture Coordinate
-				{0.0f, 1.0f},
-				{1.0f, 0.0f},
-			},
-		};
-	}
-};
-
-void Renderer::RenderResult::Draw()
-{
-	// Output
-	Renderer::Buffer & backBuffer = BackBuffer();
-	Renderer::Buffer & depthBuffer = DepthBuffer();
-
-	// Input
-	Camera camera;
-	camera.pos = { 0.0f, 0.0f, 0.0f };
-	camera.zNear = 0.1f;
-	camera.zFar = 1000.0f; // use smaller value for better depth test.
-	camera.fov = DegreeToRadian(90.0f);
-	camera.aspectRatio = 4.0f / 3.0f;
-
-	auto triangleList = TriangleSet::TextureTest();
-
-	// Projection & Clipping
-	GraphicsPipeline::Transform transform(camera);
-
-	// Rasterization
-	{
-		GraphicsPipeline::RenderTarget renderTarget(Width(),
-							    Height(),
-							    backBuffer.Data());
-
-		for ( auto & triangle : triangleList )
-		{
-			GraphicsPipeline::Rasterizer::Rasterize(
-				renderTarget.Width(),
-				renderTarget.Height(),
-				camera,
-				triangle,
-				transform,
-				[&] (int pixelX, int pixelY, const Vec3 & pos, const RGB & color)
-				{
-					// Depth test
-					float * pOldDepth = reinterpret_cast< float * >( depthBuffer.At(pixelY, pixelX) );
-
-					float oldDepth = *pOldDepth;
-					float newDepth = pos.z;
-
-					if ( oldDepth <= newDepth )
+				GraphicsPipeline::Rasterizer::Rasterize(
+					renderTarget.Width(),
+					renderTarget.Height(),
+					camera,
+					triangle,
+					transform,
+					[&] (int pixelX, int pixelY, const Vec3 & pos, const RGB & color)
 					{
-						return;
-					}
-					*pOldDepth = newDepth;
+						// Depth test
+						float * pOldDepth = reinterpret_cast< float * >( depthBuffer.At(pixelY, pixelX) );
 
-					renderTarget.SetPixel(pixelX,
-							      pixelY,
-							      static_cast< unsigned char >( color.r * 255.0f ),
-							      static_cast< unsigned char >( color.g * 255.0f ),
-							      static_cast< unsigned char >( color.b * 255.0f ));
-				});
+						float oldDepth = *pOldDepth;
+						float newDepth = pos.z;
+
+						if ( oldDepth <= newDepth )
+						{
+							return;
+						}
+						*pOldDepth = newDepth;
+
+						renderTarget.SetPixel(pixelX,
+								      pixelY,
+								      static_cast< unsigned char >( color.r * 255.0f ),
+								      static_cast< unsigned char >( color.g * 255.0f ),
+								      static_cast< unsigned char >( color.b * 255.0f ));
+					});
+			}
 		}
 	}
-
-	SwapBuffer();
 }

@@ -1,15 +1,13 @@
 #include "Renderer.h"
+#include "Common.h"
+#include "win32/Win32App.h"
 
 #include <algorithm>
-#include <cassert>
 #include <malloc.h> // _aligned_malloc
 
-#include <Windows.h>
-#include <Gdiplus.h> // Gdiplus::Bitmap
-
-namespace Renderer
+namespace Rendering
 {
-	RenderResult::RenderResult(unsigned int width, unsigned int height)
+	HardcodedRenderer::HardcodedRenderer(unsigned int width, unsigned int height)
 		: m_frontId(0)
 		, m_backId(1)
 		, m_depthBuffer(width, height, 4, 4)
@@ -18,47 +16,47 @@ namespace Renderer
 		m_swapBuffer[ 1 ] = Buffer(width, height, 3);
 	}
 
-	void RenderResult::SwapBuffer()
+	void HardcodedRenderer::SwapBuffer()
 	{
 		std::swap(m_frontId, m_backId);
 	}
 
-	unsigned int RenderResult::Width()
+	unsigned int HardcodedRenderer::Width()
 	{
 		return m_depthBuffer.Width();
 	}
 
-	unsigned int RenderResult::Height()
+	unsigned int HardcodedRenderer::Height()
 	{
 		return m_depthBuffer.Height();
 	}
 
-	const void * RenderResult::GetFrontBuffer()
+	const void * HardcodedRenderer::GetFrontBuffer()
 	{
 		return FrontBuffer().Data();
 	}
 
-	const void * RenderResult::GetBackBuffer()
+	const void * HardcodedRenderer::GetBackBuffer()
 	{
 		return BackBuffer().Data();
 	}
 
-	const void * RenderResult::GetDepthBuffer()
+	const void * HardcodedRenderer::GetDepthBuffer()
 	{
 		return DepthBuffer().Data();
 	}
 
-	Buffer & RenderResult::FrontBuffer()
+	Buffer & HardcodedRenderer::FrontBuffer()
 	{
 		return m_swapBuffer[m_frontId];
 	}
 
-	Buffer & RenderResult::BackBuffer()
+	Buffer & HardcodedRenderer::BackBuffer()
 	{
 		return m_swapBuffer[m_backId];
 	}
 
-	Buffer & RenderResult::DepthBuffer()
+	Buffer & HardcodedRenderer::DepthBuffer()
 	{
 		return m_depthBuffer;
 	}
@@ -116,7 +114,7 @@ namespace Renderer
 
 	void Buffer::Reshape(unsigned int width, unsigned int height)
 	{
-		assert(m_width * m_height <= width * height);
+		ASSERT(m_width * m_height <= width * height);
 		m_width = width;
 		m_height = height;
 		m_sizeInBytes = m_width * m_height * m_elementSize;
@@ -154,38 +152,22 @@ namespace Renderer
 
 	void * Buffer::At(unsigned int row, unsigned int col)
 	{
-		assert(m_data);
+		ASSERT(m_data);
 		return m_data + (row * m_width + col) * m_elementSize;
 	}
 
-	Texture2D::Texture2D()
-		: m_bitmap(nullptr)
+	Texture2D Texture2D::FromBitmap(const win32::Bitmap * bitmap)
 	{
+		Texture2D texture2D;
+		texture2D.m_bitmap = bitmap;
+		return texture2D;
 	}
 
-	Texture2D::~Texture2D()
+	void Texture2D::Sample(float u, float v, float * rgb) const
 	{
-		if (m_bitmap)
-		{
-			delete m_bitmap;
-			m_bitmap = nullptr;
-		}
-	}
-
-	void Texture2D::LoadFromFile(std::wstring filePath)
-	{
-		if (!m_bitmap)
-		{
-			m_bitmap = Gdiplus::Bitmap::FromFile(filePath.c_str(), false);
-			assert(m_bitmap);
-		}
-	}
-
-	void Texture2D::Sample(float u, float v, float * r, float * g, float * b)
-	{
-		assert(0.0f <= u && u <= 1.0f);
-		assert(0.0f <= v && v <= 1.0f);
-		assert(u + v <= 2.0f);
+		ASSERT(0.0f <= u && u <= 1.0f);
+		ASSERT(0.0f <= v && v <= 1.0f);
+		ASSERT(u + v <= 2.0f);
 
 		LONG width = m_bitmap->GetWidth();
 		LONG height = m_bitmap->GetHeight();
@@ -193,14 +175,13 @@ namespace Renderer
 		LONG col = static_cast< LONG >( width * u );
 		LONG row = static_cast< LONG >( height * (1.0f - v) );
 
-		Gdiplus::Color color;
-		
-		if (m_bitmap->GetPixel(col, row, &color) == Gdiplus::Ok)
-		{
-			*r = static_cast< float >( color.GetR() ) / 255.f;
-			*g = static_cast< float >( color.GetG() ) / 255.f;
-			*b = static_cast< float >( color.GetB() ) / 255.f;
-		}
+		DWORD bgra;
+		m_bitmap->GetPixel(col, row, &bgra);
+
+		BYTE * p = (BYTE *)&bgra;
+		rgb[0] = static_cast< float >( p[2] ) / 255.f;
+		rgb[1] = static_cast< float >( p[1] ) / 255.f;
+		rgb[2] = static_cast< float >( p[0] ) / 255.f;
 	}
 
 }

@@ -1,10 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="Renderer">
       <UniqueIdentifier>{8440a57f-92f8-4c27-9aa4-e34c736a28bc}</UniqueIdentifier>
     </Filter>
@@ -12,23 +8,32 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Window\Resource Files">
+    <Filter Include="Misc">
+      <UniqueIdentifier>{57ce3b92-2b27-4ceb-bd20-48bfbb79d7e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Misc\Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{89ab8fc8-b744-4570-843a-fcb01d31da85}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Resource.h">
-      <Filter>Window</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\Renderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Win32App.h">
-      <Filter>Window</Filter>
+    <ClInclude Include="Resource.h">
+      <Filter>Misc</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\win32\Win32App.h">
       <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Common.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -38,24 +43,22 @@
     <ClCompile Include="..\..\..\Source\RendererImpl.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32App.cpp">
+    <ClCompile Include="..\..\..\Source\win32\Win32App.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Window.rc">
-      <Filter>Window\Resource Files</Filter>
+      <Filter>Misc\Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico">
-      <Filter>Window\Resource Files</Filter>
+      <Filter>Misc\Resource Files</Filter>
     </Image>
     <Image Include="Window.ico">
-      <Filter>Window\Resource Files</Filter>
+      <Filter>Misc\Resource Files</Filter>
     </Image>
   </ItemGroup>
 </Project>
