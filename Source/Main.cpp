@@ -2,9 +2,6 @@
 #include "Common.h"
 #include "win32/Win32App.h"
 
-#include <Windows.h>
-#include <Gdiplus.h>
-
 #include <algorithm>
 #include <sstream>
 
@@ -117,7 +114,7 @@ _RECV_EVENT_IMPL(RendererWindow, OnWndIdle) ( void * sender )
 			SetWindowText(GetHWND(), ss.str().c_str());
 			totalElapsedMilliSeconds -= 200.0;
 		}
-		Sleep(static_cast< DWORD >( std::max(0.0, 16.0 - elapsedMilliSeconds) ));
+		// Sleep(static_cast< DWORD >( std::max(0.0, 16.0 - elapsedMilliSeconds) ));
 	}
 
 	// Reset drawing surface

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cmath>
+
+typedef unsigned char Byte;
+
 struct Vec2
 {
 	float x, y;

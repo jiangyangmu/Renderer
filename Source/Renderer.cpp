@@ -1,9 +1,15 @@
 #include "Renderer.h"
 #include "Common.h"
+#include "Graphics.h"
 #include "win32/Win32App.h"
 
 #include <algorithm>
 #include <malloc.h> // _aligned_malloc
+
+using Graphics::Buffer;
+using Graphics::Texture2D;
+using Graphics::Camera;
+using Graphics::RGB;
 
 namespace Rendering
 {
@@ -61,126 +67,87 @@ namespace Rendering
 		return m_depthBuffer;
 	}
 
-	Buffer::Buffer(unsigned int width, unsigned int height, unsigned int elementSize, unsigned int alignment)
-		: m_width(width)
-		, m_height(height)
-		, m_elementSize(elementSize)
-		, m_sizeInBytes(0)
-		, m_data(nullptr)
+	std::unique_ptr<HardcodedRenderer> HardcodedRenderer::Create()
 	{
-		m_data = ( Byte * ) _aligned_malloc(width * height * elementSize, alignment);
-		if ( m_data )
+		std::unique_ptr<HardcodedRenderer> output(new HardcodedRenderer(800, 600));
+
+		output->FrontBuffer().SetAll(100);
+		output->BackBuffer().SetAll(100);
+		std::fill_n(reinterpret_cast< float * >( output->DepthBuffer().Data() ),
+			    output->DepthBuffer().ElementCount(),
+			    1.0f);
+
+		return output;
+	}
+
+	void HardcodedRenderer::ClearSurface()
+	{
+		BackBuffer().SetAll(100);
+
+		std::fill_n(reinterpret_cast< float * >( DepthBuffer().Data() ),
+			    DepthBuffer().ElementCount(),
+			    1.0f);
+	}
+
+	void HardcodedRenderer::SetDebugPixel(int pixelX, int pixelY)
+	{
+		using Graphics::DB::GlbDebugPixel;
+		GlbDebugPixel[ 0 ] = pixelX;
+		GlbDebugPixel[ 1 ] = pixelY;
+	}
+
+	void HardcodedRenderer::Update(float milliSeconds)
+	{
+	}
+
+	void HardcodedRenderer::Draw()
+	{
+		// Output
+		Graphics::Buffer & backBuffer = BackBuffer();
+		Graphics::Buffer & depthBuffer = DepthBuffer();
+
+		// Input
+		const Camera & camera = Graphics::DB::DefaultCamera();
+		const auto & triangles = Graphics::DB::Triangles::TextureTest();
+
+		// Projection & Clipping
+		Graphics::Transform transform(camera);
+
+		// Rasterization
 		{
-			m_sizeInBytes = width * height * elementSize;
+			Graphics::RenderTarget renderTarget(Width(),
+								    Height(),
+								    backBuffer.Data());
+
+			for ( auto & triangle : triangles )
+			{
+				Graphics::Rasterizer::Rasterize(
+					renderTarget.Width(),
+					renderTarget.Height(),
+					camera,
+					triangle,
+					transform,
+					[&] (int pixelX, int pixelY, const Vec3 & pos, const RGB & color)
+					{
+						// Depth test
+						float * pOldDepth = reinterpret_cast< float * >( depthBuffer.At(pixelY, pixelX) );
+
+						float oldDepth = *pOldDepth;
+						float newDepth = pos.z;
+
+						if ( oldDepth <= newDepth )
+						{
+							return;
+						}
+						*pOldDepth = newDepth;
+
+						renderTarget.SetPixel(pixelX,
+								      pixelY,
+								      static_cast< unsigned char >( color.r * 255.0f ),
+								      static_cast< unsigned char >( color.g * 255.0f ),
+								      static_cast< unsigned char >( color.b * 255.0f ));
+					});
+			}
 		}
 	}
-
-	Buffer::~Buffer()
-	{
-		if ( m_data )
-		{
-			_aligned_free(m_data);
-		}
-		m_data = nullptr;
-	}
-
-	Buffer::Buffer(Buffer && other)
-		: m_width(other.m_width)
-		, m_height(other.m_height)
-		, m_elementSize(other.m_elementSize)
-		, m_sizeInBytes(other.m_sizeInBytes)
-		, m_data(other.m_data)
-	{
-		other.m_width = 0;
-		other.m_height = 0;
-		other.m_sizeInBytes = 0;
-		other.m_data = nullptr;
-	}
-
-	Buffer & Buffer::operator=(Buffer && other)
-	{
-		this->~Buffer();
-		new (this) Buffer(std::move(other));
-		return *this;
-	}
-
-	void Buffer::SetAll(Byte value)
-	{
-		if ( m_data )
-		{
-			memset(m_data, value, m_sizeInBytes);
-		}
-	}
-
-	void Buffer::Reshape(unsigned int width, unsigned int height)
-	{
-		ASSERT(m_width * m_height <= width * height);
-		m_width = width;
-		m_height = height;
-		m_sizeInBytes = m_width * m_height * m_elementSize;
-	}
-
-	unsigned int Buffer::Width() const
-	{
-		return m_width;
-	}
-
-	unsigned int Buffer::Height() const
-	{
-		return m_height;
-	}
-
-	unsigned int Buffer::SizeInBytes() const
-	{
-		return m_sizeInBytes;
-	}
-
-	unsigned int Buffer::ElementCount() const
-	{
-		return m_width * m_height;
-	}
-
-	unsigned int Buffer::ElementSize() const
-	{
-		return m_elementSize;
-	}
-
-	void * Buffer::Data()
-	{
-		return m_data;
-	}
-
-	void * Buffer::At(unsigned int row, unsigned int col)
-	{
-		ASSERT(m_data);
-		return m_data + (row * m_width + col) * m_elementSize;
-	}
-
-	Texture2D Texture2D::FromBitmap(const win32::Bitmap * bitmap)
-	{
-		Texture2D texture2D;
-		texture2D.m_bitmap = bitmap;
-		return texture2D;
-	}
-
-	void Texture2D::Sample(float u, float v, float * rgb) const
-	{
-		ASSERT(0.0f <= u && u <= 1.0f);
-		ASSERT(0.0f <= v && v <= 1.0f);
-		ASSERT(u + v <= 2.0f);
-
-		LONG width = m_bitmap->GetWidth();
-		LONG height = m_bitmap->GetHeight();
-
-		LONG col = static_cast< LONG >( width * u );
-		LONG row = static_cast< LONG >( height * (1.0f - v) );
-
-		DWORD bgra = m_bitmap->GetPixel(col, row);
-
-		BYTE * p = (BYTE *)&bgra;
-		rgb[0] = static_cast< float >( p[2] ) / 255.f;
-		rgb[1] = static_cast< float >( p[1] ) / 255.f;
-		rgb[2] = static_cast< float >( p[0] ) / 255.f;
-	}
-
 }

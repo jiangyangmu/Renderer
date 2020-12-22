@@ -163,6 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Common.h" />
+    <ClInclude Include="..\..\..\Source\Graphics.h" />
     <ClInclude Include="..\..\..\Source\SharedTypes.h" />
     <ClInclude Include="..\..\..\Source\Event.h" />
     <ClInclude Include="..\..\..\Source\Renderer.h" />
@@ -171,9 +172,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Source\Graphics.cpp" />
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Renderer.cpp" />
-    <ClCompile Include="..\..\..\Source\RendererImpl.cpp" />
     <ClCompile Include="..\..\..\Source\win32\Win32App.cpp" />
   </ItemGroup>
   <ItemGroup>

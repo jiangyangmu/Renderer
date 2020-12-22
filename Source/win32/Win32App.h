@@ -7,11 +7,12 @@
 namespace win32
 {
 	// Window
-	HWND                CreateDesktopWindow(HINSTANCE hInstance, LPCWSTR lpWndTitle, int width, int height, WNDPROC lpfnWndProc, LPVOID lpParam);
+	HWND		CreateDesktopWindow(HINSTANCE hInstance, LPCWSTR lpWndTitle, int width, int height, WNDPROC lpfnWndProc, LPVOID lpParam);
 
 	// GDI+
-	ULONG_PTR           InitializeGdiplus();
-	void                UninitializeGdiplus(ULONG_PTR token);
+	ULONG_PTR	InitializeGdiplus();
+	void		UninitializeGdiplus(ULONG_PTR token);
+	void		LoadBMP(LPCWSTR lpFilePath, LONG * lpWidth, LONG * lpHeight, LPVOID * lpPixels);
 
 	class Window
 	{
@@ -61,34 +62,6 @@ namespace win32
 		HWND            m_hWnd;
 		int             m_width;
 		int             m_height;
-	};
-
-	class Bitmap
-	{
-	public:
-		static std::unique_ptr<Bitmap> FromFile(LPCWSTR lpFilePath);
-
-		~Bitmap();
-
-		// Properties
-
-		LONG		GetWidth() const
-		{
-			return m_width;
-		}
-		LONG		GetHeight() const
-		{
-			return m_height;
-		}
-		DWORD		GetPixel(LONG x, LONG y) const
-		{
-			return m_pixelData[y * m_width + x];
-		};
-
-	private:
-		LONG		m_width;
-		LONG		m_height;
-		DWORD *		m_pixelData;
 	};
 
 	class Application

@@ -76,6 +76,35 @@ namespace win32
 		Gdiplus::GdiplusShutdown(token);
 	}
 
+	void LoadBMP(LPCWSTR lpFilePath, LONG * lpWidth, LONG * lpHeight, LPVOID * lpPixels)
+	{
+		Gdiplus::Bitmap * gdiplusBitmap = Gdiplus::Bitmap::FromFile(lpFilePath, false);
+		ENSURE_NOT_NULL(gdiplusBitmap);
+
+		const UINT w = gdiplusBitmap->GetWidth();
+		const UINT h = gdiplusBitmap->GetHeight();
+
+		DWORD * pixels = new DWORD[ w * h ];
+		DWORD * pixel = pixels;
+		ENSURE_NOT_NULL(pixels);
+
+		Gdiplus::Color color;
+		for ( int y = 0; y < h; ++y )
+		{
+			for ( int x = 0; x < w; ++x )
+			{
+				gdiplusBitmap->GetPixel(x, y, &color);
+				*( pixel++ ) = color.GetValue();
+			}
+		}
+
+		delete gdiplusBitmap;
+
+		*lpWidth = static_cast<LONG>(w);
+		*lpHeight = static_cast<LONG>(h);
+		*lpPixels = pixels;
+	}
+
 	static inline HINSTANCE GetCurrentInstance()
 	{
 		return GetModuleHandle(NULL);
@@ -305,46 +334,6 @@ namespace win32
 		}
 
 		return DefWindowProc(m_hWnd, uMsg, wParam, lParam);
-	}
-
-	std::unique_ptr<Bitmap> Bitmap::FromFile(LPCWSTR lpFilePath)
-	{
-		Gdiplus::Bitmap * gdiplusBitmap = Gdiplus::Bitmap::FromFile(lpFilePath, false);
-		ENSURE_NOT_NULL(gdiplusBitmap);
-
-		const UINT w = gdiplusBitmap->GetWidth();
-		const UINT h = gdiplusBitmap->GetHeight();
-
-		DWORD * pixels = new DWORD[w * h];
-		DWORD * pixel = pixels;
-		ENSURE_NOT_NULL(pixels);
-
-		Gdiplus::Color color;
-		for (int y = 0; y < h; ++y)
-		{
-			for (int x = 0; x < w; ++x)
-			{
-				gdiplusBitmap->GetPixel(x, y, &color);
-				*(pixel++) = color.GetValue();
-			}
-		}
-
-		delete gdiplusBitmap;
-
-		std::unique_ptr<Bitmap> bitmap(new Bitmap());
-		bitmap->m_width = w;
-		bitmap->m_height = h;
-		bitmap->m_pixelData = pixels;
-
-		return bitmap;
-	}
-
-	Bitmap::~Bitmap()
-	{
-		if (m_pixelData)
-		{
-			delete m_pixelData;
-		}
 	}
 
 	Application::Application()

@@ -44,18 +44,21 @@
     <ClInclude Include="..\..\..\Source\SharedTypes.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\Graphics.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Renderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\RendererImpl.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\win32\Win32App.cpp">
       <Filter>Window</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Main.cpp" />
+    <ClCompile Include="..\..\..\Source\Graphics.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Window.rc">
