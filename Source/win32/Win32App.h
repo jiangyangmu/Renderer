@@ -68,14 +68,27 @@ namespace win32
 	public:
 		static std::unique_ptr<Bitmap> FromFile(LPCWSTR lpFilePath);
 
+		~Bitmap();
+
 		// Properties
 
-		LONG		GetWidth() const;
-		LONG		GetHeight() const;
-		void		GetPixel(LONG x, LONG y, DWORD * bgra) const;
+		LONG		GetWidth() const
+		{
+			return m_width;
+		}
+		LONG		GetHeight() const
+		{
+			return m_height;
+		}
+		DWORD		GetPixel(LONG x, LONG y) const
+		{
+			return m_pixelData[y * m_width + x];
+		};
 
 	private:
-		LPVOID		m_impl;
+		LONG		m_width;
+		LONG		m_height;
+		DWORD *		m_pixelData;
 	};
 
 	class Application

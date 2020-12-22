@@ -106,11 +106,17 @@ _RECV_EVENT_IMPL(RendererWindow, OnWndIdle) ( void * sender )
 		elapsedMilliSeconds = 16.0;
 	}
 
-	m_fps = 0.5 * m_fps + 0.5 * 1000.0 / elapsedMilliSeconds;
+	m_fps = 0.8 * m_fps + 0.2 * 1000.0 / elapsedMilliSeconds;
 	{
-		std::wstringstream ss;
-		ss << L"FPS: " << m_fps << " ms: " << elapsedMilliSeconds << " frame: " << m_frame;
-		SetWindowText(GetHWND(), ss.str().c_str());
+		static double totalElapsedMilliSeconds = 0.0;
+		totalElapsedMilliSeconds += elapsedMilliSeconds;
+		if (totalElapsedMilliSeconds > 200.0)
+		{
+			std::wstringstream ss;
+			ss << L"FPS: " << m_fps << " ms: " << elapsedMilliSeconds << " frame: " << m_frame;
+			SetWindowText(GetHWND(), ss.str().c_str());
+			totalElapsedMilliSeconds -= 200.0;
+		}
 		Sleep(static_cast< DWORD >( std::max(0.0, 16.0 - elapsedMilliSeconds) ));
 	}
 

@@ -175,8 +175,7 @@ namespace Rendering
 		LONG col = static_cast< LONG >( width * u );
 		LONG row = static_cast< LONG >( height * (1.0f - v) );
 
-		DWORD bgra;
-		m_bitmap->GetPixel(col, row, &bgra);
+		DWORD bgra = m_bitmap->GetPixel(col, row);
 
 		BYTE * p = (BYTE *)&bgra;
 		rgb[0] = static_cast< float >( p[2] ) / 255.f;

@@ -11,46 +11,46 @@ struct Vec3
 
 	// Constructors
 
-	static Vec3 Zero()
+	static inline Vec3 Zero()
 	{
 		return { 0.0f, 0.0f, 0.0f };
 	}
 
 	// Properties
 
-	float Length() const
+	inline float Length() const
 	{
 		return sqrtf(x * x + y * y + z * z);
 	}
 
 	// Operations
 
-	Vec3 & Scale(float s)
+	inline Vec3 & Scale(float s)
 	{
 		x *= s;
 		y *= s;
 		z *= s;
 		return *this;
 	}
-	Vec3 operator + (const Vec3 & other) const
+	inline Vec3 operator + (const Vec3 & other) const
 	{
 		return { x + other.x, y + other.y, z + other.z };
 	}
-	Vec3 operator - (const Vec3 & other) const
+	inline Vec3 operator - (const Vec3 & other) const
 	{
 		return { x - other.x, y - other.y, z - other.z };
 	}
 
-	static Vec3 Normalize(const Vec3 & v)
+	static inline Vec3 Normalize(const Vec3 & v)
 	{
 		Vec3 nv = v;
 		return nv.Scale(1.0 / nv.Length());
 	}
-	static float Dot(const Vec3 & v1, const Vec3 & v2)
+	static inline float Dot(const Vec3 & v1, const Vec3 & v2)
 	{
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
-	static Vec3 Cross(const Vec3 & v1, const Vec3 & v2)
+	static inline Vec3 Cross(const Vec3 & v1, const Vec3 & v2)
 	{
 		return
 		{

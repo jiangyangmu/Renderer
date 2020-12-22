@@ -312,30 +312,39 @@ namespace win32
 		Gdiplus::Bitmap * gdiplusBitmap = Gdiplus::Bitmap::FromFile(lpFilePath, false);
 		ENSURE_NOT_NULL(gdiplusBitmap);
 
+		const UINT w = gdiplusBitmap->GetWidth();
+		const UINT h = gdiplusBitmap->GetHeight();
+
+		DWORD * pixels = new DWORD[w * h];
+		DWORD * pixel = pixels;
+		ENSURE_NOT_NULL(pixels);
+
+		Gdiplus::Color color;
+		for (int y = 0; y < h; ++y)
+		{
+			for (int x = 0; x < w; ++x)
+			{
+				gdiplusBitmap->GetPixel(x, y, &color);
+				*(pixel++) = color.GetValue();
+			}
+		}
+
+		delete gdiplusBitmap;
+
 		std::unique_ptr<Bitmap> bitmap(new Bitmap());
-		bitmap->m_impl = (LPVOID)gdiplusBitmap;
+		bitmap->m_width = w;
+		bitmap->m_height = h;
+		bitmap->m_pixelData = pixels;
 
 		return bitmap;
 	}
 
-	LONG Bitmap::GetWidth() const
+	Bitmap::~Bitmap()
 	{
-		return static_cast< Gdiplus::Bitmap * >( m_impl )->GetWidth();
-	}
-
-	LONG Bitmap::GetHeight() const
-	{
-		return static_cast< Gdiplus::Bitmap * >( m_impl )->GetHeight();
-	}
-
-	void Bitmap::GetPixel(LONG x, LONG y, DWORD * bgra) const
-	{
-		Gdiplus::Bitmap * gdiplusBitmap = static_cast<Gdiplus::Bitmap *>(m_impl);
-
-		Gdiplus::Color color;
-		gdiplusBitmap->GetPixel(x, y, &color);
-
-		*bgra = color.GetValue();
+		if (m_pixelData)
+		{
+			delete m_pixelData;
+		}
 	}
 
 	Application::Application()

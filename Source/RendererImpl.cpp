@@ -479,50 +479,6 @@ namespace GraphicsPipeline
 		{
 			TransformTriangle transTriangle(transform, triangle);
 
-			ForEachPixel(
-				width,
-				height,
-				camera,
-				transTriangle,
-				[&] (int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric)
-				{
-					// Compute pixel properties
-					RGB color;
-					{
-						const Vec2 & tA = transTriangle.GetWorldSpace().uvA;
-						const Vec2 & tB = transTriangle.GetWorldSpace().uvB;
-						const Vec2 & tC = transTriangle.GetWorldSpace().uvC;
-
-						float u = barycentric.a * tA.x + barycentric.b * tB.x + barycentric.c * tC.x;
-						float v = barycentric.a * tA.y + barycentric.b * tB.y + barycentric.c * tC.y;
-
-						float rgb[3];
-						DB::Textures::Duang().Sample(u, v, rgb);
-						color = { rgb[0], rgb[1], rgb[2] };
-					}
-					Vec3 pos;
-					{
-						float depthNDC = ( distance - camera.zNear ) / ( camera.zFar - camera.zNear ); // FIXIT: this is not perspective correct
-
-						pos =
-						{
-							static_cast< float >( pixelX ),
-							static_cast< float >( pixelY ),
-							depthNDC
-						};
-					}
-
-					// Draw pixel
-					rasterizerCB(pixelX, pixelY, pos, color);
-				});
-		}
-
-	private:
-		using PixelProc = void(int pixelX, int pixelY, float distance, BarycentricCoordinate barycentric);
-		using PixelCallback = std::function<PixelProc>;
-
-		static void ForEachPixel(unsigned int width, unsigned int height, const Camera & camera, TransformTriangle & transTriangle, PixelCallback pixelCB)
-		{
 			// Pick pixels with AABB and ray-triangle intersection test.
 
 			AABB aabb = GetAABB(transTriangle.GetNDCSpace());
@@ -553,15 +509,56 @@ namespace GraphicsPipeline
 						}
 					}
 
+					// Compute pixel properties
+
 					float distance;
 					BarycentricCoordinate barycentric;
-					if ( RayTriangleIntersection(GetPixelRay(camera, width, height, x, y),
-								     transTriangle.GetCameraSpace(),
-								     &distance,
-								     &barycentric) )
+					if ( !RayTriangleIntersection(GetPixelRay(camera, width, height, x, y),
+								      transTriangle.GetCameraSpace(),
+								      &distance,
+								      &barycentric) )
 					{
-						pixelCB(x, y, distance, barycentric);
+						continue;
 					}
+
+					RGB color;
+					{
+						//const RGB & cA = transTriangle.GetWorldSpace().rgbA;
+						//const RGB & cB = transTriangle.GetWorldSpace().rgbB;
+						//const RGB & cC = transTriangle.GetWorldSpace().rgbC;
+						//
+						//color =
+						//{
+						//	barycentric.a * cA.r + barycentric.b * cB.r + barycentric.c * cC.r,
+						//	barycentric.a * cA.g + barycentric.b * cB.g + barycentric.c * cC.g,
+						//	barycentric.a * cA.b + barycentric.b * cB.b + barycentric.c * cC.b
+						//};
+
+						const Vec2 & tA = transTriangle.GetWorldSpace().uvA;
+						const Vec2 & tB = transTriangle.GetWorldSpace().uvB;
+						const Vec2 & tC = transTriangle.GetWorldSpace().uvC;
+
+						float u = barycentric.a * tA.x + barycentric.b * tB.x + barycentric.c * tC.x;
+						float v = barycentric.a * tA.y + barycentric.b * tB.y + barycentric.c * tC.y;
+
+						float rgb[ 3 ];
+						DB::Textures::Duang().Sample(u, v, rgb);
+						color = { rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] };
+					}
+					Vec3 pos;
+					{
+						float depthNDC = ( distance - camera.zNear ) / ( camera.zFar - camera.zNear ); // FIXIT: this is not perspective correct
+
+						pos =
+						{
+							static_cast< float >( x ),
+							static_cast< float >( y ),
+							depthNDC
+						};
+					}
+
+					// Draw pixel
+					rasterizerCB(x, y, pos, color);
 				}
 			}
 		}
