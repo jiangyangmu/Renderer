@@ -1,11 +1,16 @@
-#include <cassert>
+#include "Renderer.h"
+#include "Common.h"
+#include "win32/Win32App.h"
 
 #include <Windows.h>
 #include <Gdiplus.h>
 
-#include "win32/Win32App.h"
-#include "Renderer.h"
-#include "Common.h"
+#include <algorithm>
+#include <sstream>
+
+#ifdef max // conflict with std::max
+#undef max
+#endif
 
 int	ShowBitmap(HWND hWnd, HDC hdcWindow, Rendering::HardcodedRenderer & rr)
 {
@@ -44,35 +49,98 @@ int	ShowBitmap(HWND hWnd, HDC hdcWindow, Rendering::HardcodedRenderer & rr)
 class RendererWindow : public win32::Window
 {
 public:
-	using Window::Window;
+	RendererWindow(LPCWSTR lpTitle, HINSTANCE hInstance)
+		: Window(lpTitle, hInstance)
+		, m_render(Rendering::HardcodedRenderer::Create())
+	{
+		ENSURE_TRUE(
+			QueryPerformanceFrequency(&m_timerFrequence));
+		m_timerPreviousValue.QuadPart = 0;
+		m_fps = 60.0;
+		m_frame = 0;
 
-	void		OnWndPaint(HDC hdc) override
-	{
-		if ( !m_render )
-		{
-			m_render = Rendering::HardcodedRenderer::Create();
-			m_render->Draw(0);
-			m_render->SwapBuffer();
-		}
-		ShowBitmap(GetHWND(), hdc, *m_render);
+		_BIND_EVENT(OnWndIdle, *this, *this);
+		_BIND_EVENT(OnWndPaint, *this, *this);
+		_BIND_EVENT(OnMouseLButtonUp, *this, *this);
 	}
-	virtual void    OnMouseLButtonDown(int pixelX, int pixelY, DWORD flags) override
-	{
-		if ( m_render )
-		{
-			m_render->SetDebugPixel(pixelX, pixelY);
-			m_render->Draw(0);
-			m_render->SwapBuffer();
-			//if ( !UpdateWindow(GetHWND()) )
-			//{
-			//	MessageBox(GetHWND(), L"UpdateWindow has failed", L"Failed", MB_OK);
-			//}
-		}
-	}
+
+public: _RECV_EVENT_DECL(RendererWindow, OnWndIdle);
+public: _RECV_EVENT_DECL1(RendererWindow, OnWndPaint);
+public: _RECV_EVENT_DECL1(RendererWindow, OnMouseLButtonUp);
 
 private:
 	std::unique_ptr<Rendering::HardcodedRenderer>	m_render;
+
+	LARGE_INTEGER					m_timerFrequence;
+	LARGE_INTEGER					m_timerPreviousValue;
+	LONG						m_frame;
+	double						m_fps;
 };
+
+_RECV_EVENT_IMPL(RendererWindow, OnWndIdle) ( void * sender )
+{
+	UNREFERENCED_PARAMETER(sender);
+
+	// Throttle FPS
+	double elapsedMilliSeconds;
+	if ( m_timerPreviousValue.QuadPart != 0 )
+	{
+		LARGE_INTEGER delta;
+
+		delta = m_timerPreviousValue;
+
+		ENSURE_TRUE(
+			QueryPerformanceCounter(&m_timerPreviousValue));
+
+		delta.QuadPart = m_timerPreviousValue.QuadPart - delta.QuadPart;
+		delta.QuadPart *= 1000;
+		delta.QuadPart /= m_timerFrequence.QuadPart;
+
+		elapsedMilliSeconds = static_cast< double >( delta.QuadPart );
+	}
+	else
+	{
+		ENSURE_TRUE(
+			QueryPerformanceCounter(&m_timerPreviousValue));
+
+		elapsedMilliSeconds = 16.0;
+	}
+
+	m_fps = 0.5 * m_fps + 0.5 * 1000.0 / elapsedMilliSeconds;
+	{
+		std::wstringstream ss;
+		ss << L"FPS: " << m_fps << " ms: " << elapsedMilliSeconds << " frame: " << m_frame;
+		SetWindowText(GetHWND(), ss.str().c_str());
+		Sleep(static_cast< DWORD >( std::max(0.0, 16.0 - elapsedMilliSeconds) ));
+	}
+
+	// Reset drawing surface
+	m_render->ClearSurface();
+
+	// Update and draw next frame
+	m_render->Update(elapsedMilliSeconds);
+	m_render->Draw();
+
+	// Present next frame
+	m_render->SwapBuffer();
+
+	ENSURE_TRUE(InvalidateRect(GetHWND(), NULL, TRUE));
+}
+_RECV_EVENT_IMPL(RendererWindow, OnWndPaint) ( void * sender, const win32::WindowPaintArgs & args )
+{
+	if ( m_render )
+	{
+		ShowBitmap(GetHWND(), args.hdc, *m_render);
+		++m_frame;
+	}
+}
+_RECV_EVENT_IMPL(RendererWindow, OnMouseLButtonUp) ( void * sender, const win32::MouseEventArgs & args )
+{
+	if ( m_render )
+	{
+		m_render->SetDebugPixel(args.pixelX, args.pixelY);
+	}
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		      _In_opt_ HINSTANCE hPrevInstance,

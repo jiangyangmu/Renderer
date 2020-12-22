@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Renderer">
-      <UniqueIdentifier>{8440a57f-92f8-4c27-9aa4-e34c736a28bc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Window">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
@@ -17,6 +14,12 @@
     </Filter>
     <Filter Include="Common">
       <UniqueIdentifier>{89ab8fc8-b744-4570-843a-fcb01d31da85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Event">
+      <UniqueIdentifier>{7f757fac-f4ff-42c5-9079-5a9354459fb6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer">
+      <UniqueIdentifier>{8440a57f-92f8-4c27-9aa4-e34c736a28bc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -33,6 +36,12 @@
       <Filter>Window</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Common.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Event.h">
+      <Filter>Event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\SharedTypes.h">
       <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>

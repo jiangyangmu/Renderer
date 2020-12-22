@@ -75,7 +75,9 @@ namespace Rendering
 
 		// Operations
 
-		void		Draw(float milliSeconds);
+		void		ClearSurface();
+		void		Update(float milliSeconds);
+		void		Draw();
 		void		SwapBuffer();
 		void		SetDebugPixel(int pixelX, int pixelY);
 

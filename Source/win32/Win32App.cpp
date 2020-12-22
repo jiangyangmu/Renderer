@@ -65,7 +65,7 @@ namespace win32
 	ULONG_PTR InitializeGdiplus()
 	{
 		Gdiplus::GdiplusStartupInput input;
-		ULONG_PTR token;
+		ULONG_PTR token = NULL;
 		ENSURE_GDIPLUS_OK(
 			Gdiplus::GdiplusStartup(&token, &input, NULL));
 		return token;
@@ -98,7 +98,7 @@ namespace win32
 		// HACK: CreateWindow can't set window title
 		SetWindowText(m_hWnd, lpTitle);
 
-		RECT rect;
+		RECT rect = {};
 
 		ENSURE_TRUE(GetClientRect(m_hWnd, &rect));
 
@@ -168,6 +168,10 @@ namespace win32
 	{
 		// Map win32 events to Window events
 
+		WindowRect rect;
+		WindowPaintArgs wndPaintArgs;
+		MouseEventArgs mouseEventArgs;
+		KeyboardEventArgs keyboardEventArgs;
 		switch ( uMsg )
 		{
 			// Window events
@@ -185,9 +189,10 @@ namespace win32
 			case WM_PAINT:
 				{
 					PAINTSTRUCT ps;
-					HDC hdc = BeginPaint(m_hWnd, &ps);
 
-					OnWndPaint(hdc);
+					wndPaintArgs.hdc = BeginPaint(m_hWnd, &ps);
+
+					_DISPATCH_EVENT1(OnWndPaint, *this, wndPaintArgs);
 					
 					EndPaint(m_hWnd, &ps);
 				}
@@ -197,7 +202,10 @@ namespace win32
 			case WM_MOVE:
 				// Sent after a window has been moved.
 				{
-					OnWndMove(LOWORD(lParam), HIWORD(lParam), 0, 0);
+					rect.x = LOWORD(lParam);
+					rect.y = HIWORD(lParam);
+
+					_DISPATCH_EVENT1(OnWndMove, *this, rect);
 				}
 				return 0;
 
@@ -205,7 +213,12 @@ namespace win32
 			case WM_SIZE:
 				// Sent to a window after its size has changed.
 				{
-					OnWndResize(0, 0, LOWORD(lParam), HIWORD(lParam));
+					m_width = LOWORD(lParam);
+					m_height = HIWORD(lParam);
+					rect.width = m_width;
+					rect.height = m_height;
+
+					_DISPATCH_EVENT1(OnWndResize, *this, rect);
 				}
 				return 0;
 
@@ -229,13 +242,15 @@ namespace win32
 
 			case WM_KEYDOWN:
 				{
-					OnKeyDown(wParam);
+					keyboardEventArgs.virtualKeyCode = wParam;
+					_DISPATCH_EVENT1(OnKeyDown, *this, keyboardEventArgs);
 				}
 				return 0;
 
 			case WM_KEYUP:
 				{
-					OnKeyUp(wParam);
+					keyboardEventArgs.virtualKeyCode = wParam;
+					_DISPATCH_EVENT1(OnKeyUp, *this, keyboardEventArgs);
 				}
 				return 0;
 
@@ -247,12 +262,19 @@ namespace win32
 
 			case WM_LBUTTONDOWN:
 				{
-					OnMouseLButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), (DWORD)wParam);
+					mouseEventArgs.pixelX = GET_X_LPARAM(lParam);
+					mouseEventArgs.pixelY = GET_Y_LPARAM(lParam);
+					mouseEventArgs.flags = ( DWORD ) wParam;
+					_DISPATCH_EVENT1(OnMouseLButtonDown, *this, mouseEventArgs);
 				}
 				return 0;
 
 			case WM_LBUTTONUP:
 				{
+					mouseEventArgs.pixelX = GET_X_LPARAM(lParam);
+					mouseEventArgs.pixelY = GET_Y_LPARAM(lParam);
+					mouseEventArgs.flags = ( DWORD ) wParam;
+					_DISPATCH_EVENT1(OnMouseLButtonUp, *this, mouseEventArgs);
 				}
 				return 0;
 
@@ -271,7 +293,10 @@ namespace win32
 
 			case WM_MOUSEMOVE:
 				{
-					OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), (DWORD)wParam);
+					mouseEventArgs.pixelX = GET_X_LPARAM(lParam);
+					mouseEventArgs.pixelY = GET_Y_LPARAM(lParam);
+					mouseEventArgs.flags = ( DWORD ) wParam;
+					_DISPATCH_EVENT1(OnMouseMove, *this, mouseEventArgs);
 				}
 				return 0;
 
@@ -300,7 +325,7 @@ namespace win32
 
 	LONG Bitmap::GetHeight() const
 	{
-		return static_cast<Gdiplus::Bitmap *>(m_impl)->GetHeight();
+		return static_cast< Gdiplus::Bitmap * >( m_impl )->GetHeight();
 	}
 
 	void Bitmap::GetPixel(LONG x, LONG y, DWORD * bgra) const
@@ -340,7 +365,7 @@ namespace win32
 			}
 			else
 			{
-				mainWnd.OnWndIdle();
+				_DISPATCH_EVENT(OnWndIdle, mainWnd);
 			}
 		}
 

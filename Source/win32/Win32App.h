@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Windows.h>
+#include "Event.h"
 
 #include <memory>
 
@@ -42,30 +42,15 @@ namespace win32
 		}
 
 		// Events
-		virtual void    OnWndIdle()
-		{
-		}
-		virtual void    OnWndPaint(HDC hdc)
-		{
-		}
-		virtual void    OnWndMove(int x, int y, int width, int height)
-		{
-		}
-		virtual void    OnWndResize(int x, int y, int width, int height)
-		{
-		}
-		virtual void    OnMouseMove(int pixelX, int pixelY, DWORD flags)
-		{
-		}
-		virtual void    OnMouseLButtonDown(int pixelX, int pixelY, DWORD flags)
-		{
-		}
-		virtual void    OnKeyDown(WPARAM virtualKeyCode)
-		{
-		}
-		virtual void    OnKeyUp(WPARAM virtualKeyCode)
-		{
-		}
+	public: _SEND_EVENT(OnWndIdle);
+	public: _SEND_EVENT(OnWndMove);
+	public: _SEND_EVENT(OnWndPaint);
+	public: _SEND_EVENT(OnWndResize);
+	public: _SEND_EVENT(OnMouseMove);
+	public: _SEND_EVENT(OnMouseLButtonDown);
+	public: _SEND_EVENT(OnMouseLButtonUp);
+	public: _SEND_EVENT(OnKeyDown);
+	public: _SEND_EVENT(OnKeyUp);
 
 	private:
 		// Win32 interfaces

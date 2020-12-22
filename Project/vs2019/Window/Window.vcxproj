@@ -163,6 +163,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Common.h" />
+    <ClInclude Include="..\..\..\Source\SharedTypes.h" />
+    <ClInclude Include="..\..\..\Source\Event.h" />
     <ClInclude Include="..\..\..\Source\Renderer.h" />
     <ClInclude Include="..\..\..\Source\win32\Win32App.h" />
     <ClInclude Include="Resource.h" />
