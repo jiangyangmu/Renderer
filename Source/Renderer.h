@@ -4,11 +4,11 @@
 
 namespace Rendering
 {
-	using Graphics::Buffer;
-
 	class HardcodedRenderer
 	{
 	public:
+		using Context = Graphics::Pipeline::Context;
+
 		static std::unique_ptr<HardcodedRenderer> Create();
 
 		~HardcodedRenderer() = default;
@@ -23,27 +23,17 @@ namespace Rendering
 		void		ClearSurface();
 		void		Update(float milliSeconds);
 		void		Draw();
-		void		SwapBuffer();
-		void		SetDebugPixel(int pixelX, int pixelY);
 
 		// Properties
 
-		unsigned int	Width();
-		unsigned int	Height();
-		const void *	GetFrontBuffer();
-		const void *	GetBackBuffer();
-		const void *	GetDepthBuffer();
+		Context &	GetContext()
+		{
+			return m_context;
+		}
 
 	private:
-		HardcodedRenderer(unsigned int width, unsigned int height);
-		Buffer &	FrontBuffer();
-		Buffer &	BackBuffer();
-		Buffer &	DepthBuffer();
+		HardcodedRenderer(Integer width, Integer height);
 
-		int		m_frontId;
-		int		m_backId;
-		Buffer		m_swapBuffer[2];
-
-		Buffer		m_depthBuffer;
+		Context		m_context;
 	};
 }

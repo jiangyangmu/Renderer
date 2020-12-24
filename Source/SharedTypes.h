@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cmath>
+#include <cinttypes>
 
 typedef unsigned char Byte;
+typedef int64_t Integer;
 
 struct Vec2
 {
@@ -48,7 +50,7 @@ struct Vec3
 	static inline Vec3 Normalize(const Vec3 & v)
 	{
 		Vec3 nv = v;
-		return nv.Scale(1.0 / nv.Length());
+		return nv.Scale(1.0f / nv.Length());
 	}
 	static inline float Dot(const Vec3 & v1, const Vec3 & v2)
 	{

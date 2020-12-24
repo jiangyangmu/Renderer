@@ -93,7 +93,7 @@ namespace win32
 		{
 			for ( int x = 0; x < w; ++x )
 			{
-				gdiplusBitmap->GetPixel(x, y, &color);
+				gdiplusBitmap->GetPixel(x, h - y - 1, &color);
 				*( pixel++ ) = color.GetValue();
 			}
 		}

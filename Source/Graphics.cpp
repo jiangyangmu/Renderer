@@ -6,29 +6,15 @@
 #include <vector>
 #include <memory>
 
-using Graphics::Camera;
-using Graphics::Triangle;
-
 constexpr auto PI = 3.141592653f;
 
-struct BarycentricCoordinate
-{
-	float a, b, c;
-};
-
-struct AABB
-{
-	Vec3 min, max;
-};
-
-// Utilities
-inline float Min(float a, float b, float c)
+inline float Min3(float a, float b, float c)
 {
 	return	a < b
 		? ( a < c ? a : c )
 		: ( b < c ? b : c );
 }
-inline float Max(float a, float b, float c)
+inline float Max3(float a, float b, float c)
 {
 	return	a > b
 		? ( a > c ? a : c )
@@ -43,8 +29,6 @@ inline float DegreeToRadian(float d)
 	// 0 < d < 180
 	return d * PI / 180.0f;
 }
-
-// Vec3 & Matrix
 Vec3 Multiply(const Vec3 & v, const Matrix4x4 & m)
 {
 	float w = m.f14 * v.x + m.f24 * v.y + m.f34 * v.z + m.f44;
@@ -56,83 +40,9 @@ Vec3 Multiply(const Vec3 & v, const Matrix4x4 & m)
 		( m.f13 * v.x + m.f23 * v.y + m.f33 * v.z + m.f43 ) * wInv,
 	};
 }
-
-// Helper
-AABB GetAABB(const Triangle & triNDC)
+float EdgeFunction(const Vec2 & a, const Vec2 & b, const Vec2 & c)
 {
-	return
-	{
-		{
-			Min(triNDC.a.x, triNDC.b.x, triNDC.c.x),
-			Min(triNDC.a.y, triNDC.b.y, triNDC.c.y),
-			Min(triNDC.a.z, triNDC.b.z, triNDC.c.z),
-		},
-		{
-			Max(triNDC.a.x, triNDC.b.x, triNDC.c.x),
-			Max(triNDC.a.y, triNDC.b.y, triNDC.c.y),
-			Max(triNDC.a.z, triNDC.b.z, triNDC.c.z),
-		},
-	};
-}
-Vec3 GetPixelRay(const Camera & camera, int width, int height, int pixelX, int pixelY)
-{
-	float nearPlaneYMax = camera.zNear * tanf(0.5f * camera.fov);
-	float nearPlaneXMax = camera.aspectRatio * nearPlaneYMax;
-
-	Vec3 ray =
-	{
-		nearPlaneXMax * ( pixelX * 2.0f / width - 1.0f ),
-		nearPlaneYMax * ( 1.0f - pixelY * 2.0f / height ),
-		camera.zNear
-	};
-
-	return ray;
-}
-bool RayTriangleIntersection(const Vec3 & ray, const Triangle & tri, float * pDistance, BarycentricCoordinate * pBarycentric)
-{
-	const Vec3 & p0 = tri.a;
-	const Vec3 & p1 = tri.b;
-	const Vec3 & p2 = tri.c;
-
-	Vec3 o = Vec3::Zero();
-	Vec3 d = Vec3::Normalize(ray);
-
-	Vec3 e1 = p1 - p0;
-	Vec3 e2 = p2 - p0;
-	Vec3 q = Vec3::Cross(d, e2);
-	float a = Vec3::Dot(e1, q);
-
-	if ( -0.00001 < a && a < 0.00001 )
-	{
-		return false;
-	}
-
-	float f = 1.0 / a;
-
-	Vec3 s = o - p0;
-	float u = f * Vec3::Dot(s, q);
-
-	if ( u < 0.0 )
-	{
-		return false;
-	}
-
-	Vec3 r = Vec3::Cross(s, e1);
-	float v = f * Vec3::Dot(d, r);
-
-	if ( v < 0.0 || ( ( double ) u + v ) > 1.0 )
-	{
-		return false;
-	}
-
-	float t = f * Vec3::Dot(e2, r);
-
-	*pDistance = t;
-	pBarycentric->a = 1.0f - u - v;
-	pBarycentric->b = u;
-	pBarycentric->c = v;
-
-	return true;
+	return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
 namespace Graphics
@@ -146,7 +56,7 @@ namespace Graphics
 	{
 	}
 
-	Buffer::Buffer(unsigned int width, unsigned int height, unsigned int elementSize, unsigned int alignment)
+	Buffer::Buffer(Integer width, Integer height, Integer elementSize, Integer alignment)
 		: m_width(width)
 		, m_height(height)
 		, m_elementSize(elementSize)
@@ -165,8 +75,8 @@ namespace Graphics
 		if ( m_data )
 		{
 			_aligned_free(m_data);
+			m_data = nullptr;
 		}
-		m_data = nullptr;
 	}
 
 	Buffer::Buffer(Buffer && other)
@@ -176,10 +86,7 @@ namespace Graphics
 		, m_sizeInBytes(other.m_sizeInBytes)
 		, m_data(other.m_data)
 	{
-		other.m_width = 0;
-		other.m_height = 0;
-		other.m_sizeInBytes = 0;
-		other.m_data = nullptr;
+		new ( &other ) Buffer();
 	}
 
 	Buffer & Buffer::operator=(Buffer && other)
@@ -197,7 +104,7 @@ namespace Graphics
 		}
 	}
 
-	void Buffer::Reshape(unsigned int width, unsigned int height)
+	void Buffer::Reshape(Integer width, Integer height)
 	{
 		ASSERT(m_width * m_height <= width * height);
 		m_width = width;
@@ -205,27 +112,27 @@ namespace Graphics
 		m_sizeInBytes = m_width * m_height * m_elementSize;
 	}
 
-	unsigned int Buffer::Width() const
+	Integer Buffer::Width() const
 	{
 		return m_width;
 	}
 
-	unsigned int Buffer::Height() const
+	Integer Buffer::Height() const
 	{
 		return m_height;
 	}
 
-	unsigned int Buffer::SizeInBytes() const
+	Integer Buffer::SizeInBytes() const
 	{
 		return m_sizeInBytes;
 	}
 
-	unsigned int Buffer::ElementCount() const
+	Integer Buffer::ElementCount() const
 	{
 		return m_width * m_height;
 	}
 
-	unsigned int Buffer::ElementSize() const
+	Integer Buffer::ElementSize() const
 	{
 		return m_elementSize;
 	}
@@ -240,13 +147,13 @@ namespace Graphics
 		return m_data;
 	}
 
-	void * Buffer::At(unsigned int row, unsigned int col)
+	void * Buffer::At(Integer row, Integer col)
 	{
 		ASSERT(m_data);
 		return m_data + ( row * m_width + col ) * m_elementSize;
 	}
 
-	const void * Buffer::At(unsigned int row, unsigned int col) const
+	const void * Buffer::At(Integer row, Integer col) const
 	{
 		ASSERT(m_data);
 		return m_data + ( row * m_width + col ) * m_elementSize;
@@ -267,7 +174,7 @@ namespace Graphics
 		LONG height = m_bitmap.Height();
 		
 		LONG col = static_cast< LONG >( width * u );
-		LONG row = static_cast< LONG >( height * ( 1.0f - v ) );
+		LONG row = static_cast< LONG >( height * v );
 
 		const Byte * bgra = (Byte * )m_bitmap.At(row, col);
 		rgb[ 0 ] = static_cast< float >( bgra[ 2 ] ) / 255.f;
@@ -275,87 +182,24 @@ namespace Graphics
 		rgb[ 2 ] = static_cast< float >( bgra[ 0 ] ) / 255.f;
 	}
 
-	Transform::Transform(const Camera & camera)
-	{
-		m_worldToCamera = Matrix4x4::Identity();
-		m_cameraToNDC = Matrix4x4::PerspectiveFovLH(camera.fov,
-							    camera.aspectRatio,
-							    camera.zNear,
-							    camera.zFar);
-	}
-
-	Vec3 Transform::WorldToCamera(const Vec3 & v) const
-	{
-		return Multiply(v, m_worldToCamera);
-	}
-
-	Vec3 Transform::CameraToNDC(const Vec3 & v) const
-	{
-		return Multiply(v, m_cameraToNDC);
-	}
-
-	TransformTriangle::TransformTriangle(const Transform & transform, const Triangle & triangle)
-	{
-		m_triangle[ 0 ] = triangle;
-		m_triangle[ 1 ] =
-		{
-			transform.WorldToCamera(triangle.a),
-			transform.WorldToCamera(triangle.b),
-			transform.WorldToCamera(triangle.c),
-			triangle.rgbA,
-			triangle.rgbB,
-			triangle.rgbC,
-			triangle.uvA,
-			triangle.uvB,
-			triangle.uvC,
-		};
-		m_triangle[ 2 ] =
-		{
-			transform.CameraToNDC(m_triangle[ 1 ].a),
-			transform.CameraToNDC(m_triangle[ 1 ].b),
-			transform.CameraToNDC(m_triangle[ 1 ].c),
-			triangle.rgbA,
-			triangle.rgbB,
-			triangle.rgbC,
-			triangle.uvA,
-			triangle.uvB,
-			triangle.uvC,
-		};
-	}
-
-	const Triangle & TransformTriangle::GetWorldSpace()
-	{
-		return m_triangle[ 0 ];
-	}
-
-	const Triangle & TransformTriangle::GetCameraSpace()
-	{
-		return m_triangle[ 1 ];
-	}
-
-	const Triangle & TransformTriangle::GetNDCSpace()
-	{
-		return m_triangle[ 2 ];
-	}
-
-	RenderTarget::RenderTarget(unsigned int width, unsigned int height, void * backBuffer) : m_width(width)
+	RenderTarget::RenderTarget(Integer width, Integer height, void * backBuffer) : m_width(width)
 		, m_height(height)
 		, m_backBuffer(backBuffer)
 	{
 
 	}
 
-	unsigned int RenderTarget::Width()
+	Integer RenderTarget::Width()
 	{
 		return m_width;
 	}
 
-	unsigned int RenderTarget::Height()
+	Integer RenderTarget::Height()
 	{
 		return m_height;
 	}
 
-	void RenderTarget::SetPixel(unsigned int x, unsigned int y, int r, int g, int b)
+	void RenderTarget::SetPixel(Integer x, Integer y, Byte r, Byte g, Byte b)
 	{
 		unsigned char * pixel = ( unsigned char * ) m_backBuffer + ( y * m_width + x ) * 3;
 		ASSERT(( pixel + 3 ) <= ( ( unsigned char * ) m_backBuffer + m_width * m_height * 3 ));
@@ -365,101 +209,144 @@ namespace Graphics
 		pixel[ 2 ] = r;
 	}
 
-	void Rasterizer::Rasterize(const unsigned int width, const unsigned int height, const Camera & camera, const Triangle & triangle, const Transform & transform, RasterizerCallback rasterizerCB)
+	void Rasterize(Pipeline::Context & context,
+		       Pipeline::Vertex * pVertexBuffer,
+		       Integer nVertex,
+		       Pipeline::VertexFormat vertexFormat)
 	{
-		TransformTriangle transTriangle(transform, triangle);
+		using Vertex = Graphics::Pipeline::Vertex;
 
-		// Pick pixels with AABB and ray-triangle intersection test.
-
-		AABB aabb = GetAABB(transTriangle.GetNDCSpace());
-
-
-		int pixelXRange[ 2 ];
-		int pixelYRange[ 2 ];
-		pixelXRange[ 0 ] = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.min.x + 1.0f ), 1.0f) * width );
-		pixelXRange[ 1 ] = static_cast< int >( Bound(0.0f, 0.5f * ( aabb.max.x + 1.0f ), 1.0f) * width );
-		pixelYRange[ 0 ] = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.max.y ), 1.0f) * height );
-		pixelYRange[ 1 ] = static_cast< int >( Bound(0.0f, 0.5f * ( 1.0f - aabb.min.y ), 1.0f) * height );
-
-		for ( int y = pixelYRange[ 0 ]; y <= pixelYRange[ 1 ]; ++y )
+		for ( Pipeline::Vertex * pVertex = pVertexBuffer;
+		     nVertex >= 3;
+		     nVertex -= 3, pVertex += 3 )
 		{
-			int lastIntersectX = INT_MAX;
-			for ( int x = pixelXRange[ 0 ]; x <= pixelXRange[ 1 ]; ++x )
+			// World(Wld) -> Camera(Cam) -> NDC -> Screen(Scn)+Depth -> Raster(Ras)+Depth
+
+			RenderTarget renderTarget = context.GetRenderTarget();
+			Buffer & depthBuffer = context.GetDepthBuffer();
+
+			Integer width = renderTarget.Width();
+			Integer height = renderTarget.Height();
+
+			const Matrix4x4 & wldToCam = context.GetConstants().WorldToCamera;
+			const Matrix4x4 & camToNDC = context.GetConstants().CameraToNDC;
+
+			const Vertex & v0 = pVertex[ 0 ];
+			const Vertex & v1 = pVertex[ 1 ];
+			const Vertex & v2 = pVertex[ 2 ];
+
+			const Vec3 & p0Wld = v0.pos;
+			const Vec3 & p1Wld = v1.pos;
+			const Vec3 & p2Wld = v2.pos;
+
+			Vec3 p0Cam = Multiply(p0Wld, wldToCam);
+			Vec3 p1Cam = Multiply(p1Wld, wldToCam);
+			Vec3 p2Cam = Multiply(p2Wld, wldToCam);
+
+			Vec3 p0NDC = Multiply(p0Cam, camToNDC);
+			Vec3 p1NDC = Multiply(p1Cam, camToNDC);
+			Vec3 p2NDC = Multiply(p2Cam, camToNDC);
+
+			float z0NDCInv = 1.0f / p0NDC.z;
+			float z1NDCInv = 1.0f / p1NDC.z;
+			float z2NDCInv = 1.0f / p2NDC.z;
+
+			Vec2 p0Scn = { ( p0NDC.x + 1.0f ) * 0.5f, ( 1.0f - p0NDC.y ) * 0.5f };
+			Vec2 p1Scn = { ( p1NDC.x + 1.0f ) * 0.5f, ( 1.0f - p1NDC.y ) * 0.5f };
+			Vec2 p2Scn = { ( p2NDC.x + 1.0f ) * 0.5f, ( 1.0f - p2NDC.y ) * 0.5f };
+
+			Vec2 p0Ras = { p0Scn.x * width, p0Scn.y * height };
+			Vec2 p1Ras = { p1Scn.x * width, p1Scn.y * height };
+			Vec2 p2Ras = { p2Scn.x * width, p2Scn.y * height };
+
+			Integer xRasMin = static_cast< Integer >( Min3(p0Ras.x, p1Ras.x, p2Ras.x) );
+			Integer xRasMax = static_cast< Integer >( Max3(p0Ras.x, p1Ras.x, p2Ras.x) );
+			Integer yRasMin = static_cast< Integer >( Min3(p0Ras.y, p1Ras.y, p2Ras.y) );
+			Integer yRasMax = static_cast< Integer >( Max3(p0Ras.y, p1Ras.y, p2Ras.y) );
+
+			float areaInv = EdgeFunction(p0Ras, p1Ras, p2Ras);
+			areaInv = ( areaInv < 0.0001f ) ? 1000.0f : 1.0f / areaInv;
+			ASSERT(areaInv >= 0.0f);
+
+			for ( Integer y = yRasMin; y <= yRasMax; ++y )
 			{
-				using DB::GlbDebugPixel;
-				if ( GlbDebugPixel[ 0 ] >= 0 )
+				int lastIntersectX = INT_MAX;
+				for ( Integer x = xRasMin; x <= xRasMax; ++x )
 				{
-					if ( x != GlbDebugPixel[ 0 ] || y != GlbDebugPixel[ 1 ] )
+					Vec2 pixel = { x, y };
+
+					// Barycentric coordinate
+					float e0 = EdgeFunction(p1Ras, p2Ras, pixel);
+					float e1 = EdgeFunction(p2Ras, p0Ras, pixel);
+					float e2 = EdgeFunction(p0Ras, p1Ras, pixel);
+					if ( e0 < 0 || e1 < 0 || e2 < 0 || ( e0 == 0 && e1 == 0 && e2 == 0 ) )
 					{
 						continue;
 					}
+					float bary0 = e0 * areaInv;
+					float bary1 = e1 * areaInv;
+					float bary2 = e2 * areaInv;
+					ASSERT(0.0f <= bary0 && bary0 <= 1.0f);
+					ASSERT(0.0f <= bary1 && bary1 <= 1.0f);
+					ASSERT(0.0f <= bary2 && bary2 <= 1.0f);
+
+					// Depth
+					float zNDC = 1.0f / ( z0NDCInv * bary0 + z1NDCInv * bary1 + z2NDCInv * bary2 );
+					float * depth = static_cast< float * >( depthBuffer.At(y, x) );
+					if ( *depth <= zNDC )
+					{
+						continue;
+					}
+					*depth = zNDC;
+
+					// Vertex properties
+					RGB color;
+					if ( vertexFormat == Pipeline::VertexFormat::POSITION_RGB )
+					{
+						const RGB & cA = v0.color;
+						const RGB & cB = v1.color;
+						const RGB & cC = v2.color;
+
+						color =
+						{
+							bary0 * cA.r + bary1 * cB.r + bary2 * cC.r,
+							bary0 * cA.g + bary1 * cB.g + bary2 * cC.g,
+							bary0 * cA.b + bary1 * cB.b + bary2 * cC.b
+						};
+					}
 					else
 					{
-						// Set break point here.
-						GlbDebugPixel[ 0 ] = GlbDebugPixel[ 1 ] = -1;
+						const Vec2 & tA = v0.uv;
+						const Vec2 & tB = v1.uv;
+						const Vec2 & tC = v2.uv;
+
+						float u = bary0 * tA.x + bary1 * tB.x + bary2 * tC.x;
+						float v = bary0 * tA.y + bary1 * tB.y + bary2 * tC.y;
+
+						float rgb[ 3 ];
+						DB::Textures::Duang().Sample(u, v, rgb);
+						color = { rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] };
 					}
-				}
-
-				// Compute pixel properties
-
-				float distance;
-				BarycentricCoordinate barycentric;
-				if ( !RayTriangleIntersection(GetPixelRay(camera, width, height, x, y),
-							      transTriangle.GetCameraSpace(),
-							      &distance,
-							      &barycentric) )
-				{
-					if ( lastIntersectX < x ) break;
-					else continue;
-				}
-				lastIntersectX = x;
-
-				RGB color;
-				{
-					//const RGB & cA = transTriangle.GetWorldSpace().rgbA;
-					//const RGB & cB = transTriangle.GetWorldSpace().rgbB;
-					//const RGB & cC = transTriangle.GetWorldSpace().rgbC;
-					//
-					//color =
-					//{
-					//	barycentric.a * cA.r + barycentric.b * cB.r + barycentric.c * cC.r,
-					//	barycentric.a * cA.g + barycentric.b * cB.g + barycentric.c * cC.g,
-					//	barycentric.a * cA.b + barycentric.b * cB.b + barycentric.c * cC.b
-					//};
-
-					const Vec2 & tA = transTriangle.GetWorldSpace().uvA;
-					const Vec2 & tB = transTriangle.GetWorldSpace().uvB;
-					const Vec2 & tC = transTriangle.GetWorldSpace().uvC;
-
-					float u = barycentric.a * tA.x + barycentric.b * tB.x + barycentric.c * tC.x;
-					float v = barycentric.a * tA.y + barycentric.b * tB.y + barycentric.c * tC.y;
-
-					float rgb[ 3 ];
-					DB::Textures::Duang().Sample(u, v, rgb);
-					color = { rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] };
-				}
-				Vec3 pos;
-				{
-					float depthNDC = ( distance - camera.zNear ) / ( camera.zFar - camera.zNear ); // FIXIT: this is not perspective correct
-
-					pos =
+					Vec3 pos =
 					{
 						static_cast< float >( x ),
 						static_cast< float >( y ),
-						depthNDC
+						zNDC
 					};
-				}
 
-				// Draw pixel
-				rasterizerCB(x, y, pos, color);
+					// Draw pixel
+					renderTarget.SetPixel(x,
+							      y,
+							      static_cast< unsigned char >( color.r * 255.0f ),
+							      static_cast< unsigned char >( color.g * 255.0f ),
+							      static_cast< unsigned char >( color.b * 255.0f ));
+				}
 			}
 		}
 	}
 
 	namespace DB
 	{
-		int GlbDebugPixel[ 2 ] = { -1, -1 };
-
 		const Texture2D & Textures::Duang()
 		{
 			static Buffer bitmapData;
@@ -498,5 +385,96 @@ namespace Graphics
 
 			return camera;
 		}
+
+		std::vector<std::vector<Vertex>> Triangles::One()
+		{
+			std::vector<std::vector<Vertex>> vertices =
+			{
+				// RGB
+				{
+					Pipeline::MakeVertex({0.0f,   0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}),
+					Pipeline::MakeVertex({1.0f,   0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}),
+					Pipeline::MakeVertex({0.5f, 0.866f, 1.0f}, {0.0f, 0.0f, 1.0f}),
+				},
+				// Texture
+				{}
+			};
+			return vertices;
+		}
+
+		std::vector<std::vector<Vertex>> Triangles::Two()
+		{
+			std::vector<std::vector<Vertex>> vertices =
+			{
+				// RGB
+				{
+					Pipeline::MakeVertex({0.0f,   0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}),
+					Pipeline::MakeVertex({1.0f,   0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}),
+					Pipeline::MakeVertex({0.5f, 0.866f, 1.0f}, {0.0f, 0.0f, 1.0f}),
+					Pipeline::MakeVertex({-1.0f,   0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}),
+					Pipeline::MakeVertex({ 0.0f,   0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}),
+					Pipeline::MakeVertex({-0.5f, 0.866f, 1.0f}, {0.0f, 0.0f, 1.0f}),
+				},
+				// Texture
+				{}
+			};
+			return vertices;
+		}
+
+		std::vector<std::vector<Vertex>> Triangles::TwoIntersect()
+		{
+			std::vector<std::vector<Vertex>> vertices =
+			{
+				// RGB
+				{
+					Pipeline::MakeVertex({-1.0f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}),
+					Pipeline::MakeVertex({ 0.5f,  0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}),
+					Pipeline::MakeVertex({-1.0f,  0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}),
+					Pipeline::MakeVertex({ 1.0f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}),
+					Pipeline::MakeVertex({ 1.0f,  0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}),
+					Pipeline::MakeVertex({-0.5f,  0.0f, 0.5f}, {1.0f, 0.0f, 0.0f}),
+				},
+				// Texture
+				{}
+			};
+			return vertices;
+		}
+
+		std::vector<std::vector<Vertex>> Triangles::TextureTest()
+		{
+			std::vector<std::vector<Vertex>> vertices =
+			{
+				// RGB
+				{},
+				// Texture
+				{
+					Pipeline::MakeVertex({0.0f, 0.0f, 1.0f}, Vec2{0.0f, 0.0f}),
+					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
+					Pipeline::MakeVertex({0.0f, 1.0f, 1.0f}, Vec2{0.0f, 1.0f}),
+					Pipeline::MakeVertex({1.0f, 1.0f, 1.0f}, Vec2{1.0f, 1.0f}),
+					Pipeline::MakeVertex({0.0f, 1.0f, 1.0f}, Vec2{0.0f, 1.0f}),
+					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
+				}
+			};
+			return vertices;
+		}
+
 	}
+
+	Pipeline::Vertex Pipeline::MakeVertex(Vec3 pos, RGB color)
+	{
+		Vertex v;
+		v.pos = pos;
+		v.color = color;
+		return v;
+	}
+
+	Pipeline::Vertex Pipeline::MakeVertex(Vec3 pos, Vec2 uv)
+	{
+		Vertex v;
+		v.pos = pos;
+		v.uv = uv;
+		return v;
+	}
+
 }

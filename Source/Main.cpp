@@ -9,12 +9,12 @@
 #undef max
 #endif
 
-int	ShowBitmap(HWND hWnd, HDC hdcWindow, Rendering::HardcodedRenderer & rr)
+int	ShowBitmap(HWND hWnd, HDC hdcWindow, LONG width, LONG height, LPVOID data)
 {
 	BITMAPINFOHEADER bi;
 	bi.biSize = sizeof(BITMAPINFOHEADER);
-	bi.biWidth = rr.Width();
-	bi.biHeight = -( LONG ) rr.Height();
+	bi.biWidth = width;
+	bi.biHeight = -height;
 	bi.biPlanes = 1;
 	bi.biBitCount = 24;
 	bi.biCompression = BI_RGB;
@@ -27,13 +27,13 @@ int	ShowBitmap(HWND hWnd, HDC hdcWindow, Rendering::HardcodedRenderer & rr)
 	if ( !SetDIBitsToDevice(hdcWindow,
 				0,
 				0,
-				rr.Width(),
-				rr.Height(),
+				width,
+				height,
 				0,
 				0,
 				0,
-				rr.Height(),
-				( void * ) rr.GetFrontBuffer(),
+				height,
+				data,
 				( BITMAPINFO * ) &bi,
 				DIB_RGB_COLORS) )
 	{
@@ -125,7 +125,7 @@ _RECV_EVENT_IMPL(RendererWindow, OnWndIdle) ( void * sender )
 	m_render->Draw();
 
 	// Present next frame
-	m_render->SwapBuffer();
+	m_render->GetContext().SwapBuffer();
 
 	ENSURE_TRUE(InvalidateRect(GetHWND(), NULL, TRUE));
 }
@@ -133,7 +133,11 @@ _RECV_EVENT_IMPL(RendererWindow, OnWndPaint) ( void * sender, const win32::Windo
 {
 	if ( m_render )
 	{
-		ShowBitmap(GetHWND(), args.hdc, *m_render);
+		ShowBitmap(GetHWND(),
+			   args.hdc,
+			   m_render->GetContext().GetWidth(),
+			   m_render->GetContext().GetHeight(),
+			   m_render->GetContext().GetFrontBuffer().Data());
 		++m_frame;
 	}
 }
@@ -141,7 +145,8 @@ _RECV_EVENT_IMPL(RendererWindow, OnMouseLButtonUp) ( void * sender, const win32:
 {
 	if ( m_render )
 	{
-		m_render->SetDebugPixel(args.pixelX, args.pixelY);
+		m_render->GetContext().GetConstants().DebugPixel[0] = args.pixelX;
+		m_render->GetContext().GetConstants().DebugPixel[1] = args.pixelY;
 	}
 }
 

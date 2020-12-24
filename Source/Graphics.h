@@ -13,13 +13,6 @@ namespace Graphics
 		float r, g, b;
 	};
 
-	struct Triangle
-	{
-		Vec3 a, b, c;
-		RGB rgbA, rgbB, rgbC;
-		Vec2 uvA, uvB, uvC;
-	};
-
 	struct Camera
 	{
 		Vec3 pos;
@@ -32,7 +25,7 @@ namespace Graphics
 	{
 	public:
 		Buffer();
-		Buffer(unsigned int width, unsigned int height, unsigned int elementSize, unsigned int alignment = 1);
+		Buffer(Integer width, Integer height, Integer elementSize, Integer alignment = 1);
 		~Buffer();
 
 		Buffer(const Buffer &) = delete;
@@ -43,25 +36,25 @@ namespace Graphics
 		// Operations
 
 		void		SetAll(Byte value);
-		void		Reshape(unsigned int width, unsigned int height);
+		void		Reshape(Integer width, Integer height);
 
 		// Properties
 
-		unsigned int	Width() const;
-		unsigned int	Height() const;
-		unsigned int	SizeInBytes() const;
-		unsigned int	ElementCount() const;
-		unsigned int	ElementSize() const;
+		Integer		Width() const;
+		Integer		Height() const;
+		Integer		SizeInBytes() const;
+		Integer		ElementCount() const;
+		Integer		ElementSize() const;
 		const void *	Data() const;
 		void *		Data();
-		const void *	At(unsigned int row, unsigned int col) const;
-		void *		At(unsigned int row, unsigned int col);
+		const void *	At(Integer row, Integer col) const;
+		void *		At(Integer row, Integer col);
 
 	private:
-		unsigned int	m_width;
-		unsigned int	m_height;
-		unsigned int	m_elementSize;
-		unsigned int	m_sizeInBytes;
+		Integer		m_width;
+		Integer		m_height;
+		Integer		m_elementSize;
+		Integer		m_sizeInBytes;
 		Byte *		m_data;
 	};
 
@@ -85,223 +78,188 @@ namespace Graphics
 		const Buffer &	m_bitmap;
 	};
 
-	class Transform
-	{
-	public:
-		Transform(const Camera & camera);
-
-		Vec3 WorldToCamera(const Vec3 & v) const;
-		Vec3 CameraToNDC(const Vec3 & v) const;
-
-	private:
-		Matrix4x4	m_worldToCamera;
-		Matrix4x4	m_cameraToNDC;
-	};
-
-	class TransformTriangle
-	{
-	public:
-		TransformTriangle(const Transform & transform, const Triangle & triangle);
-
-		const Triangle &	GetWorldSpace();
-		const Triangle &	GetCameraSpace();
-		const Triangle &	GetNDCSpace();
-
-	private:
-		Triangle	m_triangle[ 3 ]; // origin(world), camera, NDC
-	};
-
 	class RenderTarget
 	{
 	public:
-		RenderTarget(unsigned int width, unsigned int height, void * backBuffer);
+		RenderTarget(Integer width, Integer height, void * backBuffer);
 
-		unsigned int	Width();
-		unsigned int	Height();
-		void		SetPixel(unsigned int x, unsigned int y, int r, int g, int b);
+		Integer		Width();
+		Integer		Height();
+		void		SetPixel(Integer x, Integer y, Byte r, Byte g, Byte b);
 
 	private:
-		unsigned int	m_width;
-		unsigned int	m_height;
+		Integer		m_width;
+		Integer		m_height;
 		void *		m_backBuffer;
 	};
 
-	namespace Shader
+	namespace Pipeline
 	{
+		typedef int64_t TextureId;
+
+		class Context
+		{
+		public:
+			struct Constants
+			{
+				Matrix4x4	WorldToCamera;
+				Matrix4x4	CameraToNDC;
+				int		DebugPixel[2];
+			};
+
+			Context(Integer width, Integer height)
+				: m_width(width)
+				, m_height(height)
+				, m_frontId(0)
+				, m_backId(1)
+				, m_depthBuffer(width, height, 4, 4)
+			{
+				m_swapBuffer[ 0 ] = Buffer(width, height, 3);
+				m_swapBuffer[ 1 ] = Buffer(width, height, 3);
+			}
+
+			// Operations
+
+			void			SwapBuffer()
+			{
+				std::swap(m_frontId, m_backId);
+			}
+
+			// Properties
+
+			Integer			GetWidth()
+			{
+				return m_width;
+			}
+			Integer			GetHeight()
+			{
+				return m_height;
+			}
+			Buffer &		GetFrontBuffer()
+			{
+				return m_swapBuffer[ m_frontId ];
+			}
+			Buffer &		GetBackBuffer()
+			{
+				return m_swapBuffer[ m_backId ];
+			}
+			RenderTarget		GetRenderTarget()
+			{
+				return RenderTarget(m_width, m_height, GetBackBuffer().Data());
+			}
+			Buffer &		GetDepthBuffer()
+			{
+				return m_depthBuffer;
+			}
+			Constants &		GetConstants()
+			{
+				return m_constants;
+			}
+
+		private:
+			Integer			m_width;
+			Integer			m_height;
+			Buffer			m_swapBuffer[ 2 ];
+			int			m_frontId;
+			int			m_backId;
+
+			Buffer			m_depthBuffer;
+
+			std::vector<Buffer>	m_texBuffers;
+
+			Constants		m_constants;
+		};
+
+		enum class VertexFormat
+		{
+			POSITION_RGB = 0,
+			POSITION_TEXCOORD = 1,
+		};
 		struct Vertex
 		{
 			Vec3 pos;
-			Vec3 color;
+			union
+			{
+				RGB color;
+				Vec2 uv;
+			};
 		};
 
-		struct Pixel
-		{
-			Vec3 pos; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
-			Vec3 color;
-			Vec2 tex;
-		};
-
-		// Compute lighting
-		class VertexShader
+		class Input
 		{
 		public:
-			struct Input
+			enum class Topology
 			{
-				Vertex v;
-			};
-			struct Output
-			{
-				Vertex v;
+				TRIANGLE_LIST,
 			};
 
-			static Output Shade(Input in)
-			{
-				return { in.v };
-			}
+			std::vector<Vertex>	m_vertices[2];
 		};
 
-		class PixelShader
+		Vertex MakeVertex(Vec3 pos, RGB color);
+		Vertex MakeVertex(Vec3 pos, Vec2 uv);
+
+		namespace Shader
 		{
-		public:
-			struct Input
+			struct Pixel
 			{
-				Pixel p;
-			};
-			struct Output
-			{
+				Vec3 pos; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
 				Vec3 color;
+				Vec2 tex;
 			};
 
-			static Output Shade(Input in)
+			// Compute lighting
+			class VertexShader
 			{
-				return { in.p.color };
-			}
-		};
+			public:
+				struct Input
+				{
+					Vertex v;
+				};
+				struct Output
+				{
+					Vertex v;
+				};
+
+				static Output Shade(Input in)
+				{
+					return { in.v };
+				}
+			};
+
+			class PixelShader
+			{
+			public:
+				struct Input
+				{
+					Pixel p;
+				};
+				struct Output
+				{
+					Vec3 color;
+				};
+
+				static Output Shade(Input in)
+				{
+					return { in.p.color };
+				}
+			};
+		}
 	}
 
-	class Rasterizer
-	{
-	public:
 
-		using RasterizerProc = void(int pixelX, int pixelY, const Vec3 & pos, const RGB & color);
-		using RasterizerCallback = std::function<RasterizerProc>;
-
-		static void Rasterize(const unsigned int width,
-				      const unsigned int height,
-				      const Camera & camera,
-				      const Triangle & triangle,
-				      const Transform & transform,
-				      RasterizerCallback rasterizerCB);
-	};
+	void Rasterize(Pipeline::Context & context, Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
 
 	namespace DB
 	{
-		extern int GlbDebugPixel[ 2 ];
+		using Vertex = Pipeline::Vertex;
 
 		struct Triangles
 		{
-			static std::vector<Triangle> One()
-			{
-				return
-				{
-					Triangle
-					{
-						{0.0f, 0.0f, 1.0f},
-					{1.0f, 0.0f, 1.0f},
-					{0.5f, 0.866f, 1.0f},
-
-					{1.0f, 0.0f, 0.0f},
-					{0.0f, 1.0f, 0.0f},
-					{0.0f, 0.0f, 1.0f},
-				}
-				};
-			}
-			static std::vector<Triangle> Two()
-			{
-				return
-				{
-					Triangle
-					{
-						{0.0f, 0.0f, 1.0f},
-					{1.0f, 0.0f, 1.0f},
-					{0.5f, 0.866f, 1.0f},
-
-					{1.0f, 0.0f, 0.0f},
-					{0.0f, 1.0f, 0.0f},
-					{0.0f, 0.0f, 1.0f},
-				},
-				Triangle
-					{
-						{-1.0f, 0.0f, 1.0f},
-					{0.0f, 0.0f, 1.0f},
-					{-0.5f, 0.866f, 1.0f},
-
-					{1.0f, 0.0f, 0.0f},
-					{0.0f, 1.0f, 0.0f},
-					{0.0f, 0.0f, 1.0f},
-				}
-				};
-			}
-			static std::vector<Triangle> TwoIntersect()
-			{
-				return
-				{
-					Triangle
-					{
-						{-1.0f, -0.5f, 1.0f},
-					{0.5f, 0.0f, 0.5f},
-					{-1.0f, 0.5f, 1.0f},
-
-					{0.0f, 0.0f, 1.0f},
-					{0.0f, 1.0f, 0.0f},
-					{1.0f, 0.0f, 0.0f},
-				},
-				Triangle
-					{
-						{1.0f, -0.5f, 1.0f},
-					{1.0f, 0.5f, 1.0f},
-					{-0.5f, 0.0f, 0.5f},
-
-					{0.0f, 0.0f, 1.0f},
-					{0.0f, 1.0f, 0.0f},
-					{1.0f, 0.0f, 0.0f},
-				}
-				};
-			}
-			static std::vector<Triangle> TextureTest()
-			{
-				return
-				{
-					Triangle
-					{
-						{0.0f, 0.0f, 1.0f}, // Position
-					{1.0f, 0.0f, 1.0f},
-					{0.0f, 1.0f, 1.0f},
-
-					{0.0f, 0.0f, 0.0f}, // Color
-					{0.0f, 1.0f, 0.0f},
-					{0.0f, 0.0f, 1.0f},
-
-					{0.0f, 0.0f}, // Texture Coordinate
-					{1.0f, 0.0f},
-					{0.0f, 1.0f},
-				},
-				Triangle
-					{
-						{1.0f, 1.0f, 1.0f}, // Position
-					{0.0f, 1.0f, 1.0f},
-					{1.0f, 0.0f, 1.0f},
-
-					{0.0f, 1.0f, 1.0f}, // Color
-					{0.0f, 0.0f, 1.0f},
-					{0.0f, 1.0f, 0.0f},
-
-					{1.0f, 1.0f}, // Texture Coordinate
-					{0.0f, 1.0f},
-					{1.0f, 0.0f},
-				},
-				};
-			}
+			static std::vector<std::vector<Vertex>> One();
+			static std::vector<std::vector<Vertex>> Two();
+			static std::vector<std::vector<Vertex>> TwoIntersect();
+			static std::vector<std::vector<Vertex>> TextureTest();
 		};
 
 		struct Textures
