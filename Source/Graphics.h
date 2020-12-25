@@ -260,6 +260,7 @@ namespace Graphics
 			static std::vector<std::vector<Vertex>> Two();
 			static std::vector<std::vector<Vertex>> TwoIntersect();
 			static std::vector<std::vector<Vertex>> TextureTest();
+			static std::vector<std::vector<Vertex>> Perspective();
 		};
 
 		struct Textures

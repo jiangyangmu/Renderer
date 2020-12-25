@@ -44,7 +44,7 @@ namespace Rendering
 
 		// Input
 		const Camera & camera = DB::DefaultCamera();
-		const auto & triangles = DB::Triangles::TextureTest();
+		const auto & triangles = DB::Triangles::Perspective();
 
 		m_context.GetConstants().WorldToCamera = Matrix4x4::Identity();
 		m_context.GetConstants().CameraToNDC = Matrix4x4::PerspectiveFovLH(camera.fov,

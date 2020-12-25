@@ -243,6 +243,10 @@ namespace Graphics
 			Vec3 p1Cam = Multiply(p1Wld, wldToCam);
 			Vec3 p2Cam = Multiply(p2Wld, wldToCam);
 
+			float z0CamInv = 1.0f / p0Cam.z;
+			float z1CamInv = 1.0f / p1Cam.z;
+			float z2CamInv = 1.0f / p2Cam.z;
+
 			Vec3 p0NDC = Multiply(p0Cam, camToNDC);
 			Vec3 p1NDC = Multiply(p1Cam, camToNDC);
 			Vec3 p2NDC = Multiply(p2Cam, camToNDC);
@@ -300,18 +304,24 @@ namespace Graphics
 					*depth = zNDC;
 
 					// Vertex properties
+					float zCam = 1.0f / ( z0CamInv * bary0 + z1CamInv * bary1 + z2CamInv * bary2 );
+					float zz0 = zCam * z0CamInv;
+					float zz1 = zCam * z1CamInv;
+					float zz2 = zCam * z2CamInv;
+
 					RGB color;
 					if ( vertexFormat == Pipeline::VertexFormat::POSITION_RGB )
 					{
+
 						const RGB & cA = v0.color;
 						const RGB & cB = v1.color;
 						const RGB & cC = v2.color;
 
 						color =
 						{
-							bary0 * cA.r + bary1 * cB.r + bary2 * cC.r,
-							bary0 * cA.g + bary1 * cB.g + bary2 * cC.g,
-							bary0 * cA.b + bary1 * cB.b + bary2 * cC.b
+							zz0 * bary0 * cA.r + zz1 * bary1 * cB.r + zz2 * bary2 * cC.r,
+							zz0 * bary0 * cA.g + zz1 * bary1 * cB.g + zz2 * bary2 * cC.g,
+							zz0 * bary0 * cA.b + zz1 * bary1 * cB.b + zz2 * bary2 * cC.b
 						};
 					}
 					else
@@ -320,19 +330,20 @@ namespace Graphics
 						const Vec2 & tB = v1.uv;
 						const Vec2 & tC = v2.uv;
 
-						float u = bary0 * tA.x + bary1 * tB.x + bary2 * tC.x;
-						float v = bary0 * tA.y + bary1 * tB.y + bary2 * tC.y;
+						float u = zz0 * bary0 * tA.x + zz1 * bary1 * tB.x + zz2 * bary2 * tC.x;
+						float v = zz0 * bary0 * tA.y + zz1 * bary1 * tB.y + zz2 * bary2 * tC.y;
 
 						float rgb[ 3 ];
 						DB::Textures::Duang().Sample(u, v, rgb);
 						color = { rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] };
 					}
-					Vec3 pos =
-					{
-						static_cast< float >( x ),
-						static_cast< float >( y ),
-						zNDC
-					};
+					ASSERT(color.r <= 1.0f && color.g <= 1.0f && color.b <= 1.0f);
+					//Vec3 pos =
+					//{
+					//	static_cast< float >( x ),
+					//	static_cast< float >( y ),
+					//	zNDC
+					//};
 
 					// Draw pixel
 					renderTarget.SetPixel(x,
@@ -453,6 +464,29 @@ namespace Graphics
 					Pipeline::MakeVertex({0.0f, 1.0f, 1.0f}, Vec2{0.0f, 1.0f}),
 					Pipeline::MakeVertex({1.0f, 1.0f, 1.0f}, Vec2{1.0f, 1.0f}),
 					Pipeline::MakeVertex({0.0f, 1.0f, 1.0f}, Vec2{0.0f, 1.0f}),
+					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
+				}
+			};
+			return vertices;
+		}
+
+		std::vector<std::vector<Graphics::Pipeline::Vertex>> Triangles::Perspective()
+		{
+			std::vector<std::vector<Vertex>> vertices =
+			{
+				// RGB
+				{
+					Pipeline::MakeVertex({-1.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}),
+					Pipeline::MakeVertex({ 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}),
+					Pipeline::MakeVertex({-0.5f, 3.0f, 5.0f}, {0.0f, 0.0f, 1.0f}),
+				},
+				// Texture
+				{
+					Pipeline::MakeVertex({0.0f, 0.0f, 1.0f}, Vec2{0.0f, 0.0f}),
+					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
+					Pipeline::MakeVertex({0.0f, 1.0f, 1.7f}, Vec2{0.0f, 1.0f}),
+					Pipeline::MakeVertex({1.0f, 1.0f, 1.7f}, Vec2{1.0f, 1.0f}),
+					Pipeline::MakeVertex({0.0f, 1.0f, 1.7f}, Vec2{0.0f, 1.0f}),
 					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
 				}
 			};
