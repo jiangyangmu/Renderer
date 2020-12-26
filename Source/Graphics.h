@@ -18,7 +18,7 @@ namespace Graphics
 	{
 	public:
 		Buffer();
-		Buffer(Integer width, Integer height, Integer elementSize, Integer alignment = 1);
+		Buffer(Integer width, Integer height, Integer elementSize, Integer alignment = 1, Integer rowPadding = 0);
 		~Buffer();
 
 		Buffer(const Buffer &) = delete;
@@ -29,13 +29,13 @@ namespace Graphics
 		// Operations
 
 		void		SetAll(Byte value);
-		void		Reshape(Integer width, Integer height);
 
 		// Properties
 
 		Integer		Width() const;
 		Integer		Height() const;
 		Integer		SizeInBytes() const;
+		Integer		RowSizeInBytes() const;
 		Integer		ElementCount() const;
 		Integer		ElementSize() const;
 		const void *	Data() const;
@@ -48,6 +48,7 @@ namespace Graphics
 		Integer		m_height;
 		Integer		m_elementSize;
 		Integer		m_sizeInBytes;
+		Integer		m_rowSizeInBytes;
 		Byte *		m_data;
 	};
 
@@ -90,7 +91,7 @@ namespace Graphics
 	class RenderTarget
 	{
 	public:
-		RenderTarget(Integer width, Integer height, void * backBuffer);
+		RenderTarget(Integer width, Integer height, Integer rowSizeInBytes, void * backBuffer);
 
 		Integer		Width();
 		Integer		Height();
@@ -99,6 +100,7 @@ namespace Graphics
 	private:
 		Integer		m_width;
 		Integer		m_height;
+		Integer		m_rowSizeInBytes;
 		void *		m_backBuffer;
 	};
 
@@ -184,9 +186,11 @@ namespace Graphics
 				, m_frontId(0)
 				, m_backId(1)
 			{
+				int rowPadding = (4 - ((width * 3) & 0x3)) & 0x3;
 				m_depthBuffer = Buffer(width, height, 4, 4);
-				m_swapBuffer[ 0 ] = Buffer(width, height, 3);
-				m_swapBuffer[ 1 ] = Buffer(width, height, 3);
+				m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
+				m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
+
 				m_constants.DebugPixel[0] = -1;
 				m_constants.DebugPixel[1] = -1;
 			}
@@ -197,9 +201,11 @@ namespace Graphics
 			{
 				m_width = width;
 				m_height = height;
+
+				int rowPadding = (4 - ((width * 3) & 0x3)) & 0x3;
 				m_depthBuffer = Buffer(width, height, 4, 4);
-				m_swapBuffer[ 0 ] = Buffer(width, height, 3);
-				m_swapBuffer[ 1 ] = Buffer(width, height, 3);
+				m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
+				m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
 			}
 			void			SwapBuffer()
 			{
@@ -226,7 +232,7 @@ namespace Graphics
 			}
 			RenderTarget		GetRenderTarget()
 			{
-				return RenderTarget(m_width, m_height, GetBackBuffer().Data());
+				return RenderTarget(m_width, m_height, GetBackBuffer().RowSizeInBytes(), GetBackBuffer().Data());
 			}
 			Buffer &		GetDepthBuffer()
 			{
@@ -268,7 +274,7 @@ namespace Graphics
 	}
 
 
-	void Rasterize(Pipeline::Context & context, Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
+	void Rasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
 
 	namespace DB
 	{

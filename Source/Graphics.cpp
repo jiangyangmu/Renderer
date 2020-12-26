@@ -34,21 +34,24 @@ namespace Graphics
 		, m_height(0)
 		, m_elementSize(0)
 		, m_sizeInBytes(0)
+		, m_rowSizeInBytes(0)
 		, m_data(nullptr)
 	{
 	}
 
-	Buffer::Buffer(Integer width, Integer height, Integer elementSize, Integer alignment)
+	Buffer::Buffer(Integer width, Integer height, Integer elementSize, Integer alignment, Integer rowPadding)
 		: m_width(width)
 		, m_height(height)
 		, m_elementSize(elementSize)
 		, m_sizeInBytes(0)
+		, m_rowSizeInBytes(0)
 		, m_data(nullptr)
 	{
-		m_data = ( Byte * ) _aligned_malloc(width * height * elementSize, alignment);
+		m_data = ( Byte * ) _aligned_malloc(height * (width * elementSize + rowPadding), alignment);
 		if ( m_data )
 		{
-			m_sizeInBytes = width * height * elementSize;
+			m_rowSizeInBytes = width * elementSize + rowPadding;
+			m_sizeInBytes = height * m_rowSizeInBytes;
 			ZeroMemory(m_data, m_sizeInBytes);
 		}
 	}
@@ -67,6 +70,7 @@ namespace Graphics
 		, m_height(other.m_height)
 		, m_elementSize(other.m_elementSize)
 		, m_sizeInBytes(other.m_sizeInBytes)
+		, m_rowSizeInBytes(other.m_rowSizeInBytes)
 		, m_data(other.m_data)
 	{
 		new ( &other ) Buffer();
@@ -87,14 +91,6 @@ namespace Graphics
 		}
 	}
 
-	void Buffer::Reshape(Integer width, Integer height)
-	{
-		ASSERT(m_width * m_height <= width * height);
-		m_width = width;
-		m_height = height;
-		m_sizeInBytes = m_width * m_height * m_elementSize;
-	}
-
 	Integer Buffer::Width() const
 	{
 		return m_width;
@@ -108,6 +104,11 @@ namespace Graphics
 	Integer Buffer::SizeInBytes() const
 	{
 		return m_sizeInBytes;
+	}
+
+	Integer Buffer::RowSizeInBytes() const
+	{
+		return m_rowSizeInBytes;
 	}
 
 	Integer Buffer::ElementCount() const
@@ -133,13 +134,13 @@ namespace Graphics
 	void * Buffer::At(Integer row, Integer col)
 	{
 		ASSERT(m_data);
-		return m_data + ( row * m_width + col ) * m_elementSize;
+		return m_data + row * m_rowSizeInBytes + col * m_elementSize;
 	}
 
 	const void * Buffer::At(Integer row, Integer col) const
 	{
 		ASSERT(m_data);
-		return m_data + ( row * m_width + col ) * m_elementSize;
+		return m_data + row * m_rowSizeInBytes + col * m_elementSize;
 	}
 
 	Texture2D::Texture2D(const Buffer & bitmap)
@@ -147,8 +148,10 @@ namespace Graphics
 	{
 	}
 
-	RenderTarget::RenderTarget(Integer width, Integer height, void * backBuffer) : m_width(width)
+	RenderTarget::RenderTarget(Integer width, Integer height, Integer rowSizeInBytes, void * backBuffer)
+		: m_width(width)
 		, m_height(height)
+		, m_rowSizeInBytes(rowSizeInBytes)
 		, m_backBuffer(backBuffer)
 	{
 
@@ -166,8 +169,8 @@ namespace Graphics
 
 	void RenderTarget::SetPixel(Integer x, Integer y, Byte r, Byte g, Byte b)
 	{
-		unsigned char * pixel = ( unsigned char * ) m_backBuffer + ( y * m_width + x ) * 3;
-		ASSERT(( pixel + 3 ) <= ( ( unsigned char * ) m_backBuffer + m_width * m_height * 3 ));
+		unsigned char * pixel = ( unsigned char * ) m_backBuffer + y * m_rowSizeInBytes + x * 3;
+		ASSERT(( pixel + 3 ) <= ( ( unsigned char * ) m_backBuffer + m_height * m_rowSizeInBytes ));
 
 		pixel[ 0 ] = b;
 		pixel[ 1 ] = g;
@@ -175,27 +178,29 @@ namespace Graphics
 	}
 
 	void Rasterize(Pipeline::Context & context,
-		       Pipeline::Vertex * pVertexBuffer,
+		       const Pipeline::Vertex * pVertexBuffer,
 		       Integer nVertex,
 		       Pipeline::VertexFormat vertexFormat)
 	{
 		using Vertex = Graphics::Pipeline::Vertex;
 
-		for ( Pipeline::Vertex * pVertex = pVertexBuffer;
+		RenderTarget renderTarget = context.GetRenderTarget();
+		Buffer & depthBuffer = context.GetDepthBuffer();
+
+		Integer width = renderTarget.Width();
+		Integer height = renderTarget.Height();
+
+		const Matrix4x4 & wldToCam = context.GetConstants().WorldToCamera;
+		const Matrix4x4 & camToNDC = context.GetConstants().CameraToNDC;
+
+		Integer dbgX = context.GetConstants().DebugPixel[ 0 ];
+		Integer dbgY = context.GetConstants().DebugPixel[ 1 ];
+
+		for (const Pipeline::Vertex * pVertex = pVertexBuffer;
 		     nVertex >= 3;
 		     nVertex -= 3, pVertex += 3 )
 		{
 			// World(Wld) -> Camera(Cam) -> NDC -> Screen(Scn)+Depth -> Raster(Ras)+Depth
-
-			RenderTarget renderTarget = context.GetRenderTarget();
-			Buffer & depthBuffer = context.GetDepthBuffer();
-
-			Integer width = renderTarget.Width();
-			Integer height = renderTarget.Height();
-
-			const Matrix4x4 & wldToCam = context.GetConstants().WorldToCamera;
-			const Matrix4x4 & camToNDC = context.GetConstants().CameraToNDC;
-
 			const Vertex & v0 = pVertex[ 0 ];
 			const Vertex & v1 = pVertex[ 1 ];
 			const Vertex & v2 = pVertex[ 2 ];
@@ -246,20 +251,15 @@ namespace Graphics
 			areaInv = ( areaInv < 0.0001f ) ? 1000.0f : 1.0f / areaInv;
 			ASSERT(areaInv >= 0.0f);
 
-			Integer dbgX = context.GetConstants().DebugPixel[0];
-			Integer dbgY = context.GetConstants().DebugPixel[1];
-
 			for ( Integer y = yRasMin; y <= yRasMax; ++y )
 			{
 				for ( Integer x = xRasMin; x <= xRasMax; ++x )
 				{
+					//renderTarget.SetPixel(x, y, 100, 100, 100);
+
 					Vec2 pixel = { x, y };
 
 					if ( dbgX != -1 && dbgY != -1 && ( x != dbgX || y != dbgY ) ) continue;
-					if ( dbgX != -1 && dbgY != -1 && ( x == dbgX && y == dbgY ))
-					{
-						int a = 1 + 2;
-					}
 
 					// Barycentric coordinate
 					float e0 = EdgeFunction(p1Ras, p2Ras, pixel);
@@ -325,6 +325,7 @@ namespace Graphics
 						DB::Textures::Duang().Sample(u, v, rgb);
 						color = { rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] };
 					}
+					ASSERT(color.r >= 0.0f && color.g >= 0.0f && color.b >= 0.0f);
 					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
 
 					// Draw pixel

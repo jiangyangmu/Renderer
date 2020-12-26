@@ -47,8 +47,8 @@ namespace Rendering
 		m_context.GetConstants().CameraToNDC = GetCamera().GetProjMatrix();
 
 		// Rasterization
-		auto verticesRGB = triangles[ 0 ];
-		auto verticesTex = triangles[ 1 ];
+		auto & verticesRGB = triangles[ 0 ];
+		auto & verticesTex = triangles[ 1 ];
 		Rasterize(m_context, verticesRGB.data(), verticesRGB.size(), Pipeline::VertexFormat::POSITION_RGB);
 		Rasterize(m_context, verticesTex.data(), verticesTex.size(), Pipeline::VertexFormat::POSITION_TEXCOORD);
 	}
