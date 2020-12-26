@@ -1,6 +1,7 @@
 #pragma once
 
-#include "SharedTypes.h"
+#include "Camera.h"
+#include "Common.h"
 
 #include <functional>
 #include <memory>
@@ -11,14 +12,6 @@ namespace Graphics
 	struct RGB
 	{
 		float r, g, b;
-	};
-
-	struct Camera
-	{
-		Vec3 pos;
-		float zNear, zFar;
-		float fov; // in radian
-		float aspectRatio;
 	};
 
 	class Buffer
@@ -72,7 +65,23 @@ namespace Graphics
 
 		// Operations
 
-		void Sample(float u, float v, float * rgb) const;
+		inline void Sample(float u, float v, float * rgb) const
+		{
+			ASSERT(0.0f <= u && u <= 1.0001f);
+			ASSERT(0.0f <= v && v <= 1.0001f);
+			ASSERT(u + v <= 2.0f);
+
+			LONG width = m_bitmap.Width();
+			LONG height = m_bitmap.Height();
+
+			LONG col = static_cast< LONG >( width * u );
+			LONG row = static_cast< LONG >( height * v );
+
+			const Byte * bgra = ( Byte * ) m_bitmap.At(row, col);
+			rgb[ 0 ] = static_cast< float >( bgra[ 2 ] ) / 255.f;
+			rgb[ 1 ] = static_cast< float >( bgra[ 1 ] ) / 255.f;
+			rgb[ 2 ] = static_cast< float >( bgra[ 0 ] ) / 255.f;
+		}
 
 	private:
 		const Buffer &	m_bitmap;
@@ -97,79 +106,6 @@ namespace Graphics
 	{
 		typedef int64_t TextureId;
 
-		class Context
-		{
-		public:
-			struct Constants
-			{
-				Matrix4x4	WorldToCamera;
-				Matrix4x4	CameraToNDC;
-				int		DebugPixel[2];
-			};
-
-			Context(Integer width, Integer height)
-				: m_width(width)
-				, m_height(height)
-				, m_frontId(0)
-				, m_backId(1)
-				, m_depthBuffer(width, height, 4, 4)
-			{
-				m_swapBuffer[ 0 ] = Buffer(width, height, 3);
-				m_swapBuffer[ 1 ] = Buffer(width, height, 3);
-			}
-
-			// Operations
-
-			void			SwapBuffer()
-			{
-				std::swap(m_frontId, m_backId);
-			}
-
-			// Properties
-
-			Integer			GetWidth()
-			{
-				return m_width;
-			}
-			Integer			GetHeight()
-			{
-				return m_height;
-			}
-			Buffer &		GetFrontBuffer()
-			{
-				return m_swapBuffer[ m_frontId ];
-			}
-			Buffer &		GetBackBuffer()
-			{
-				return m_swapBuffer[ m_backId ];
-			}
-			RenderTarget		GetRenderTarget()
-			{
-				return RenderTarget(m_width, m_height, GetBackBuffer().Data());
-			}
-			Buffer &		GetDepthBuffer()
-			{
-				return m_depthBuffer;
-			}
-			Constants &		GetConstants()
-			{
-				return m_constants;
-			}
-
-		private:
-			Integer			m_width;
-			Integer			m_height;
-			Buffer			m_swapBuffer[ 2 ];
-			int			m_frontId;
-			int			m_backId;
-
-			Buffer			m_depthBuffer;
-
-			std::vector<Buffer>	m_texBuffers;
-
-			Constants		m_constants;
-		};
-
 		enum class VertexFormat
 		{
 			POSITION_RGB = 0,
@@ -184,20 +120,6 @@ namespace Graphics
 				Vec2 uv;
 			};
 		};
-
-		class Input
-		{
-		public:
-			enum class Topology
-			{
-				TRIANGLE_LIST,
-			};
-
-			std::vector<Vertex>	m_vertices[2];
-		};
-
-		Vertex MakeVertex(Vec3 pos, RGB color);
-		Vertex MakeVertex(Vec3 pos, Vec2 uv);
 
 		namespace Shader
 		{
@@ -245,6 +167,104 @@ namespace Graphics
 				}
 			};
 		}
+
+		class Context
+		{
+		public:
+			struct Constants
+			{
+				Matrix4x4	WorldToCamera;
+				Matrix4x4	CameraToNDC;
+				int		DebugPixel[2];
+			};
+
+			Context(Integer width, Integer height)
+				: m_width(width)
+				, m_height(height)
+				, m_frontId(0)
+				, m_backId(1)
+			{
+				m_depthBuffer = Buffer(width, height, 4, 4);
+				m_swapBuffer[ 0 ] = Buffer(width, height, 3);
+				m_swapBuffer[ 1 ] = Buffer(width, height, 3);
+				m_constants.DebugPixel[0] = -1;
+				m_constants.DebugPixel[1] = -1;
+			}
+
+			// Operations
+
+			void			Resize(Integer width, Integer height)
+			{
+				m_width = width;
+				m_height = height;
+				m_depthBuffer = Buffer(width, height, 4, 4);
+				m_swapBuffer[ 0 ] = Buffer(width, height, 3);
+				m_swapBuffer[ 1 ] = Buffer(width, height, 3);
+			}
+			void			SwapBuffer()
+			{
+				std::swap(m_frontId, m_backId);
+			}
+
+			// Properties
+
+			Integer			GetWidth()
+			{
+				return m_width;
+			}
+			Integer			GetHeight()
+			{
+				return m_height;
+			}
+			Buffer &		GetFrontBuffer()
+			{
+				return m_swapBuffer[ m_frontId ];
+			}
+			Buffer &		GetBackBuffer()
+			{
+				return m_swapBuffer[ m_backId ];
+			}
+			RenderTarget		GetRenderTarget()
+			{
+				return RenderTarget(m_width, m_height, GetBackBuffer().Data());
+			}
+			Buffer &		GetDepthBuffer()
+			{
+				return m_depthBuffer;
+			}
+			Constants &		GetConstants()
+			{
+				return m_constants;
+			}
+
+		private:
+			Integer			m_width;
+			Integer			m_height;
+
+			Buffer			m_swapBuffer[ 2 ];
+			int			m_frontId;
+			int			m_backId;
+
+			Buffer			m_depthBuffer;
+
+			// std::vector<Buffer>	m_texBuffers;
+
+			Constants		m_constants;
+		};
+
+		class Input
+		{
+		public:
+			enum class Topology
+			{
+				TRIANGLE_LIST,
+			};
+
+			std::vector<Vertex>	m_vertices[2];
+		};
+
+		Vertex MakeVertex(Vec3 pos, RGB color);
+		Vertex MakeVertex(Vec3 pos, Vec2 uv);
 	}
 
 
@@ -256,18 +276,17 @@ namespace Graphics
 
 		struct Triangles
 		{
-			static std::vector<std::vector<Vertex>> One();
-			static std::vector<std::vector<Vertex>> Two();
-			static std::vector<std::vector<Vertex>> TwoIntersect();
-			static std::vector<std::vector<Vertex>> TextureTest();
-			static std::vector<std::vector<Vertex>> Perspective();
+			static const std::vector<std::vector<Vertex>> & One();
+			static const std::vector<std::vector<Vertex>> & Two();
+			static const std::vector<std::vector<Vertex>> & IntersectionTest();
+			static const std::vector<std::vector<Vertex>> & TextureTest();
+			static const std::vector<std::vector<Vertex>> & PerspectiveProjectionTest();
+			static const std::vector<std::vector<Vertex>> & CameraTest();
 		};
 
 		struct Textures
 		{
 			static const Graphics::Texture2D & Duang();
 		};
-
-		const Camera & DefaultCamera();
 	}
 }

@@ -9,8 +9,7 @@ namespace Rendering
 	public:
 		using Context = Graphics::Pipeline::Context;
 
-		static std::unique_ptr<HardcodedRenderer> Create();
-
+		HardcodedRenderer(Integer width, Integer height);
 		~HardcodedRenderer() = default;
 
 		HardcodedRenderer(const HardcodedRenderer &) = delete;
@@ -19,6 +18,8 @@ namespace Rendering
 		HardcodedRenderer & operator = (HardcodedRenderer && other) = default;
 
 		// Operations
+
+		void		Resize(Integer width, Integer height);
 
 		void		ClearSurface();
 		void		Update(float milliSeconds);
@@ -30,10 +31,14 @@ namespace Rendering
 		{
 			return m_context;
 		}
+		Camera &	GetCamera()
+		{
+			return m_camera;
+		}
 
 	private:
-		HardcodedRenderer(Integer width, Integer height);
 
 		Context		m_context;
+		Camera		m_camera;
 	};
 }

@@ -9,20 +9,18 @@ namespace Rendering
 {
 	HardcodedRenderer::HardcodedRenderer(Integer width, Integer height)
 		: m_context(width, height)
+		, m_camera(0.1f,			// z near
+			   1000.0f,			// z far (use smaller value for better depth test.)
+			   DegreeToRadian(90.0f),	// field of view
+			   ((float)width) / height,	// aspect ratio
+			   Vec3::Zero())		// position
 	{
 	}
 
-	std::unique_ptr<HardcodedRenderer> HardcodedRenderer::Create()
+	void HardcodedRenderer::Resize(Integer width, Integer height)
 	{
-		std::unique_ptr<HardcodedRenderer> output(new HardcodedRenderer(800, 600));
-
-		output->m_context.GetFrontBuffer().SetAll(100);
-		output->m_context.GetBackBuffer().SetAll(100);
-		std::fill_n(static_cast< float * >( output->m_context.GetDepthBuffer().Data() ),
-			    output->m_context.GetDepthBuffer().ElementCount(),
-			    1.0f);
-
-		return output;
+		m_context.Resize(width, height);
+		m_camera.SetAspectRatio(((float)width) / height);
 	}
 
 	void HardcodedRenderer::ClearSurface()
@@ -36,6 +34,7 @@ namespace Rendering
 
 	void HardcodedRenderer::Update(float milliSeconds)
 	{
+		GetCamera().GetController().Update(milliSeconds);
 	}
 
 	void HardcodedRenderer::Draw()
@@ -43,17 +42,9 @@ namespace Rendering
 		using namespace Graphics;
 
 		// Input
-		const Camera & camera = DB::DefaultCamera();
-		const auto & triangles = DB::Triangles::Perspective();
-
-		m_context.GetConstants().WorldToCamera = Matrix4x4::Identity();
-		m_context.GetConstants().CameraToNDC = Matrix4x4::PerspectiveFovLH(camera.fov,
-										   camera.aspectRatio,
-										   camera.zNear,
-										   camera.zFar);
-		m_context.GetConstants().DebugPixel[ 0 ] = -1;
-		m_context.GetConstants().DebugPixel[ 1 ] = -1;
-
+		const auto & triangles = DB::Triangles::CameraTest();
+		m_context.GetConstants().WorldToCamera = GetCamera().GetViewMatrix();
+		m_context.GetConstants().CameraToNDC = GetCamera().GetProjMatrix();
 
 		// Rasterization
 		auto verticesRGB = triangles[ 0 ];

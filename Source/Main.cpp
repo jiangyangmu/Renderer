@@ -3,13 +3,164 @@
 #include "win32/Win32App.h"
 
 #include <algorithm>
-#include <sstream>
+#include <strsafe.h>
 
 #ifdef max // conflict with std::max
 #undef max
 #endif
 
-int	ShowBitmap(HWND hWnd, HDC hdcWindow, LONG width, LONG height, LPVOID data)
+class RendererWindow : public win32::Window
+{
+public:
+	RendererWindow(LPCWSTR lpTitle, HINSTANCE hInstance)
+		: Window(lpTitle, hInstance)
+		, m_render(GetWidth(), GetHeight())
+	{
+		ENSURE_TRUE(QueryPerformanceFrequency(&m_timerFrequence));
+
+		m_timerBegin.QuadPart = m_timerEnd.QuadPart = 0;
+		m_drawnFrame = m_presentedFrame = 0;
+		m_lastFrameCostMS = m_minFrameCostMS = 1000.0 / 220.0; // 220 max FPS
+		m_debugMode = false;
+
+		_BIND_EVENT(OnWndIdle, *this, *this);
+		_BIND_EVENT(OnWndPaint, *this, *this);
+		_BIND_EVENT(OnWndResize, *this, *this);
+		
+		_BIND_EVENT(OnMouseMove, *this, *this);
+		_BIND_EVENT(OnMouseLButtonDown, *this, *this);
+		_BIND_EVENT(OnMouseLButtonUp, *this, *this);
+
+		_BIND_EVENT(OnMouseMove, *this, m_render.GetCamera().GetController());
+		_BIND_EVENT(OnKeyDown, *this, m_render.GetCamera().GetController());
+		_BIND_EVENT(OnKeyUp, *this, m_render.GetCamera().GetController());
+	}
+
+public: _RECV_EVENT_DECL(RendererWindow, OnWndIdle);
+public: _RECV_EVENT_DECL1(RendererWindow, OnWndPaint);
+public: _RECV_EVENT_DECL1(RendererWindow, OnWndResize);
+public: _RECV_EVENT_DECL1(RendererWindow, OnMouseMove);
+public: _RECV_EVENT_DECL1(RendererWindow, OnMouseLButtonDown);
+public: _RECV_EVENT_DECL1(RendererWindow, OnMouseLButtonUp);
+
+private:
+	int Present(HWND hWnd, HDC hdcWindow, LONG width, LONG height, LPVOID data);
+
+	// Rendering
+	Rendering::HardcodedRenderer	m_render;
+
+	// FPS control
+	LARGE_INTEGER			m_timerFrequence;
+	LARGE_INTEGER			m_timerBegin;
+	LARGE_INTEGER			m_timerEnd;
+	double				m_minFrameCostMS; // each frame spend at least this milliseconds
+	double				m_lastFrameCostMS;
+
+	// Statistics
+	LONG				m_drawnFrame;
+	LONG				m_presentedFrame;
+
+	bool				m_debugMode;
+};
+
+_RECV_EVENT_IMPL(RendererWindow, OnWndIdle) ( void * sender )
+{
+	UNREFERENCED_PARAMETER(sender);
+
+	bool isFirstFrame = ( m_timerBegin.QuadPart == 0 );
+	if ( !isFirstFrame )
+	{
+		// Count frame N cost - end
+		ENSURE_TRUE(QueryPerformanceCounter(&m_timerEnd));
+
+		m_lastFrameCostMS = static_cast< double >( ( m_timerEnd.QuadPart - m_timerBegin.QuadPart ) * 1000 / m_timerFrequence.QuadPart );
+
+		// Throttle frame rate
+		if ( m_lastFrameCostMS < m_minFrameCostMS )
+		{
+			Sleep(static_cast< DWORD >( m_minFrameCostMS - m_lastFrameCostMS ));
+		}
+
+		// Present frame N
+		m_render.GetContext().SwapBuffer();
+		ENSURE_TRUE(InvalidateRect(GetHWND(), NULL, TRUE));
+
+		// Show frame N debug info
+		{
+			static double totalMS = 0.0;
+			static TCHAR strBuf[ 1024 ];
+			if ( ( totalMS += std::max(m_minFrameCostMS, m_lastFrameCostMS) ) > 500.0 ) // update once every 0.5 second
+			{
+				auto pos = m_render.GetCamera().GetPos();
+
+				StringCchPrintf(strBuf,
+						1024,
+						TEXT("FPS=%.2f Cost=%.2f(ms) Frame=%d/%d Pos=(%.2f, %.2f, %.2f) Debug%s=(%d, %d)"),
+						1000.0 / std::max(m_minFrameCostMS, m_lastFrameCostMS),
+						m_lastFrameCostMS,
+						m_presentedFrame,
+						m_drawnFrame,
+						pos.x,
+						pos.y,
+						pos.z,
+						( m_debugMode ? TEXT("On") : TEXT("Off") ),
+						m_render.GetContext().GetConstants().DebugPixel[ 0 ],
+						m_render.GetContext().GetConstants().DebugPixel[ 1 ]);
+
+				SetWindowText(GetHWND(), strBuf);
+
+				totalMS = 0.0;
+			}
+		}
+	}
+
+	// Count frame N+1 cost - begin
+	ENSURE_TRUE(QueryPerformanceCounter(&m_timerBegin));
+
+	// Reset drawing surface
+	m_render.ClearSurface();
+
+	// Update and draw frame N+1
+	m_render.Update(m_minFrameCostMS);
+	m_render.Draw();
+	++m_drawnFrame;
+}
+_RECV_EVENT_IMPL(RendererWindow, OnWndPaint) ( void * sender, const win32::WindowPaintArgs & args )
+{
+	auto & context = m_render.GetContext();
+
+	Present(GetHWND(),
+		args.hdc,
+		context.GetWidth(),
+		context.GetHeight(),
+		context.GetFrontBuffer().Data());
+	++m_presentedFrame;
+}
+_RECV_EVENT_IMPL(RendererWindow, OnWndResize) ( void * sender, const win32::WindowRect & args )
+{
+	m_render.Resize(args.width, args.height);
+}
+_RECV_EVENT_IMPL(RendererWindow, OnMouseMove) ( void * sender, const win32::MouseEventArgs & args )
+{
+	if ( m_debugMode )
+	{
+		m_render.GetContext().GetConstants().DebugPixel[ 0 ] = args.pixelX;
+		m_render.GetContext().GetConstants().DebugPixel[ 1 ] = args.pixelY;
+	}
+}
+_RECV_EVENT_IMPL(RendererWindow, OnMouseLButtonDown) ( void * sender, const win32::MouseEventArgs & args )
+{
+	m_render.GetContext().GetConstants().DebugPixel[ 0 ] = args.pixelX;
+	m_render.GetContext().GetConstants().DebugPixel[ 1 ] = args.pixelY;
+	m_debugMode = true;
+}
+_RECV_EVENT_IMPL(RendererWindow, OnMouseLButtonUp) ( void * sender, const win32::MouseEventArgs & args )
+{
+	m_debugMode = false;
+	m_render.GetContext().GetConstants().DebugPixel[ 0 ] = -1;
+	m_render.GetContext().GetConstants().DebugPixel[ 1 ] = -1;
+}
+int RendererWindow::Present(HWND hWnd, HDC hdcWindow, LONG width, LONG height, LPVOID data)
 {
 	BITMAPINFOHEADER bi;
 	bi.biSize = sizeof(BITMAPINFOHEADER);
@@ -43,113 +194,6 @@ int	ShowBitmap(HWND hWnd, HDC hdcWindow, LONG width, LONG height, LPVOID data)
 	return 0;
 }
 
-class RendererWindow : public win32::Window
-{
-public:
-	RendererWindow(LPCWSTR lpTitle, HINSTANCE hInstance)
-		: Window(lpTitle, hInstance)
-		, m_render(Rendering::HardcodedRenderer::Create())
-	{
-		ENSURE_TRUE(
-			QueryPerformanceFrequency(&m_timerFrequence));
-		m_timerPreviousValue.QuadPart = 0;
-		m_fps = 60.0;
-		m_frame = 0;
-
-		_BIND_EVENT(OnWndIdle, *this, *this);
-		_BIND_EVENT(OnWndPaint, *this, *this);
-		_BIND_EVENT(OnMouseLButtonUp, *this, *this);
-	}
-
-public: _RECV_EVENT_DECL(RendererWindow, OnWndIdle);
-public: _RECV_EVENT_DECL1(RendererWindow, OnWndPaint);
-public: _RECV_EVENT_DECL1(RendererWindow, OnMouseLButtonUp);
-
-private:
-	std::unique_ptr<Rendering::HardcodedRenderer>	m_render;
-
-	LARGE_INTEGER					m_timerFrequence;
-	LARGE_INTEGER					m_timerPreviousValue;
-	LONG						m_frame;
-	double						m_fps;
-};
-
-_RECV_EVENT_IMPL(RendererWindow, OnWndIdle) ( void * sender )
-{
-	UNREFERENCED_PARAMETER(sender);
-
-	// Throttle FPS
-	double elapsedMilliSeconds;
-	if ( m_timerPreviousValue.QuadPart != 0 )
-	{
-		LARGE_INTEGER delta;
-
-		delta = m_timerPreviousValue;
-
-		ENSURE_TRUE(
-			QueryPerformanceCounter(&m_timerPreviousValue));
-
-		delta.QuadPart = m_timerPreviousValue.QuadPart - delta.QuadPart;
-		delta.QuadPart *= 1000;
-		delta.QuadPart /= m_timerFrequence.QuadPart;
-
-		elapsedMilliSeconds = static_cast< double >( delta.QuadPart );
-	}
-	else
-	{
-		ENSURE_TRUE(
-			QueryPerformanceCounter(&m_timerPreviousValue));
-
-		elapsedMilliSeconds = 16.0;
-	}
-
-	m_fps = 0.8 * m_fps + 0.2 * 1000.0 / elapsedMilliSeconds;
-	{
-		static double totalElapsedMilliSeconds = 0.0;
-		totalElapsedMilliSeconds += elapsedMilliSeconds;
-		if (totalElapsedMilliSeconds > 200.0)
-		{
-			std::wstringstream ss;
-			ss << L"FPS: " << m_fps << " ms: " << elapsedMilliSeconds << " frame: " << m_frame;
-			SetWindowText(GetHWND(), ss.str().c_str());
-			totalElapsedMilliSeconds -= 200.0;
-		}
-		// Sleep(static_cast< DWORD >( std::max(0.0, 16.0 - elapsedMilliSeconds) ));
-	}
-
-	// Reset drawing surface
-	m_render->ClearSurface();
-
-	// Update and draw next frame
-	m_render->Update(elapsedMilliSeconds);
-	m_render->Draw();
-
-	// Present next frame
-	m_render->GetContext().SwapBuffer();
-
-	ENSURE_TRUE(InvalidateRect(GetHWND(), NULL, TRUE));
-}
-_RECV_EVENT_IMPL(RendererWindow, OnWndPaint) ( void * sender, const win32::WindowPaintArgs & args )
-{
-	if ( m_render )
-	{
-		ShowBitmap(GetHWND(),
-			   args.hdc,
-			   m_render->GetContext().GetWidth(),
-			   m_render->GetContext().GetHeight(),
-			   m_render->GetContext().GetFrontBuffer().Data());
-		++m_frame;
-	}
-}
-_RECV_EVENT_IMPL(RendererWindow, OnMouseLButtonUp) ( void * sender, const win32::MouseEventArgs & args )
-{
-	if ( m_render )
-	{
-		m_render->GetContext().GetConstants().DebugPixel[0] = args.pixelX;
-		m_render->GetContext().GetConstants().DebugPixel[1] = args.pixelY;
-	}
-}
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		      _In_opt_ HINSTANCE hPrevInstance,
 		      _In_ LPWSTR lpCmdLine,
@@ -166,6 +210,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		RendererWindow wnd(L"My Renderer", hInstance);
 		ret = app.Run(wnd);
 	}
-	
+
 	return ret;
 }

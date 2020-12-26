@@ -178,7 +178,7 @@ namespace Event
 // --------------------------------------------------------------------------
 
 #include <Windows.h>
-#include "SharedTypes.h"
+#include "Common.h"
 
 namespace win32
 {
@@ -219,7 +219,7 @@ _DEFINE_EVENT1(OnMouseLButtonUp, win32::MouseEventArgs);
 _DEFINE_EVENT1(OnKeyDown, win32::KeyboardEventArgs);
 _DEFINE_EVENT1(OnKeyUp, win32::KeyboardEventArgs);
 
-// renderer window
+// window -> camera
 _DEFINE_EVENT1(OnAspectRatioChange, float);
 
 // camera

@@ -1,12 +1,9 @@
 #include "Graphics.h"
 #include "Common.h"
-#include "SharedTypes.h"
 #include "win32/Win32App.h"
 
 #include <vector>
 #include <memory>
-
-constexpr auto PI = 3.141592653f;
 
 inline float Min3(float a, float b, float c)
 {
@@ -20,27 +17,12 @@ inline float Max3(float a, float b, float c)
 		? ( a > c ? a : c )
 		: ( b > c ? b : c );
 }
-inline float Bound(float min, float value, float max)
+template <typename T>
+inline T Bound(T min, T value, T max)
 {
 	return value < min ? min : ( value > max ? max : value );
 }
-inline float DegreeToRadian(float d)
-{
-	// 0 < d < 180
-	return d * PI / 180.0f;
-}
-Vec3 Multiply(const Vec3 & v, const Matrix4x4 & m)
-{
-	float w = m.f14 * v.x + m.f24 * v.y + m.f34 * v.z + m.f44;
-	float wInv = ( w == 0.0f ? 0.0f : 1.0f / w );
-	return
-	{
-		( m.f11 * v.x + m.f21 * v.y + m.f31 * v.z + m.f41 ) * wInv,
-		( m.f12 * v.x + m.f22 * v.y + m.f32 * v.z + m.f42 ) * wInv,
-		( m.f13 * v.x + m.f23 * v.y + m.f33 * v.z + m.f43 ) * wInv,
-	};
-}
-float EdgeFunction(const Vec2 & a, const Vec2 & b, const Vec2 & c)
+inline float EdgeFunction(const Vec2 & a, const Vec2 & b, const Vec2 & c)
 {
 	return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
@@ -67,6 +49,7 @@ namespace Graphics
 		if ( m_data )
 		{
 			m_sizeInBytes = width * height * elementSize;
+			ZeroMemory(m_data, m_sizeInBytes);
 		}
 	}
 
@@ -164,24 +147,6 @@ namespace Graphics
 	{
 	}
 
-	void Texture2D::Sample(float u, float v, float * rgb) const
-	{
-		ASSERT(0.0f <= u && u <= 1.0f);
-		ASSERT(0.0f <= v && v <= 1.0f);
-		ASSERT(u + v <= 2.0f);
-
-		LONG width = m_bitmap.Width();
-		LONG height = m_bitmap.Height();
-		
-		LONG col = static_cast< LONG >( width * u );
-		LONG row = static_cast< LONG >( height * v );
-
-		const Byte * bgra = (Byte * )m_bitmap.At(row, col);
-		rgb[ 0 ] = static_cast< float >( bgra[ 2 ] ) / 255.f;
-		rgb[ 1 ] = static_cast< float >( bgra[ 1 ] ) / 255.f;
-		rgb[ 2 ] = static_cast< float >( bgra[ 0 ] ) / 255.f;
-	}
-
 	RenderTarget::RenderTarget(Integer width, Integer height, void * backBuffer) : m_width(width)
 		, m_height(height)
 		, m_backBuffer(backBuffer)
@@ -239,21 +204,23 @@ namespace Graphics
 			const Vec3 & p1Wld = v1.pos;
 			const Vec3 & p2Wld = v2.pos;
 
-			Vec3 p0Cam = Multiply(p0Wld, wldToCam);
-			Vec3 p1Cam = Multiply(p1Wld, wldToCam);
-			Vec3 p2Cam = Multiply(p2Wld, wldToCam);
+			Vec3 p0Cam = Vec3::Transform(p0Wld, wldToCam);
+			Vec3 p1Cam = Vec3::Transform(p1Wld, wldToCam);
+			Vec3 p2Cam = Vec3::Transform(p2Wld, wldToCam);
+
+			//if (p0Cam.z < 0.0f && p1Cam.z < 0.0f && p2Cam.z < 0.0f) continue;
 
 			float z0CamInv = 1.0f / p0Cam.z;
 			float z1CamInv = 1.0f / p1Cam.z;
 			float z2CamInv = 1.0f / p2Cam.z;
 
-			Vec3 p0NDC = Multiply(p0Cam, camToNDC);
-			Vec3 p1NDC = Multiply(p1Cam, camToNDC);
-			Vec3 p2NDC = Multiply(p2Cam, camToNDC);
+			Vec3 p0NDC = Vec3::Transform(p0Cam, camToNDC);
+			Vec3 p1NDC = Vec3::Transform(p1Cam, camToNDC);
+			Vec3 p2NDC = Vec3::Transform(p2Cam, camToNDC);
 
-			float z0NDCInv = 1.0f / p0NDC.z;
-			float z1NDCInv = 1.0f / p1NDC.z;
-			float z2NDCInv = 1.0f / p2NDC.z;
+			//float z0NDCInv = 1.0f / p0NDC.z;
+			//float z1NDCInv = 1.0f / p1NDC.z;
+			//float z2NDCInv = 1.0f / p2NDC.z;
 
 			Vec2 p0Scn = { ( p0NDC.x + 1.0f ) * 0.5f, ( 1.0f - p0NDC.y ) * 0.5f };
 			Vec2 p1Scn = { ( p1NDC.x + 1.0f ) * 0.5f, ( 1.0f - p1NDC.y ) * 0.5f };
@@ -268,16 +235,31 @@ namespace Graphics
 			Integer yRasMin = static_cast< Integer >( Min3(p0Ras.y, p1Ras.y, p2Ras.y) );
 			Integer yRasMax = static_cast< Integer >( Max3(p0Ras.y, p1Ras.y, p2Ras.y) );
 
+			// ASSERT(0 <= xRasMin && xRasMin < width);
+			// ASSERT(0 <= yRasMin && yRasMin < height);
+			if (xRasMin < 0 || width <= xRasMax || yRasMin < 0 || height <= yRasMax)
+			{
+				continue;
+			}
+
 			float areaInv = EdgeFunction(p0Ras, p1Ras, p2Ras);
 			areaInv = ( areaInv < 0.0001f ) ? 1000.0f : 1.0f / areaInv;
 			ASSERT(areaInv >= 0.0f);
 
+			Integer dbgX = context.GetConstants().DebugPixel[0];
+			Integer dbgY = context.GetConstants().DebugPixel[1];
+
 			for ( Integer y = yRasMin; y <= yRasMax; ++y )
 			{
-				int lastIntersectX = INT_MAX;
 				for ( Integer x = xRasMin; x <= xRasMax; ++x )
 				{
 					Vec2 pixel = { x, y };
+
+					if ( dbgX != -1 && dbgY != -1 && ( x != dbgX || y != dbgY ) ) continue;
+					if ( dbgX != -1 && dbgY != -1 && ( x == dbgX && y == dbgY ))
+					{
+						int a = 1 + 2;
+					}
 
 					// Barycentric coordinate
 					float e0 = EdgeFunction(p1Ras, p2Ras, pixel);
@@ -290,12 +272,19 @@ namespace Graphics
 					float bary0 = e0 * areaInv;
 					float bary1 = e1 * areaInv;
 					float bary2 = e2 * areaInv;
-					ASSERT(0.0f <= bary0 && bary0 <= 1.0f);
-					ASSERT(0.0f <= bary1 && bary1 <= 1.0f);
-					ASSERT(0.0f <= bary2 && bary2 <= 1.0f);
-
+					ASSERT(0.0f <= bary0 && bary0 <= 1.0001f);
+					ASSERT(0.0f <= bary1 && bary1 <= 1.0001f);
+					ASSERT(0.0f <= bary2 && bary2 <= 1.0001f);
+					ASSERT((bary0 + bary1 + bary2) <= 1.0001f);
+					
 					// Depth
-					float zNDC = 1.0f / ( z0NDCInv * bary0 + z1NDCInv * bary1 + z2NDCInv * bary2 );
+					float zNDC = p0NDC.z * bary0 + p1NDC.z * bary1 + p2NDC.z * bary2;
+					// ASSERT(0.0f <= zNDC && zNDC <= 1.0001f);
+					if (!(0.0f <= zNDC && zNDC <= 1.0001f))
+					{
+						continue;
+					}
+
 					float * depth = static_cast< float * >( depthBuffer.At(y, x) );
 					if ( *depth <= zNDC )
 					{
@@ -312,7 +301,6 @@ namespace Graphics
 					RGB color;
 					if ( vertexFormat == Pipeline::VertexFormat::POSITION_RGB )
 					{
-
 						const RGB & cA = v0.color;
 						const RGB & cB = v1.color;
 						const RGB & cC = v2.color;
@@ -337,20 +325,14 @@ namespace Graphics
 						DB::Textures::Duang().Sample(u, v, rgb);
 						color = { rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] };
 					}
-					ASSERT(color.r <= 1.0f && color.g <= 1.0f && color.b <= 1.0f);
-					//Vec3 pos =
-					//{
-					//	static_cast< float >( x ),
-					//	static_cast< float >( y ),
-					//	zNDC
-					//};
+					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
 
 					// Draw pixel
 					renderTarget.SetPixel(x,
 							      y,
-							      static_cast< unsigned char >( color.r * 255.0f ),
-							      static_cast< unsigned char >( color.g * 255.0f ),
-							      static_cast< unsigned char >( color.b * 255.0f ));
+							      static_cast< Byte >( color.r * 255.0f ),
+							      static_cast< Byte >( color.g * 255.0f ),
+							      static_cast< Byte >( color.b * 255.0f ));
 				}
 			}
 		}
@@ -379,27 +361,9 @@ namespace Graphics
 			return texture;
 		}
 
-		const Camera & DefaultCamera()
+		const std::vector<std::vector<Vertex>> & Triangles::One()
 		{
-			static Camera camera;
-			static bool init = false;
-
-			if ( !init )
-			{
-				init = true;
-				camera.pos = { 0.0f, 0.0f, 0.0f };
-				camera.zNear = 0.1f;
-				camera.zFar = 1000.0f; // use smaller value for better depth test.
-				camera.fov = DegreeToRadian(90.0f);
-				camera.aspectRatio = 4.0f / 3.0f;
-			}
-
-			return camera;
-		}
-
-		std::vector<std::vector<Vertex>> Triangles::One()
-		{
-			std::vector<std::vector<Vertex>> vertices =
+			static std::vector<std::vector<Vertex>> vertices =
 			{
 				// RGB
 				{
@@ -413,9 +377,9 @@ namespace Graphics
 			return vertices;
 		}
 
-		std::vector<std::vector<Vertex>> Triangles::Two()
+		const std::vector<std::vector<Vertex>> & Triangles::Two()
 		{
-			std::vector<std::vector<Vertex>> vertices =
+			static std::vector<std::vector<Vertex>> vertices =
 			{
 				// RGB
 				{
@@ -432,9 +396,9 @@ namespace Graphics
 			return vertices;
 		}
 
-		std::vector<std::vector<Vertex>> Triangles::TwoIntersect()
+		const std::vector<std::vector<Vertex>> & Triangles::IntersectionTest()
 		{
-			std::vector<std::vector<Vertex>> vertices =
+			static std::vector<std::vector<Vertex>> vertices =
 			{
 				// RGB
 				{
@@ -451,9 +415,9 @@ namespace Graphics
 			return vertices;
 		}
 
-		std::vector<std::vector<Vertex>> Triangles::TextureTest()
+		const std::vector<std::vector<Vertex>> & Triangles::TextureTest()
 		{
-			std::vector<std::vector<Vertex>> vertices =
+			static std::vector<std::vector<Vertex>> vertices =
 			{
 				// RGB
 				{},
@@ -470,9 +434,9 @@ namespace Graphics
 			return vertices;
 		}
 
-		std::vector<std::vector<Graphics::Pipeline::Vertex>> Triangles::Perspective()
+		const std::vector<std::vector<Graphics::Pipeline::Vertex>> & Triangles::PerspectiveProjectionTest()
 		{
-			std::vector<std::vector<Vertex>> vertices =
+			static std::vector<std::vector<Vertex>> vertices =
 			{
 				// RGB
 				{
@@ -490,6 +454,45 @@ namespace Graphics
 					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
 				}
 			};
+			return vertices;
+		}
+
+		const std::vector<std::vector<Vertex>> & Triangles::CameraTest()
+		{
+			static std::vector<std::vector<Vertex>> vertices;
+
+			if (vertices.empty())
+			{
+				std::vector<Vertex> v;
+
+				constexpr int len = 5;
+				constexpr float edge = 1.0f;
+
+				float d = 0.5f * edge;
+				v.resize(( len + 1 ) * ( len + 1 ) * 6);
+				for ( int x = -len; x <= len; ++x )
+				{
+					for ( int z = -len; z <= len; ++z )
+					{
+						RGB color = ( ( x + z ) % 2 == 0 ) ? RGB { 0.0f, 0.8f, 0.0f } : RGB { 1.0f, 1.0f, 1.0f };
+
+						std::vector<Vertex> square =
+						{
+							Pipeline::MakeVertex({ x-d, -1.0f, z-d }, color),
+							Pipeline::MakeVertex({ x+d, -1.0f, z-d }, color),
+							Pipeline::MakeVertex({ x+d, -1.0f, z+d }, color),
+							Pipeline::MakeVertex({ x-d, -1.0f, z-d }, color),
+							Pipeline::MakeVertex({ x+d, -1.0f, z+d }, color),
+							Pipeline::MakeVertex({ x-d, -1.0f, z+d }, color),
+						};
+						v.insert(v.end(), square.begin(), square.end());
+					}
+				}
+
+				vertices.resize(2);
+				vertices[ 0 ] = std::move(v);
+			}
+
 			return vertices;
 		}
 
