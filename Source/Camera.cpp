@@ -18,53 +18,71 @@ namespace Rendering
 		m_pos.x += delta.x;
 		m_pos.y += delta.y;
 		m_pos.z += delta.z;
+		m_dirtyBits |= BIT_VIEW_MATRIX;
 		_DISPATCH_EVENT1(OnCameraPosChange, *this, GetPos());
 	}
 
 	void Camera::SetHorizontalAngle(float fAngle)
 	{
-		float hradian = fAngle / 180.0f * PI;
+		float hradian = DegreeToRadian(fAngle);
 
 		if ( m_hradian != hradian )
 		{
 			m_hradian = hradian;
+			m_dirtyBits |= BIT_DIRECTION | BIT_VIEW_MATRIX;
 			_DISPATCH_EVENT1(OnCameraDirChange, *this, GetDirection());
 		}
 	}
 
 	void Camera::SetVerticalAngle(float fAngle)
 	{
-		float vradian =
-			std::max(-90.0f, std::min(fAngle, 90.0f)) / 180.0f * PI;
+		float vradian = DegreeToRadian(Bound(-90.0f, fAngle, 90.0f));
 
 		if ( m_vradian != vradian )
 		{
 			m_vradian = vradian;
+			m_dirtyBits |= BIT_DIRECTION | BIT_VIEW_MATRIX;
 			_DISPATCH_EVENT1(OnCameraDirChange, *this, GetDirection());
 		}
 	}
 
 	const Vec3 Camera::GetDirection()
 	{
-		return Vec3::Transform(m_forward,
-				       Matrix4x4::RotationAxisLH(m_right, -m_vradian) * Matrix4x4::RotationAxisLH(m_up, m_hradian));
+		if (m_dirtyBits & BIT_DIRECTION)
+		{
+			m_dirtyBits &= ~BIT_DIRECTION;
+
+			m_dir = Vec3::Transform(m_forward,
+						Matrix4x4::RotationAxisLH(m_right, -m_vradian) * Matrix4x4::RotationAxisLH(m_up, m_hradian));
+		}
+		return m_dir;
 	}
 
 	const Matrix4x4 & Camera::GetViewMatrix()
 	{
-		m_viewMatrix =
-			Matrix4x4::Translation(-m_pos.x, -m_pos.y, -m_pos.z) *
-			Matrix4x4::RotationAxisLH(m_up, -m_hradian) *
-			Matrix4x4::RotationAxisLH(m_right, m_vradian);
+		if (m_dirtyBits & BIT_VIEW_MATRIX)
+		{
+			m_dirtyBits &= ~BIT_VIEW_MATRIX;
+
+			m_viewMatrix =
+				Matrix4x4::Translation(-m_pos.x, -m_pos.y, -m_pos.z) *
+				Matrix4x4::RotationAxisLH(m_up, -m_hradian) *
+				Matrix4x4::RotationAxisLH(m_right, m_vradian);
+		}
 		return m_viewMatrix;
 	}
 
 	const Matrix4x4 & Camera::GetProjMatrix()
 	{
-		m_projMatrix = Matrix4x4::PerspectiveFovLH(m_fov,
-							   m_aspectRatio,
-							   m_zNear,
-							   m_zFar);
+		if (m_dirtyBits & BIT_PROJ_MATRIX)
+		{
+			m_dirtyBits &= ~BIT_PROJ_MATRIX;
+
+			m_projMatrix = Matrix4x4::PerspectiveFovLH(m_fov,
+								   m_aspectRatio,
+								   m_zNear,
+								   m_zFar);
+		}
 		return m_projMatrix;
 	}
 
@@ -73,6 +91,7 @@ namespace Rendering
 		UNREFERENCED_PARAMETER(sender);
 
 		m_aspectRatio = aspectRatio;
+		m_dirtyBits |= BIT_PROJ_MATRIX;
 	}
 
 

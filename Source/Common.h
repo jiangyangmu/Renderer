@@ -251,8 +251,18 @@ Vec3 Vec3::Transform(const Vec3 & v, const Matrix4x4 & m)
 
 inline float DegreeToRadian(float d)
 {
-	// 0 < d < 180
 	return d * PI / 180.0f;
+}
+
+inline float RadianToDegree(float r)
+{
+	return r * 180.0f / PI;
+}
+
+template <typename T>
+inline T Bound(T min, T value, T max)
+{
+	return value < min ? min : ( value > max ? max : value );
 }
 
 // --------------------------------------------------------------------------

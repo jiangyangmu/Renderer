@@ -17,11 +17,6 @@ inline float Max3(float a, float b, float c)
 		? ( a > c ? a : c )
 		: ( b > c ? b : c );
 }
-template <typename T>
-inline T Bound(T min, T value, T max)
-{
-	return value < min ? min : ( value > max ? max : value );
-}
 inline float EdgeFunction(const Vec2 & a, const Vec2 & b, const Vec2 & c)
 {
 	return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);

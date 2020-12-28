@@ -46,11 +46,7 @@ namespace Rendering
 	{
 	public:
 
-		Camera(float zNear,
-		       float zFar,
-		       float fov,
-		       float aspectRatio,
-		       const Vec3 pos)
+		Camera(float zNear, float zFar, float fov, float aspectRatio, const Vec3 pos)
 			: m_zNear(zNear)
 			, m_zFar(zFar)
 			, m_fov(fov)
@@ -61,8 +57,10 @@ namespace Rendering
 			, m_hradian(0.0f)
 			, m_vradian(0.0f)
 			, m_pos(pos)
-			, m_viewMatrix{}
-			, m_projMatrix{}
+			, m_dirtyBits(BIT_ALL)
+			, m_dir { 0.0f, 0.0f, 0.0f }
+			, m_viewMatrix {}
+			, m_projMatrix {}
 			, m_controller(this)
 		{
 		}
@@ -127,6 +125,15 @@ namespace Rendering
 		// --------------------------------------------------------------------------
 		// Cache
 		// --------------------------------------------------------------------------
+		enum
+		{
+			BIT_DIRECTION = 1,
+			BIT_VIEW_MATRIX = 2,
+			BIT_PROJ_MATRIX = 4,
+			BIT_ALL = 7,
+		};
+		int			m_dirtyBits;
+		Vec3			m_dir;
 		Matrix4x4		m_viewMatrix;
 		Matrix4x4		m_projMatrix;
 
