@@ -213,6 +213,91 @@ namespace Graphics
 			m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
 			m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
 		}
+
+		namespace Shader
+		{
+			VertexShader::Output VertexShader::VS_RGB(const Input & in, const ContextConstants & constants)
+			{
+				Output out;
+				out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
+				out.color = in.color;
+				return out;
+			}
+
+			VertexShader::Output VertexShader::VS_TEX(const Input & in, const ContextConstants & constants)
+			{
+				Output out;
+				out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
+				out.uv = in.uv;
+				return out;
+			}
+
+			VertexShader::Output VertexShader::VS_LIGHT(const Input & in, const ContextConstants & constants)
+			{
+				Output out;
+				out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
+				out.norm = in.norm;
+				out.material = in.material;
+				out.posWld = in.pos;
+				return out;
+			}
+
+			PixelShader::Output PixelShader::PS_RGB(const Input & in, const ContextConstants & constants)
+			{
+				return { in.color };
+			}
+
+			PixelShader::Output PixelShader::PS_TEX(const Input & in, const ContextConstants & constants)
+			{
+				float color[ 3 ];
+				constants.Texture.Sample(in.uv.x, in.uv.y, color);
+				return { color[ 0 ], color[ 1 ], color[ 2 ] };
+			}
+
+			PixelShader::Output PixelShader::PS_LIGHT(const Input & in, const ContextConstants & constants)
+			{
+				constexpr float diffuseRatio = 0.5f;
+				constexpr float specularRatio = 0.5f;
+
+				// Diffuse Color = max( cos(-L, norm), 0) * ElementwiseProduce(C_light, C_material)
+				Vec3 diffuse;
+				{
+					const DiffuseLight & diffuseLight = constants.Diffuse;
+
+					Vec3 invLightDir = Vec3::Normalize(diffuseLight.posWld - in.posWld);
+
+					float decayFactor = Max(0.0f, Vec3::Dot(invLightDir, in.norm));
+
+					diffuse =
+						Vec3::Scale(
+							Vec3::ElementwiseProduct(RGBToVec3(diffuseLight.color), in.material),
+							decayFactor);
+				}
+
+				// Specular Color = max( cos(L', to-eye), 0) * ElementwiseProduce(C_light, C_material)
+				Vec3 specular;
+				{
+					const SpecularLight & specularLight = constants.Specular;
+
+					Vec3 lightDir = Vec3::Normalize(in.posWld - specularLight.posWld);
+					Vec3 reflectLightDir = Vec3::Normalize(lightDir - Vec3::Scale(in.norm, 2 * Vec3::Dot(in.norm, lightDir)));
+					Vec3 toEyeDir = Vec3::Normalize(-in.posWld);
+
+					float decayFactor = Max(0.0f, Vec3::Dot(reflectLightDir, toEyeDir));
+					decayFactor = decayFactor * decayFactor;
+					decayFactor = decayFactor * decayFactor;
+					decayFactor = decayFactor * decayFactor;
+
+					specular =
+						Vec3::Scale(
+							Vec3::ElementwiseProduct(RGBToVec3(specularLight.color), in.material),
+							decayFactor);
+				}
+
+				return { WeightedAdd(diffuse, specular, Vec3::Zero(), diffuseRatio, specularRatio, 0.0f) };
+			}
+		}
+
 	}
 
 	void Rasterize(Pipeline::Context & context,
@@ -230,13 +315,30 @@ namespace Graphics
 		Integer width = renderTarget.Width();
 		Integer height = renderTarget.Height();
 
-		VertexShader::Func vertexShader = reinterpret_cast<VertexShader::Func>(context.GetVertexShader());
-		PixelShader::Func pixelShader = reinterpret_cast<PixelShader::Func>(context.GetPixelShader());
+		VertexShader::Func vertexShader = context.GetVertexShader();
+		PixelShader::Func pixelShader = context.GetPixelShader();
 		ASSERT(vertexShader);
 		ASSERT(pixelShader);
 
 		Integer dbgX = context.GetConstants().DebugPixel[ 0 ];
 		Integer dbgY = context.GetConstants().DebugPixel[ 1 ];
+
+		DiffuseLight & diffuseLight = context.GetConstants().Diffuse;
+		SpecularLight & specularLight = context.GetConstants().Specular;
+		{
+			static float dx = 1.0f, dy = 1.0f;
+			static float sx = 1.0f, sy = 1.0f;
+
+			diffuseLight.posWld.x += 0.001f * dx;
+			if ( diffuseLight.posWld.x < -0.5f || diffuseLight.posWld.x > 0.5f ) dx = -dx;
+			diffuseLight.posWld.y += 0.0002f * dy;
+			if ( diffuseLight.posWld.y > 0.5f || diffuseLight.posWld.y < -0.5f ) dy = -dy;
+
+			specularLight.posWld.x += 0.001f * sx;
+			if ( specularLight.posWld.x < -0.5f || specularLight.posWld.x > 0.5f ) sx = -sx;
+			specularLight.posWld.y += 0.0002f * sy;
+			if ( specularLight.posWld.y > 0.5f || specularLight.posWld.y < -0.5f ) sy = -sy;
+		}
 
 		for (const Pipeline::Vertex * pVertex = pVertexBuffer;
 		     nVertex >= 3;
@@ -284,16 +386,18 @@ namespace Graphics
 			areaInv = ( areaInv < 0.0001f ) ? 1000.0f : 1.0f / areaInv;
 			ASSERT(areaInv >= 0.0f);
 
-			for ( Integer y = yRasMin; y <= yRasMax; ++y )
+			for ( Integer yPix = yRasMin; yPix <= yRasMax; ++yPix )
 			{
-				for ( Integer x = xRasMin; x <= xRasMax; ++x )
+				for ( Integer xPix = xRasMin; xPix <= xRasMax; ++xPix )
 				{
-					Vec2 pixel = { x, y };
-
 					//renderTarget.SetPixel(x, y, 100, 100, 100);
-					if ( dbgX != -1 && dbgY != -1 && ( x != dbgX || y != dbgY ) ) continue;
+					if ( dbgX != -1 && dbgY != -1 && ( xPix != dbgX || yPix != dbgY ) ) continue;
+
+					float xPixF = static_cast<float>(xPix);
+					float yPixF = static_cast<float>(yPix);
 
 					// Intersection test
+					Vec2 pixel = { xPixF, yPixF };
 					float e0 = EdgeFunction(p1Ras, p2Ras, pixel);
 					float e1 = EdgeFunction(p2Ras, p0Ras, pixel);
 					float e2 = EdgeFunction(p0Ras, p1Ras, pixel);
@@ -320,7 +424,7 @@ namespace Graphics
 					}
 
 					// Depth test
-					float * depth = static_cast< float * >( depthBuffer.At(y, x) );
+					float * depth = static_cast< float * >( depthBuffer.At(yPix, xPix) );
 					if ( *depth <= zNDC )
 					{
 						continue;
@@ -336,23 +440,53 @@ namespace Graphics
 					ASSERT(0.0f <= w2 && w2 <= 1.0001f);
 					ASSERT(( w0 + w1 + w2 ) <= 1.0001f);
 
-					PixelShader::Input pin =
+					PixelShader::Input pin;
+					switch (vertexFormat)
 					{
-						{x, y, zNDC},
-						WeightedAdd(v0.color, v1.color, v2.color, w0, w1, w2),
-						WeightedAdd(v0.norm, v1.norm, v2.norm, w0, w1, w2),
-						WeightedAdd(v0.material, v1.material, v2.material, w0, w1, w2),
-						WeightedAdd(v0.pos, v1.pos, v2.pos, w0, w1, w2),
-						WeightedAdd(v0.uv, v1.uv, v2.uv, w0, w1, w2),
-					};
+						case Pipeline::VertexFormat::POSITION_RGB:
+							pin = PixelShader::Input
+							{
+								{xPixF, yPixF, zNDC},
+								WeightedAdd(v0.color, v1.color, v2.color, w0, w1, w2),
+								{},
+								{},
+								{},
+								{},
+							};
+							break;
+						case Pipeline::VertexFormat::POSITION_TEXCOORD:
+							pin = PixelShader::Input
+							{
+								{xPixF, yPixF, zNDC},
+								{},
+								{},
+								{},
+								{},
+								WeightedAdd(v0.uv, v1.uv, v2.uv, w0, w1, w2),
+							};
+							break;
+						case Pipeline::VertexFormat::POSITION_NORM_MATERIAL:
+							pin = PixelShader::Input
+							{
+								{xPixF, yPixF, zNDC},
+								{},
+								WeightedAdd(v0.norm, v1.norm, v2.norm, w0, w1, w2),
+								WeightedAdd(v0.material, v1.material, v2.material, w0, w1, w2),
+								WeightedAdd(v0.pos, v1.pos, v2.pos, w0, w1, w2),
+								{},
+							};
+							break;
+						default:
+							break;
+					}
 
 					RGB color = Vec3ToRGB(pixelShader(pin, context.GetConstants()).color);
 					ASSERT(color.r >= 0.0f && color.g >= 0.0f && color.b >= 0.0f);
 					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
 
 					// Draw pixel
-					renderTarget.SetPixel(x,
-							      y,
+					renderTarget.SetPixel(xPix,
+							      yPix,
 							      static_cast< Byte >( color.r * 255.0f ),
 							      static_cast< Byte >( color.g * 255.0f ),
 							      static_cast< Byte >( color.b * 255.0f ));

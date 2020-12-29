@@ -322,16 +322,23 @@ inline T Min(T a, T b)
 
 #include <cassert>
 
+#define _ALERT_IF_FALSE(e) if (!(e)) { MessageBox(NULL, TEXT(#e), TEXT("Exception"), MB_OK); }
+
+#define ENSURE_NOT_NULL(e) _ALERT_IF_FALSE((e) != NULL)
+#define ENSURE_TRUE(e) _ALERT_IF_FALSE((e))
+#define ENSURE_GDIPLUS_OK(e) _ALERT_IF_FALSE((e) == Gdiplus::Ok)
+
+#define _RELEASE_ASSERT
+#ifdef _RELEASE_ASSERT
+
 #ifdef NDEBUG
-
-#ifdef assert
-#undef assert
-#endif
-#define assert(e) if (!(e)) { MessageBox(NULL, TEXT(#e), TEXT("Exception"), MB_OK); }
-
+#define ASSERT(e) _ALERT_IF_FALSE(e)
+#else
+#define ASSERT(e) assert(e)
 #endif
 
-#define ASSERT(e) assert((e))
-#define ENSURE_NOT_NULL(e) assert((e) != NULL)
-#define ENSURE_TRUE(e) assert((e))
-#define ENSURE_GDIPLUS_OK(e) assert((e) == Gdiplus::Ok)
+#else
+
+#define ASSERT(e) assert(e)
+
+#endif

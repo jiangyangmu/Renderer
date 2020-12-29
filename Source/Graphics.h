@@ -141,19 +141,64 @@ namespace Graphics
 			RGB color;
 		};
 
+		struct ContextConstants
+		{
+			Matrix4x4	WorldToCamera;
+			Matrix4x4	CameraToNDC;
+
+			int		DebugPixel[ 2 ];
+			Texture2D	Texture;
+			DiffuseLight	Diffuse;
+			SpecularLight	Specular;
+		};
+
+		namespace Shader
+		{
+			class VertexShader
+			{
+			public:
+				using Input = Vertex;
+				struct Output
+				{
+					Vec3 posNDC; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
+					Vec3 color;
+					Vec3 norm, material, posWld;
+					Vec2 uv;
+				};
+				using Func = Output(*)( const Input & in, const ContextConstants & constants );
+
+				static Output VS_RGB(const Input & in, const ContextConstants & constants);
+				static Output VS_TEX(const Input & in, const ContextConstants & constants);
+				static Output VS_LIGHT(const Input & in, const ContextConstants & constants);
+			};
+
+			class PixelShader
+			{
+			public:
+				struct Input
+				{
+					Vec3 posNDC; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
+					Vec3 color;
+					Vec3 norm, material, posWld;
+					Vec2 uv;
+				};
+				struct Output
+				{
+					Vec3 color;
+				};
+				using Func = Output(*)( const Input & in, const ContextConstants & constants );
+
+				static Output PS_RGB(const Input & in, const ContextConstants & constants);
+				static Output PS_TEX(const Input & in, const ContextConstants & constants);
+				static Output PS_LIGHT(const Input & in, const ContextConstants & constants);
+			};
+		}
+
 		class Context
 		{
 		public:
-			struct Constants
-			{
-				Matrix4x4	WorldToCamera;
-				Matrix4x4	CameraToNDC;
-
-				int		DebugPixel[2];
-				Texture2D	Texture;
-				DiffuseLight	Diffuse;
-				SpecularLight	Specular;
-			};
+			using VS = Shader::VertexShader::Func;
+			using PS = Shader::PixelShader::Func;
 
 			Context(Integer width, Integer height);
 
@@ -200,24 +245,24 @@ namespace Graphics
 			{
 				return m_depthBuffer;
 			}
-			Constants &		GetConstants()
+			ContextConstants &	GetConstants()
 			{
 				return m_constants;
 			}
 
-			void			SetVertexShader(void * func)
+			void			SetVertexShader(VS vertexShader)
 			{
-				m_vertexShaderFunc = func;
+				m_vertexShaderFunc = vertexShader;
 			}
-			void			SetPixelShader(void * func)
+			void			SetPixelShader(PS pixelShader)
 			{
-				m_pixelShaderFunc = func;
+				m_pixelShaderFunc = pixelShader;
 			}
-			void *			GetVertexShader() const
+			VS			GetVertexShader() const
 			{
 				return m_vertexShaderFunc;
 			}
-			void *			GetPixelShader() const
+			PS			GetPixelShader() const
 			{
 				return m_pixelShaderFunc;
 			}
@@ -232,122 +277,11 @@ namespace Graphics
 
 			Buffer			m_depthBuffer;
 
-			Constants		m_constants;
+			ContextConstants	m_constants;
 
-			void *			m_vertexShaderFunc;
-			void *			m_pixelShaderFunc;
+			VS			m_vertexShaderFunc;
+			PS			m_pixelShaderFunc;
 		};
-
-		namespace Shader
-		{	
-			class VertexShader
-			{
-			public:
-				using Input = Vertex;
-				struct Output
-				{
-					Vec3 posNDC; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
-					Vec3 color;
-					Vec3 norm, material, posWld;
-					Vec2 uv;
-				};
-				using Func = Output(*)( Input in, const Context::Constants & constants );
-
-				static inline Output VS_RGB(Input in, const Context::Constants & constants)
-				{
-					Output out;
-					out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
-					out.color = in.color;
-					return out;
-				}
-				static inline Output VS_TEX(Input in, const Context::Constants & constants)
-				{
-					Output out;
-					out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
-					out.uv = in.uv;
-					return out;
-				}
-				static inline Output VS_LIGHT(Input in, const Context::Constants & constants)
-				{
-					Output out;
-					out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
-					out.norm = in.norm;
-					out.material = in.material;
-					out.posWld = in.pos;
-					return out;
-				}
-			};
-
-			class PixelShader
-			{
-			public:
-				struct Input
-				{
-					Vec3 posNDC; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
-					Vec3 color;
-					Vec3 norm, material, posWld;
-					Vec2 uv;
-				};
-				struct Output
-				{
-					Vec3 color;
-				};
-				using Func = Output (*)(Input in, const Context::Constants & constants);
-
-				static inline Output PS_RGB(Input in, const Context::Constants & constants)
-				{
-					return { in.color };
-				}
-				static inline Output PS_TEX(Input in, const Context::Constants & constants)
-				{
-					float color[3];
-					constants.Texture.Sample(in.uv.x, in.uv.y, color);
-					return { color[0], color[1], color[2] };
-				}
-				static inline Output PS_LIGHT(Input in, const Context::Constants & constants)
-				{
-					constexpr float diffuseRatio = 0.5f;
-					constexpr float specularRatio = 0.5f;
-
-					// Diffuse Color = max( cos(-L, norm), 0) * ElementwiseProduce(C_light, C_material)
-					Vec3 diffuse;
-					{
-						const DiffuseLight & diffuseLight = constants.Diffuse;
-
-						Vec3 invLightDir = Vec3::Normalize(diffuseLight.posWld - in.posWld);
-
-						float decayFactor = Max(0.0f, Vec3::Dot(invLightDir, in.norm));
-
-						diffuse =
-							Vec3::Scale(
-								Vec3::ElementwiseProduct(RGBToVec3(diffuseLight.color), in.material),
-								decayFactor);
-					}
-
-					// Specular Color = max( cos(L', to-eye), 0) * ElementwiseProduce(C_light, C_material)
-					Vec3 specular;
-					{
-						const SpecularLight & specularLight = constants.Specular;
-
-						Vec3 lightDir = Vec3::Normalize(in.posWld - specularLight.posWld);
-						Vec3 reflectLightDir = Vec3::Normalize(lightDir - Vec3::Scale(in.norm, 2 * Vec3::Dot(in.norm, lightDir)));
-						Vec3 toEyeDir = Vec3::Normalize(-in.posWld);
-
-						float decayFactor = Max(0.0f, Vec3::Dot(reflectLightDir, toEyeDir));
-						decayFactor = decayFactor * decayFactor;
-						decayFactor = decayFactor * decayFactor;
-						decayFactor = decayFactor * decayFactor;
-
-						specular =
-							Vec3::Scale(
-								Vec3::ElementwiseProduct(RGBToVec3(specularLight.color), in.material),
-								decayFactor);
-					}
-
-					return { WeightedAdd(diffuse, specular, Vec3::Zero(), diffuseRatio, specularRatio, 0.0f) };
-				}
-			};
-		}
 
 		class Input
 		{
@@ -360,7 +294,6 @@ namespace Graphics
 			std::vector<Vertex>	m_vertices[2];
 		};
 	}
-
 
 	void Rasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
 
