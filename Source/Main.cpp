@@ -31,7 +31,7 @@ public:
 		_BIND_EVENT(OnMouseLButtonDown, *this, *this);
 		_BIND_EVENT(OnMouseLButtonUp, *this, *this);
 
-		// _BIND_EVENT(OnMouseMove, *this, m_render.GetCamera().GetController());
+		_BIND_EVENT(OnMouseMove, *this, m_render.GetCamera().GetController());
 		_BIND_EVENT(OnKeyDown, *this, m_render.GetCamera().GetController());
 		_BIND_EVENT(OnKeyUp, *this, m_render.GetCamera().GetController());
 	}

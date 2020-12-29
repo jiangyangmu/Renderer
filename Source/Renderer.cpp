@@ -47,13 +47,29 @@ namespace Rendering
 		m_context.GetConstants().CameraToNDC = GetCamera().GetProjMatrix();
 
 		// Rasterization
-		Pipeline::VertexFormat formats[] = {
+		Pipeline::VertexFormat formats[] =
+		{
 			Pipeline::VertexFormat::POSITION_RGB,
 			Pipeline::VertexFormat::POSITION_TEXCOORD,
 			Pipeline::VertexFormat::POSITION_NORM_MATERIAL,
 		};
+		Pipeline::Shader::VertexShader::Func vss[] =
+		{
+			Pipeline::Shader::VertexShader::VS_RGB,
+			Pipeline::Shader::VertexShader::VS_TEX,
+			Pipeline::Shader::VertexShader::VS_LIGHT,
+		};
+		Pipeline::Shader::PixelShader::Func pss[] =
+		{
+			Pipeline::Shader::PixelShader::PS_RGB,
+			Pipeline::Shader::PixelShader::PS_TEX,
+			Pipeline::Shader::PixelShader::PS_LIGHT,
+		};
 		for (int index = 0; index < triangles.size() && index < (sizeof(formats)/sizeof(Pipeline::VertexFormat)); ++index)
 		{
+			m_context.SetVertexShader(vss[index]);
+			m_context.SetPixelShader(pss[index]);
+
 			auto & vertices = triangles[index];
 			Rasterize(m_context, vertices.data(), vertices.size(), formats[index]);
 		}

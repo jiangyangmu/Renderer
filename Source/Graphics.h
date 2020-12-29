@@ -9,11 +9,6 @@
 
 namespace Graphics
 {
-	struct RGB
-	{
-		float r, g, b;
-	};
-
 	class Buffer
 	{
 	public:
@@ -120,19 +115,31 @@ namespace Graphics
 			Vec3 pos;
 			union
 			{
-				RGB color;
+				Vec3 color;
 				Vec2 uv;
 				struct
 				{
 					Vec3 norm;
-					RGB material;
+					Vec3 material;
 				};
 			};
 		};
 
-		Vertex MakeVertex(Vec3 pos, RGB color);
+		Vertex MakeVertex(Vec3 pos, Vec3 color);
 		Vertex MakeVertex(Vec3 pos, Vec2 uv);
-		Vertex MakeVertex(Vec3 pos, Vec3 norm, RGB material);
+		Vertex MakeVertex(Vec3 pos, Vec3 norm, Vec3 material);
+
+		struct DiffuseLight
+		{
+			Vec3 posWld;
+			RGB color;
+		};
+
+		struct SpecularLight
+		{
+			Vec3 posWld;
+			RGB color;
+		};
 
 		class Context
 		{
@@ -141,23 +148,14 @@ namespace Graphics
 			{
 				Matrix4x4	WorldToCamera;
 				Matrix4x4	CameraToNDC;
+
 				int		DebugPixel[2];
+				Texture2D	Texture;
+				DiffuseLight	Diffuse;
+				SpecularLight	Specular;
 			};
 
-			Context(Integer width, Integer height)
-				: m_width(width)
-				, m_height(height)
-				, m_frontId(0)
-				, m_backId(1)
-			{
-				int rowPadding = (4 - ((width * 3) & 0x3)) & 0x3;
-				m_depthBuffer = Buffer(width, height, 4, 4);
-				m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
-				m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
-
-				m_constants.DebugPixel[0] = -1;
-				m_constants.DebugPixel[1] = -1;
-			}
+			Context(Integer width, Integer height);
 
 			// Operations
 
@@ -207,6 +205,23 @@ namespace Graphics
 				return m_constants;
 			}
 
+			void			SetVertexShader(void * func)
+			{
+				m_vertexShaderFunc = func;
+			}
+			void			SetPixelShader(void * func)
+			{
+				m_pixelShaderFunc = func;
+			}
+			void *			GetVertexShader() const
+			{
+				return m_vertexShaderFunc;
+			}
+			void *			GetPixelShader() const
+			{
+				return m_pixelShaderFunc;
+			}
+
 		private:
 			Integer			m_width;
 			Integer			m_height;
@@ -217,9 +232,10 @@ namespace Graphics
 
 			Buffer			m_depthBuffer;
 
-			// std::vector<Buffer>	m_texBuffers;
-
 			Constants		m_constants;
+
+			void *			m_vertexShaderFunc;
+			void *			m_pixelShaderFunc;
 		};
 
 		namespace Shader
@@ -227,22 +243,38 @@ namespace Graphics
 			class VertexShader
 			{
 			public:
-				struct Input
-				{
-					Vec3 posWld; // World space
-
-					// color, uv, norm
-				};
+				using Input = Vertex;
 				struct Output
 				{
 					Vec3 posNDC; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
-
-					// color, uv, norm
+					Vec3 color;
+					Vec3 norm, material, posWld;
+					Vec2 uv;
 				};
+				using Func = Output(*)( Input in, const Context::Constants & constants );
 
-				static Output Shade(Input in, const Context::Constants & constants)
+				static inline Output VS_RGB(Input in, const Context::Constants & constants)
 				{
-					return {};
+					Output out;
+					out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
+					out.color = in.color;
+					return out;
+				}
+				static inline Output VS_TEX(Input in, const Context::Constants & constants)
+				{
+					Output out;
+					out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
+					out.uv = in.uv;
+					return out;
+				}
+				static inline Output VS_LIGHT(Input in, const Context::Constants & constants)
+				{
+					Output out;
+					out.posNDC = Vec3::Transform(Vec3::Transform(in.pos, constants.WorldToCamera), constants.CameraToNDC);
+					out.norm = in.norm;
+					out.material = in.material;
+					out.posWld = in.pos;
+					return out;
 				}
 			};
 
@@ -251,16 +283,68 @@ namespace Graphics
 			public:
 				struct Input
 				{
-					Vec3 pos; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
+					Vec3 posNDC; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
+					Vec3 color;
+					Vec3 norm, material, posWld;
+					Vec2 uv;
 				};
 				struct Output
 				{
 					Vec3 color;
 				};
+				using Func = Output (*)(Input in, const Context::Constants & constants);
 
-				static Output Shade(Input in, const Context::Constants & constants)
+				static inline Output PS_RGB(Input in, const Context::Constants & constants)
 				{
-					return {};
+					return { in.color };
+				}
+				static inline Output PS_TEX(Input in, const Context::Constants & constants)
+				{
+					float color[3];
+					constants.Texture.Sample(in.uv.x, in.uv.y, color);
+					return { color[0], color[1], color[2] };
+				}
+				static inline Output PS_LIGHT(Input in, const Context::Constants & constants)
+				{
+					constexpr float diffuseRatio = 0.5f;
+					constexpr float specularRatio = 0.5f;
+
+					// Diffuse Color = max( cos(-L, norm), 0) * ElementwiseProduce(C_light, C_material)
+					Vec3 diffuse;
+					{
+						const DiffuseLight & diffuseLight = constants.Diffuse;
+
+						Vec3 invLightDir = Vec3::Normalize(diffuseLight.posWld - in.posWld);
+
+						float decayFactor = Max(0.0f, Vec3::Dot(invLightDir, in.norm));
+
+						diffuse =
+							Vec3::Scale(
+								Vec3::ElementwiseProduct(RGBToVec3(diffuseLight.color), in.material),
+								decayFactor);
+					}
+
+					// Specular Color = max( cos(L', to-eye), 0) * ElementwiseProduce(C_light, C_material)
+					Vec3 specular;
+					{
+						const SpecularLight & specularLight = constants.Specular;
+
+						Vec3 lightDir = Vec3::Normalize(in.posWld - specularLight.posWld);
+						Vec3 reflectLightDir = Vec3::Normalize(lightDir - Vec3::Scale(in.norm, 2 * Vec3::Dot(in.norm, lightDir)));
+						Vec3 toEyeDir = Vec3::Normalize(-in.posWld);
+
+						float decayFactor = Max(0.0f, Vec3::Dot(reflectLightDir, toEyeDir));
+						decayFactor = decayFactor * decayFactor;
+						decayFactor = decayFactor * decayFactor;
+						decayFactor = decayFactor * decayFactor;
+
+						specular =
+							Vec3::Scale(
+								Vec3::ElementwiseProduct(RGBToVec3(specularLight.color), in.material),
+								decayFactor);
+					}
+
+					return { WeightedAdd(diffuse, specular, Vec3::Zero(), diffuseRatio, specularRatio, 0.0f) };
 				}
 			};
 		}
@@ -283,6 +367,8 @@ namespace Graphics
 	namespace DB
 	{
 		using Vertex = Pipeline::Vertex;
+		using DiffuseLight = Pipeline::DiffuseLight;
+		using SpecularLight = Pipeline::SpecularLight;
 
 		struct Triangles
 		{
@@ -295,22 +381,15 @@ namespace Graphics
 			static const std::vector<std::vector<Vertex>> & LightingTest();
 		};
 
-		struct DiffuseLight
-		{
-			Vec3 pos;
-			RGB color;
-		};
-		DiffuseLight & Diffuse();
-		struct SpecularLight
-		{
-			Vec3 pos;
-			RGB color;
-		};
-		SpecularLight & Specular();
-
 		struct Textures
 		{
 			static const Graphics::Texture2D & Duang();
+		};
+
+		struct Lights
+		{
+			static const DiffuseLight & Diffuse();
+			static const SpecularLight & Specular();
 		};
 	}
 }

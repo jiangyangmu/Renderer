@@ -44,13 +44,13 @@ struct Vec3
 
 	// Operations
 
-	inline Vec3 & Scale(float s)
+	inline void Scale(float s)
 	{
 		x *= s;
 		y *= s;
 		z *= s;
-		return *this;
 	}
+	
 	inline Vec3 operator - () const
 	{
 		return { -x, -y, -z };
@@ -64,14 +64,13 @@ struct Vec3
 		return { x - other.x, y - other.y, z - other.z };
 	}
 
-	static inline Vec3 Normalize(const Vec3 & v)
-	{
-		Vec3 nv = v;
-		return nv.Scale(1.0f / nv.Length());
-	}
 	static inline Vec3 Scale(const Vec3 & v, float scale)
 	{
 		return { v.x * scale, v.y * scale, v.z * scale };
+	}
+	static inline Vec3 Normalize(const Vec3 & v)
+	{
+		return Scale(v, 1.0f / v.Length());
 	}
 	static inline float Dot(const Vec3 & v1, const Vec3 & v2)
 	{
@@ -257,6 +256,39 @@ Vec3 Vec3::Transform(const Vec3 & v, const Matrix4x4 & m)
 	};
 }
 
+inline Vec2 WeightedAdd(const Vec2 & v0, const Vec2 & v1, const Vec2 & v2, float w0, float w1, float w2)
+{
+	return
+	{
+		v0.x * w0 + v1.x * w1 + v2.x * w2,
+		v0.y * w0 + v1.y * w1 + v2.y * w2,
+	};
+}
+inline Vec3 WeightedAdd(const Vec3 & v0, const Vec3 & v1, const Vec3 & v2, float w0, float w1, float w2)
+{
+	return
+	{
+		v0.x * w0 + v1.x * w1 + v2.x * w2,
+		v0.y * w0 + v1.y * w1 + v2.y * w2,
+		v0.z * w0 + v1.z * w1 + v2.z * w2,
+	};
+}
+
+struct RGB
+{
+	float r, g, b;
+};
+
+inline Vec3 RGBToVec3(const RGB & rgb)
+{
+	return { rgb.r, rgb.g, rgb.b };
+}
+
+inline RGB Vec3ToRGB(const Vec3 & v)
+{
+	return { v.x, v.y, v.z };
+}
+
 inline float DegreeToRadian(float d)
 {
 	return d * PI / 180.0f;
@@ -271,6 +303,17 @@ template <typename T>
 inline T Bound(T min, T value, T max)
 {
 	return value < min ? min : ( value > max ? max : value );
+}
+
+template <typename T>
+inline T Max(T a, T b)
+{
+	return a >= b ? a : b;
+}
+template <typename T>
+inline T Min(T a, T b)
+{
+	return a <= b ? a : b;
 }
 
 // --------------------------------------------------------------------------
