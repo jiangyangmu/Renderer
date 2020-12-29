@@ -2,7 +2,7 @@
 
 #include "Event.h"
 
-#include <memory>
+#include <vector>
 
 namespace win32
 {
@@ -13,6 +13,25 @@ namespace win32
 	ULONG_PTR	InitializeGdiplus();
 	void		UninitializeGdiplus(ULONG_PTR token);
 	void		LoadBMP(LPCWSTR lpFilePath, LONG * lpWidth, LONG * lpHeight, LPVOID * lpPixels);
+
+	// Threads
+	class ParallelTaskRunner
+	{
+	public:
+		ParallelTaskRunner(DWORD nThread);
+		~ParallelTaskRunner();
+
+		// Operations
+
+		void			RunTask(PTP_WORK_CALLBACK callback, LPVOID lpData);
+		void			WaitForAllTasks();
+
+	private:
+		TP_CALLBACK_ENVIRON	m_callBackEnviron;
+		PTP_POOL		m_pool;
+		PTP_CLEANUP_GROUP	m_cleanupGroup;
+		std::vector<PTP_WORK>	m_tasks;
+	};
 
 	class Window
 	{

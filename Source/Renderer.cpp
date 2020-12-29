@@ -42,7 +42,7 @@ namespace Rendering
 		using namespace Graphics;
 
 		// Input
-		const auto & triangles = DB::Triangles::LightingTest();
+		const auto & triangles = DB::Triangles::CameraTest();
 		m_context.GetConstants().WorldToCamera = GetCamera().GetViewMatrix();
 		m_context.GetConstants().CameraToNDC = GetCamera().GetProjMatrix();
 
@@ -71,7 +71,7 @@ namespace Rendering
 			m_context.SetPixelShader(pss[index]);
 
 			auto & vertices = triangles[index];
-			Rasterize(m_context, vertices.data(), vertices.size(), formats[index]);
+			ParallelRasterize(m_context, vertices.data(), vertices.size(), formats[index]);
 		}
 	}
 }

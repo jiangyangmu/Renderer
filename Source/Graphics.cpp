@@ -2,6 +2,8 @@
 #include "Common.h"
 #include "win32/Win32App.h"
 
+#include <Windows.h>
+
 #include <vector>
 #include <memory>
 
@@ -300,10 +302,7 @@ namespace Graphics
 
 	}
 
-	void Rasterize(Pipeline::Context & context,
-		       const Pipeline::Vertex * pVertexBuffer,
-		       Integer nVertex,
-		       Pipeline::VertexFormat vertexFormat)
+	void Rasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat)
 	{
 		using namespace Graphics::Pipeline;
 		using VertexShader = Shader::VertexShader;
@@ -492,6 +491,270 @@ namespace Graphics
 							      static_cast< Byte >( color.b * 255.0f ));
 				}
 			}
+		}
+	}
+
+	struct ParallelRasterData
+	{
+		Integer width;
+		Integer height;
+		const Pipeline::Vertex & v0;
+		const Pipeline::Vertex & v1;
+		const Pipeline::Vertex & v2;
+		Vec2 p0Ras;
+		Vec2 p1Ras;
+		Vec2 p2Ras;
+		float z0NDCInv;
+		float z1NDCInv;
+		float z2NDCInv;
+		float areaInv;
+		RenderTarget & renderTarget;
+		Buffer & depthBuffer;
+		Pipeline::ContextConstants & constants;
+		Pipeline::Context::PS pixelShader;
+		Pipeline::VertexFormat vertexFormat;
+
+		Integer xRasMin;
+		Integer xRasMax;
+		Integer yRasMin;
+		Integer yRasMax;
+	};
+	static void WINAPI ParallelRasterizeInternal(PTP_CALLBACK_INSTANCE hInstance, LPVOID lpParam, PTP_WORK hWork)
+	{
+		using namespace Graphics::Pipeline;
+		using VertexShader = Shader::VertexShader;
+		using PixelShader = Shader::PixelShader;
+
+		ParallelRasterData * pData = reinterpret_cast<ParallelRasterData *>(lpParam);
+
+		const Integer & width = pData->width;
+		const Integer & height = pData->height;
+		const Pipeline::Vertex & v0 = pData->v0;
+		const Pipeline::Vertex & v1 = pData->v1;
+		const Pipeline::Vertex & v2 = pData->v2;
+		const Vec2 & p0Ras = pData->p0Ras;
+		const Vec2 & p1Ras = pData->p1Ras;
+		const Vec2 & p2Ras = pData->p2Ras;
+		const float & z0NDCInv = pData->z0NDCInv;
+		const float & z1NDCInv = pData->z1NDCInv;
+		const float & z2NDCInv = pData->z2NDCInv;
+		RenderTarget & renderTarget = pData->renderTarget;
+		Buffer & depthBuffer = pData->depthBuffer;
+		Pipeline::ContextConstants & constants = pData->constants;
+		Pipeline::Context::PS pixelShader = pData->pixelShader;
+		Pipeline::VertexFormat vertexFormat = pData->vertexFormat;
+		Integer xRasMin = pData->xRasMin;
+		Integer xRasMax = pData->xRasMax;
+		Integer yRasMin = pData->yRasMin;
+		Integer yRasMax = pData->yRasMax;
+		float areaInv = pData->areaInv;
+
+		for ( Integer yPix = yRasMin; yPix < yRasMax; ++yPix )
+		{
+			for ( Integer xPix = xRasMin; xPix < xRasMax; ++xPix )
+			{
+				float xPixF = static_cast< float >( xPix );
+				float yPixF = static_cast< float >( yPix );
+
+				// Intersection test
+				Vec2 pixel = { xPixF, yPixF };
+				float e0 = EdgeFunction(p1Ras, p2Ras, pixel);
+				float e1 = EdgeFunction(p2Ras, p0Ras, pixel);
+				float e2 = EdgeFunction(p0Ras, p1Ras, pixel);
+				if ( e0 < 0 || e1 < 0 || e2 < 0 || ( e0 == 0 && e1 == 0 && e2 == 0 ) )
+				{
+					continue;
+				}
+
+				// Barycentric coordinate
+				float bary0 = e0 * areaInv;
+				float bary1 = e1 * areaInv;
+				float bary2 = e2 * areaInv;
+				ASSERT(0.0f <= bary0 && bary0 <= 1.0001f);
+				ASSERT(0.0f <= bary1 && bary1 <= 1.0001f);
+				ASSERT(0.0f <= bary2 && bary2 <= 1.0001f);
+				ASSERT(( bary0 + bary1 + bary2 ) <= 1.0001f);
+
+				// Z
+				float zNDC = 1.0f / ( z0NDCInv * bary0 + z1NDCInv * bary1 + z2NDCInv * bary2 );
+				// ASSERT(0.0f <= zNDC && zNDC <= 1.0001f);
+				if ( !( 0.0f <= zNDC && zNDC <= 1.0001f ) )
+				{
+					continue;
+				}
+
+				// Depth test
+				float * depth = static_cast< float * >( depthBuffer.At(yPix, xPix) );
+				if ( *depth <= zNDC )
+				{
+					continue;
+				}
+				*depth = zNDC;
+
+				// Vertex properties
+				float w0 = zNDC * z0NDCInv * bary0;
+				float w1 = zNDC * z1NDCInv * bary1;
+				float w2 = zNDC * z2NDCInv * bary2;
+				ASSERT(0.0f <= w0 && w0 <= 1.0001f);
+				ASSERT(0.0f <= w1 && w1 <= 1.0001f);
+				ASSERT(0.0f <= w2 && w2 <= 1.0001f);
+				ASSERT(( w0 + w1 + w2 ) <= 1.0001f);
+
+				PixelShader::Input pin;
+				switch ( vertexFormat )
+				{
+					case Pipeline::VertexFormat::POSITION_RGB:
+						pin = PixelShader::Input
+						{
+							{xPixF, yPixF, zNDC},
+							WeightedAdd(v0.color, v1.color, v2.color, w0, w1, w2),
+							{},
+							{},
+							{},
+							{},
+						};
+						break;
+					case Pipeline::VertexFormat::POSITION_TEXCOORD:
+						pin = PixelShader::Input
+						{
+							{xPixF, yPixF, zNDC},
+							{},
+							{},
+							{},
+							{},
+							WeightedAdd(v0.uv, v1.uv, v2.uv, w0, w1, w2),
+						};
+						break;
+					case Pipeline::VertexFormat::POSITION_NORM_MATERIAL:
+						pin = PixelShader::Input
+						{
+							{xPixF, yPixF, zNDC},
+							{},
+							WeightedAdd(v0.norm, v1.norm, v2.norm, w0, w1, w2),
+							WeightedAdd(v0.material, v1.material, v2.material, w0, w1, w2),
+							WeightedAdd(v0.pos, v1.pos, v2.pos, w0, w1, w2),
+							{},
+						};
+						break;
+					default:
+						break;
+				}
+
+				RGB color = Vec3ToRGB(pixelShader(pin, constants).color);
+				ASSERT(color.r >= 0.0f && color.g >= 0.0f && color.b >= 0.0f);
+				ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
+
+				// Draw pixel
+				renderTarget.SetPixel(xPix,
+						      yPix,
+						      static_cast< Byte >( color.r * 255.0f ),
+						      static_cast< Byte >( color.g * 255.0f ),
+						      static_cast< Byte >( color.b * 255.0f ));
+			}
+		}
+	}
+	void ParallelRasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat)
+	{
+		static win32::ParallelTaskRunner taskRunner(4);
+
+		using namespace Graphics::Pipeline;
+		using VertexShader = Shader::VertexShader;
+		using PixelShader = Shader::PixelShader;
+
+		RenderTarget renderTarget = context.GetRenderTarget();
+		Buffer & depthBuffer = context.GetDepthBuffer();
+
+		Integer width = renderTarget.Width();
+		Integer height = renderTarget.Height();
+
+		VertexShader::Func vertexShader = context.GetVertexShader();
+		PixelShader::Func pixelShader = context.GetPixelShader();
+		ASSERT(vertexShader);
+		ASSERT(pixelShader);
+
+		Integer dbgX = context.GetConstants().DebugPixel[ 0 ];
+		Integer dbgY = context.GetConstants().DebugPixel[ 1 ];
+
+		DiffuseLight & diffuseLight = context.GetConstants().Diffuse;
+		SpecularLight & specularLight = context.GetConstants().Specular;
+		{
+			static float dx = 1.0f, dy = 1.0f;
+			static float sx = 1.0f, sy = 1.0f;
+
+			diffuseLight.posWld.x += 0.001f * dx;
+			if ( diffuseLight.posWld.x < -0.5f || diffuseLight.posWld.x > 0.5f ) dx = -dx;
+			diffuseLight.posWld.y += 0.0002f * dy;
+			if ( diffuseLight.posWld.y > 0.5f || diffuseLight.posWld.y < -0.5f ) dy = -dy;
+
+			specularLight.posWld.x += 0.001f * sx;
+			if ( specularLight.posWld.x < -0.5f || specularLight.posWld.x > 0.5f ) sx = -sx;
+			specularLight.posWld.y += 0.0002f * sy;
+			if ( specularLight.posWld.y > 0.5f || specularLight.posWld.y < -0.5f ) sy = -sy;
+		}
+
+		for ( const Pipeline::Vertex * pVertex = pVertexBuffer;
+		     nVertex >= 3;
+		     nVertex -= 3, pVertex += 3 )
+		{
+			// World(Wld) -> Camera(Cam) -> NDC -> Screen(Scn)+Depth -> Raster(Ras)+Depth
+
+			const Vertex & v0 = pVertex[ 0 ];
+			const Vertex & v1 = pVertex[ 1 ];
+			const Vertex & v2 = pVertex[ 2 ];
+
+			VertexShader::Output vs0 = vertexShader(v0, context.GetConstants());
+			VertexShader::Output vs1 = vertexShader(v1, context.GetConstants());
+			VertexShader::Output vs2 = vertexShader(v2, context.GetConstants());
+
+			const Vec3 & p0NDC = vs0.posNDC;
+			const Vec3 & p1NDC = vs1.posNDC;
+			const Vec3 & p2NDC = vs2.posNDC;
+
+			float z0NDCInv = 1.0f / p0NDC.z;
+			float z1NDCInv = 1.0f / p1NDC.z;
+			float z2NDCInv = 1.0f / p2NDC.z;
+
+			Vec2 p0Scn = { ( p0NDC.x + 1.0f ) * 0.5f, ( 1.0f - p0NDC.y ) * 0.5f };
+			Vec2 p1Scn = { ( p1NDC.x + 1.0f ) * 0.5f, ( 1.0f - p1NDC.y ) * 0.5f };
+			Vec2 p2Scn = { ( p2NDC.x + 1.0f ) * 0.5f, ( 1.0f - p2NDC.y ) * 0.5f };
+
+			Vec2 p0Ras = { p0Scn.x * width, p0Scn.y * height };
+			Vec2 p1Ras = { p1Scn.x * width, p1Scn.y * height };
+			Vec2 p2Ras = { p2Scn.x * width, p2Scn.y * height };
+
+			Integer xRasMin = static_cast< Integer >( Min3(p0Ras.x, p1Ras.x, p2Ras.x) );
+			Integer xRasMax = static_cast< Integer >( Max3(p0Ras.x, p1Ras.x, p2Ras.x) );
+			Integer yRasMin = static_cast< Integer >( Min3(p0Ras.y, p1Ras.y, p2Ras.y) );
+			Integer yRasMax = static_cast< Integer >( Max3(p0Ras.y, p1Ras.y, p2Ras.y) );
+
+			// ASSERT(0 <= xRasMin && xRasMin < width);
+			// ASSERT(0 <= yRasMin && yRasMin < height);
+			if ( xRasMin < 0 || width <= xRasMax || yRasMin < 0 || height <= yRasMax )
+			{
+				continue;
+			}
+
+			float areaInv = EdgeFunction(p0Ras, p1Ras, p2Ras);
+			areaInv = ( areaInv < 0.0001f ) ? 1000.0f : 1.0f / areaInv;
+			ASSERT(areaInv >= 0.0f);
+
+			ParallelRasterData pDataArray[ 4 ] =
+			{
+				{width, height, v0, v1, v2, p0Ras, p1Ras, p2Ras, z0NDCInv, z1NDCInv, z2NDCInv, areaInv, renderTarget, depthBuffer, context.GetConstants(), pixelShader, vertexFormat,
+				xRasMin, xRasMin + ( xRasMax - xRasMin ) / 2, yRasMin, yRasMin + ( yRasMax - yRasMin ) / 2 },
+				{width, height, v0, v1, v2, p0Ras, p1Ras, p2Ras, z0NDCInv, z1NDCInv, z2NDCInv, areaInv, renderTarget, depthBuffer, context.GetConstants(), pixelShader, vertexFormat,
+				xRasMin + ( xRasMax - xRasMin ) / 2, xRasMax + 1, yRasMin, yRasMin + ( yRasMax - yRasMin ) / 2},
+				{width, height, v0, v1, v2, p0Ras, p1Ras, p2Ras, z0NDCInv, z1NDCInv, z2NDCInv, areaInv, renderTarget, depthBuffer, context.GetConstants(), pixelShader, vertexFormat,
+				xRasMin, xRasMin + ( xRasMax - xRasMin ) / 2, yRasMin + ( yRasMax - yRasMin ) / 2 , yRasMax + 1},
+				{width, height, v0, v1, v2, p0Ras, p1Ras, p2Ras, z0NDCInv, z1NDCInv, z2NDCInv, areaInv, renderTarget, depthBuffer, context.GetConstants(), pixelShader, vertexFormat,
+				xRasMin + ( xRasMax - xRasMin ) / 2, xRasMax + 1, yRasMin + ( yRasMax - yRasMin ) / 2, yRasMax + 1},
+			};
+			for ( int i = 0; i < 4; i++ )
+			{
+				taskRunner.RunTask(ParallelRasterizeInternal,
+						   pDataArray + i);
+			}
+			taskRunner.WaitForAllTasks();
 		}
 	}
 

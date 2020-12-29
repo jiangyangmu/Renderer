@@ -296,6 +296,7 @@ namespace Graphics
 	}
 
 	void Rasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
+	void ParallelRasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
 
 	namespace DB
 	{

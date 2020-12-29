@@ -62,6 +62,10 @@ namespace win32
 		);
 	}
 
+	// --------------------------------------------------------------------------
+	// GDI+
+	// --------------------------------------------------------------------------
+
 	ULONG_PTR InitializeGdiplus()
 	{
 		Gdiplus::GdiplusStartupInput input;
@@ -109,6 +113,65 @@ namespace win32
 	{
 		return GetModuleHandle(NULL);
 	}
+
+	// --------------------------------------------------------------------------
+	// Threads
+	// --------------------------------------------------------------------------
+
+	ParallelTaskRunner::ParallelTaskRunner(DWORD nThread)
+	{
+		InitializeThreadpoolEnvironment(&m_callBackEnviron);
+
+		m_pool = CreateThreadpool(NULL);
+		ENSURE_NOT_NULL(m_pool);
+
+		SetThreadpoolThreadMaximum(m_pool, nThread);
+		ENSURE_TRUE(SetThreadpoolThreadMinimum(m_pool, nThread));
+
+		m_cleanupGroup = CreateThreadpoolCleanupGroup();
+		ENSURE_NOT_NULL(m_cleanupGroup);
+
+		SetThreadpoolCallbackPool(&m_callBackEnviron, m_pool);
+		SetThreadpoolCallbackCleanupGroup(&m_callBackEnviron,
+						  m_cleanupGroup,
+						  NULL);
+	}
+
+	ParallelTaskRunner::~ParallelTaskRunner()
+	{
+		if (!m_tasks.empty())
+		{
+			WaitForAllTasks();
+		}
+
+		CloseThreadpoolCleanupGroupMembers(m_cleanupGroup,
+						   FALSE,
+						   NULL);
+		CloseThreadpoolCleanupGroup(m_cleanupGroup);
+		CloseThreadpool(m_pool);
+	}
+
+	void ParallelTaskRunner::RunTask(PTP_WORK_CALLBACK callback, LPVOID lpData)
+	{
+		PTP_WORK work = CreateThreadpoolWork(callback,
+						     lpData,
+						     &m_callBackEnviron);
+		ENSURE_NOT_NULL(work);
+		SubmitThreadpoolWork(work);
+
+		m_tasks.emplace_back(work);
+	}
+
+	void ParallelTaskRunner::WaitForAllTasks()
+	{
+		for (PTP_WORK & pWork : m_tasks)
+		{
+			WaitForThreadpoolWorkCallbacks(pWork, FALSE);
+		}
+
+		m_tasks.clear();
+	}
+
 
 	// --------------------------------------------------------------------------
 	// Application
