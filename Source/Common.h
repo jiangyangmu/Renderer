@@ -69,9 +69,17 @@ struct Vec3
 		Vec3 nv = v;
 		return nv.Scale(1.0f / nv.Length());
 	}
+	static inline Vec3 Scale(const Vec3 & v, float scale)
+	{
+		return { v.x * scale, v.y * scale, v.z * scale };
+	}
 	static inline float Dot(const Vec3 & v1, const Vec3 & v2)
 	{
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+	}
+	static inline Vec3 ElementwiseProduct(const Vec3 & v1, const Vec3 & v2)
+	{
+		return { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z };
 	}
 	static inline Vec3 CrossLH(const Vec3 & v1, const Vec3 & v2)
 	{

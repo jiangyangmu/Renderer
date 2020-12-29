@@ -172,6 +172,32 @@ namespace Graphics
 		pixel[ 2 ] = r;
 	}
 
+	Pipeline::Vertex Pipeline::MakeVertex(Vec3 pos, RGB color)
+	{
+		Vertex v;
+		v.pos = pos;
+		v.color = color;
+		return v;
+	}
+	
+	Pipeline::Vertex Pipeline::MakeVertex(Vec3 pos, Vec2 uv)
+	{
+		Vertex v;
+		v.pos = pos;
+		v.uv = uv;
+		return v;
+	}
+
+	Pipeline::Vertex Pipeline::MakeVertex(Vec3 pos, Vec3 norm, RGB material)
+	{
+		Vertex v;
+		v.pos = pos;
+		v.norm = norm;
+		v.material = material;
+		return v;
+	}
+
+
 	void Rasterize(Pipeline::Context & context,
 		       const Pipeline::Vertex * pVertexBuffer,
 		       Integer nVertex,
@@ -190,6 +216,24 @@ namespace Graphics
 
 		Integer dbgX = context.GetConstants().DebugPixel[ 0 ];
 		Integer dbgY = context.GetConstants().DebugPixel[ 1 ];
+
+		// Lights
+		DB::DiffuseLight & diffuseLight = DB::Diffuse();
+		DB::SpecularLight & specularLight = DB::Specular();
+		{
+			static float dx = 1.0f, dy = 1.0f;
+			static float sx = 1.0f, sy = 1.0f;
+
+			diffuseLight.pos.x += 0.001f * dx;
+			if ( diffuseLight.pos.x < -0.5f || diffuseLight.pos.x > 0.5f ) dx = -dx;
+			diffuseLight.pos.y += 0.0002f * dy;
+			if ( diffuseLight.pos.y > 0.5f || diffuseLight.pos.y < -0.5f ) dy = -dy;
+
+			specularLight.pos.x += 0.001f * sx;
+			if ( specularLight.pos.x < -0.5f || specularLight.pos.x > 0.5f ) sx = -sx;
+			specularLight.pos.y += 0.0002f * sy;
+			if ( specularLight.pos.y > 0.5f || specularLight.pos.y < -0.5f ) sy = -sy;
+		}
 
 		for (const Pipeline::Vertex * pVertex = pVertexBuffer;
 		     nVertex >= 3;
@@ -307,7 +351,7 @@ namespace Graphics
 							zz0 * bary0 * cA.b + zz1 * bary1 * cB.b + zz2 * bary2 * cC.b
 						};
 					}
-					else
+					else if ( vertexFormat == Pipeline::VertexFormat::POSITION_TEXCOORD )
 					{
 						const Vec2 & tA = v0.uv;
 						const Vec2 & tB = v1.uv;
@@ -319,6 +363,68 @@ namespace Graphics
 						float rgb[ 3 ];
 						DB::Textures::Duang().Sample(u, v, rgb);
 						color = { rgb[ 0 ], rgb[ 1 ], rgb[ 2 ] };
+					}
+					else
+					{
+						Vec3 norm =
+						{
+							zz0 * bary0 * v0.norm.x + zz1 * bary1 * v1.norm.x + zz2 * bary2 * v2.norm.x,
+							zz0 * bary0 * v0.norm.y + zz1 * bary1 * v1.norm.y + zz2 * bary2 * v2.norm.y,
+							zz0 * bary0 * v0.norm.z + zz1 * bary1 * v1.norm.z + zz2 * bary2 * v2.norm.z,
+						};
+						norm = Vec3::Normalize(norm);
+
+						Vec3 pos =
+						{
+							zz0 * bary0 * v0.pos.x + zz1 * bary1 * v1.pos.x + zz2 * bary2 * v2.pos.x,
+							zz0 * bary0 * v0.pos.y + zz1 * bary1 * v1.pos.y + zz2 * bary2 * v2.pos.y,
+							zz0 * bary0 * v0.pos.z + zz1 * bary1 * v1.pos.z + zz2 * bary2 * v2.pos.z,
+						};
+
+						Vec3 materialColor =
+						{
+							zz0 * bary0 * v0.material.r + zz1 * bary1 * v1.material.r + zz2 * bary2 * v2.material.r,
+							zz0 * bary0 * v0.material.g + zz1 * bary1 * v1.material.g + zz2 * bary2 * v2.material.g,
+							zz0 * bary0 * v0.material.b + zz1 * bary1 * v1.material.b + zz2 * bary2 * v2.material.b,
+						};
+
+						// Diffuse Light = max( cos(-L, norm), 0) * ElementwiseProduce(C_light, C_material)
+						Vec3 diffuse;
+						{
+							Vec3 invLightDir = Vec3::Normalize(diffuseLight.pos - pos);
+							float decayFactor = max(0.0f, Vec3::Dot(invLightDir, norm));
+
+							Vec3 lightColor = { diffuseLight.color.r, diffuseLight.color.g, diffuseLight.color.b };
+
+							diffuse = Vec3::ElementwiseProduct(lightColor, materialColor);
+							diffuse.Scale(decayFactor);
+						}
+
+						// Specular Light = max( cos(L', to-eye), 0) * ElementwiseProduce(C_light, C_material)
+						Vec3 specular;
+						{
+							Vec3 lightDir = Vec3::Normalize(pos - specularLight.pos);
+							Vec3 reflectLightDir = Vec3::Normalize(lightDir - Vec3::Scale(norm, 2 * Vec3::Dot(norm, lightDir)));
+							Vec3 toEyeDir = Vec3::Normalize(-pos);
+							float decayFactor = max(0.0f, Vec3::Dot(reflectLightDir, toEyeDir));
+							decayFactor = decayFactor * decayFactor;
+							decayFactor = decayFactor * decayFactor;
+							decayFactor = decayFactor * decayFactor;
+
+							Vec3 lightColor = { specularLight.color.r, specularLight.color.g, specularLight.color.b };
+
+							specular = Vec3::ElementwiseProduct(lightColor, materialColor);
+							specular.Scale(decayFactor);
+						}
+
+						float diffuseRatio = 0.5f;
+						float specularRatio = 0.5f;
+						color =
+						{
+							diffuseRatio * diffuse.x + specularRatio * specular.x,
+							diffuseRatio * diffuse.y + specularRatio * specular.y,
+							diffuseRatio * diffuse.z + specularRatio * specular.z,
+						};
 					}
 					ASSERT(color.r >= 0.0f && color.g >= 0.0f && color.b >= 0.0f);
 					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
@@ -355,6 +461,26 @@ namespace Graphics
 			}
 
 			return texture;
+		}
+
+		DiffuseLight & Diffuse()
+		{
+			static DiffuseLight light =
+			{
+				{0.0f, 0.0f, 0.85f},
+				{1.0f, 1.0f, 1.0f},
+			};
+			return light;
+		}
+
+		Graphics::DB::SpecularLight & Specular()
+		{
+			static SpecularLight light =
+			{
+				{0.5f, 0.0f, 0.85f},
+				{1.0f, 0.0f, 0.0f},
+			};
+			return light;
 		}
 
 		const std::vector<std::vector<Vertex>> & Triangles::One()
@@ -492,22 +618,26 @@ namespace Graphics
 			return vertices;
 		}
 
-	}
+		const std::vector<std::vector<Vertex>> & Triangles::LightingTest()
+		{
+			static std::vector<std::vector<Vertex>> vertices =
+			{
+				// RGB
+				{},
+				// Texture
+				{},
+				// Normal, material
+				{
+					Pipeline::MakeVertex({-0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
+					Pipeline::MakeVertex({ 0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
+					Pipeline::MakeVertex({ 0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
+					Pipeline::MakeVertex({-0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
+					Pipeline::MakeVertex({ 0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
+					Pipeline::MakeVertex({-0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
+				},
+			};
+			return vertices;
+		}
 
-	Pipeline::Vertex Pipeline::MakeVertex(Vec3 pos, RGB color)
-	{
-		Vertex v;
-		v.pos = pos;
-		v.color = color;
-		return v;
 	}
-
-	Pipeline::Vertex Pipeline::MakeVertex(Vec3 pos, Vec2 uv)
-	{
-		Vertex v;
-		v.pos = pos;
-		v.uv = uv;
-		return v;
-	}
-
 }

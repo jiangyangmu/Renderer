@@ -42,14 +42,20 @@ namespace Rendering
 		using namespace Graphics;
 
 		// Input
-		const auto & triangles = DB::Triangles::CameraTest();
+		const auto & triangles = DB::Triangles::LightingTest();
 		m_context.GetConstants().WorldToCamera = GetCamera().GetViewMatrix();
 		m_context.GetConstants().CameraToNDC = GetCamera().GetProjMatrix();
 
 		// Rasterization
-		auto & verticesRGB = triangles[ 0 ];
-		auto & verticesTex = triangles[ 1 ];
-		Rasterize(m_context, verticesRGB.data(), verticesRGB.size(), Pipeline::VertexFormat::POSITION_RGB);
-		Rasterize(m_context, verticesTex.data(), verticesTex.size(), Pipeline::VertexFormat::POSITION_TEXCOORD);
+		Pipeline::VertexFormat formats[] = {
+			Pipeline::VertexFormat::POSITION_RGB,
+			Pipeline::VertexFormat::POSITION_TEXCOORD,
+			Pipeline::VertexFormat::POSITION_NORM_MATERIAL,
+		};
+		for (int index = 0; index < triangles.size() && index < (sizeof(formats)/sizeof(Pipeline::VertexFormat)); ++index)
+		{
+			auto & vertices = triangles[index];
+			Rasterize(m_context, vertices.data(), vertices.size(), formats[index]);
+		}
 	}
 }

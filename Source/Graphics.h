@@ -110,9 +110,11 @@ namespace Graphics
 
 		enum class VertexFormat
 		{
-			POSITION_RGB = 0,
-			POSITION_TEXCOORD = 1,
+			POSITION_RGB,
+			POSITION_TEXCOORD,
+			POSITION_NORM_MATERIAL,
 		};
+
 		struct Vertex
 		{
 			Vec3 pos;
@@ -120,55 +122,17 @@ namespace Graphics
 			{
 				RGB color;
 				Vec2 uv;
+				struct
+				{
+					Vec3 norm;
+					RGB material;
+				};
 			};
 		};
 
-		namespace Shader
-		{
-			struct Pixel
-			{
-				Vec3 pos; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
-				Vec3 color;
-				Vec2 tex;
-			};
-
-			// Compute lighting
-			class VertexShader
-			{
-			public:
-				struct Input
-				{
-					Vertex v;
-				};
-				struct Output
-				{
-					Vertex v;
-				};
-
-				static Output Shade(Input in)
-				{
-					return { in.v };
-				}
-			};
-
-			class PixelShader
-			{
-			public:
-				struct Input
-				{
-					Pixel p;
-				};
-				struct Output
-				{
-					Vec3 color;
-				};
-
-				static Output Shade(Input in)
-				{
-					return { in.p.color };
-				}
-			};
-		}
+		Vertex MakeVertex(Vec3 pos, RGB color);
+		Vertex MakeVertex(Vec3 pos, Vec2 uv);
+		Vertex MakeVertex(Vec3 pos, Vec3 norm, RGB material);
 
 		class Context
 		{
@@ -258,6 +222,49 @@ namespace Graphics
 			Constants		m_constants;
 		};
 
+		namespace Shader
+		{	
+			class VertexShader
+			{
+			public:
+				struct Input
+				{
+					Vec3 posWld; // World space
+
+					// color, uv, norm
+				};
+				struct Output
+				{
+					Vec3 posNDC; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
+
+					// color, uv, norm
+				};
+
+				static Output Shade(Input in, const Context::Constants & constants)
+				{
+					return {};
+				}
+			};
+
+			class PixelShader
+			{
+			public:
+				struct Input
+				{
+					Vec3 pos; // x: [0, screen width) y: [0, screen height) z: depth: [0.0f, 1.0f]
+				};
+				struct Output
+				{
+					Vec3 color;
+				};
+
+				static Output Shade(Input in, const Context::Constants & constants)
+				{
+					return {};
+				}
+			};
+		}
+
 		class Input
 		{
 		public:
@@ -268,9 +275,6 @@ namespace Graphics
 
 			std::vector<Vertex>	m_vertices[2];
 		};
-
-		Vertex MakeVertex(Vec3 pos, RGB color);
-		Vertex MakeVertex(Vec3 pos, Vec2 uv);
 	}
 
 
@@ -288,7 +292,21 @@ namespace Graphics
 			static const std::vector<std::vector<Vertex>> & TextureTest();
 			static const std::vector<std::vector<Vertex>> & PerspectiveProjectionTest();
 			static const std::vector<std::vector<Vertex>> & CameraTest();
+			static const std::vector<std::vector<Vertex>> & LightingTest();
 		};
+
+		struct DiffuseLight
+		{
+			Vec3 pos;
+			RGB color;
+		};
+		DiffuseLight & Diffuse();
+		struct SpecularLight
+		{
+			Vec3 pos;
+			RGB color;
+		};
+		SpecularLight & Specular();
 
 		struct Textures
 		{

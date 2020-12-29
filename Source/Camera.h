@@ -73,10 +73,7 @@ namespace Rendering
 
 		void			SetHorizontalAngle(float fAngle); // Clockwise: 0.0f ~ 360.0f
 		void			SetVerticalAngle(float fAngle); // Down: -90.0f, Up: 90.0f
-		void			SetAspectRatio(float fAspectRatio)
-		{
-			m_aspectRatio = fAspectRatio;
-		}
+		void			SetAspectRatio(float fAspectRatio);
 
 		const Vec3 &		GetUp()
 		{

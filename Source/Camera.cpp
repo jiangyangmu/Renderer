@@ -46,6 +46,12 @@ namespace Rendering
 		}
 	}
 
+	void Camera::SetAspectRatio(float fAspectRatio)
+	{
+		m_aspectRatio = fAspectRatio;
+		m_dirtyBits |= BIT_PROJ_MATRIX;
+	}
+
 	const Vec3 Camera::GetDirection()
 	{
 		if (m_dirtyBits & BIT_DIRECTION)
@@ -90,8 +96,7 @@ namespace Rendering
 	{
 		UNREFERENCED_PARAMETER(sender);
 
-		m_aspectRatio = aspectRatio;
-		m_dirtyBits |= BIT_PROJ_MATRIX;
+		SetAspectRatio(aspectRatio);
 	}
 
 
