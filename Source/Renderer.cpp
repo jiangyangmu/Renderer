@@ -15,6 +15,22 @@ namespace Rendering
 			   ((float)width) / height,	// aspect ratio
 			   Vec3::Zero())		// position
 	{
+		m_context.LoadTexture(L"Resources/duang.bmp");
+		m_context.GetConstants().Light = Graphics::Lights::Light
+		{
+			{ 1.0f, 1.0f, 1.0f }, // color
+			{ 0.3f, 0.3f, 0.1f }, // position
+			{ 0.0f, 0.0f, 1.0f }, // attenuation
+		};
+		m_context.GetConstants().Material = Graphics::Materials::BlinnPhong
+		{
+			Graphics::Materials::Ambient{{1.0f, 1.0f, 1.0f}},
+			Graphics::Materials::Diffuse{{1.0f, 1.0f, 1.0f}},
+			Graphics::Materials::Specular{{1.0f, 1.0f, 1.0f}},
+			0.0f,
+			0.8f,
+			0.2f,
+		};
 	}
 
 	void HardcodedRenderer::Resize(Integer width, Integer height)
@@ -35,6 +51,11 @@ namespace Rendering
 	void HardcodedRenderer::Update(float milliSeconds)
 	{
 		GetCamera().GetController().Update(milliSeconds);
+
+		m_context.GetConstants().WorldToCamera = GetCamera().GetViewMatrix();
+		m_context.GetConstants().CameraToNDC = GetCamera().GetProjMatrix();
+		m_context.GetConstants().CameraPosition = GetCamera().GetPos();
+		m_context.GetConstants().Texture = m_context.GetTexture(0);
 	}
 
 	void HardcodedRenderer::Draw()
@@ -43,24 +64,6 @@ namespace Rendering
 
 		// Input
 		const auto & triangles = DB::Scene::LightingTest();
-		m_context.GetConstants().WorldToCamera = GetCamera().GetViewMatrix();
-		m_context.GetConstants().CameraToNDC = GetCamera().GetProjMatrix();
-		m_context.GetConstants().CameraPosition = GetCamera().GetPos();
-		m_context.GetConstants().Light = Lights::Light
-		{
-			{ 1.0f, 1.0f, 1.0f }, // color
-			{ 0.3f, 0.3f, 0.1f }, // position
-			{ 0.0f, 0.0f, 1.0f } // attenuation
-		};
-		m_context.GetConstants().Material = Materials::BlinnPhong
-		{
-			Materials::Ambient{{1.0f, 1.0f, 1.0f}},
-			Materials::Diffuse{{1.0f, 1.0f, 1.0f}},
-			Materials::Specular{{1.0f, 1.0f, 1.0f}},
-			0.0f,
-			0.8f,
-			0.2f,
-		};
 
 		// Rasterization
 		Pipeline::VertexFormat formats[] =

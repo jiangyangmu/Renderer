@@ -141,8 +141,13 @@ namespace Graphics
 		return m_data + row * m_rowSizeInBytes + col * m_elementSize;
 	}
 
+	Texture2D::Texture2D()
+		: m_bitmap(nullptr)
+	{
+	}
+
 	Texture2D::Texture2D(const Buffer & bitmap)
-		: m_bitmap(bitmap)
+		: m_bitmap(&bitmap)
 	{
 	}
 
@@ -256,7 +261,7 @@ namespace Graphics
 			, m_height(height)
 			, m_frontId(0)
 			, m_backId(1)
-			, m_constants { {},{},{-1, -1}, Texture2D(DB::Textures::Duang()) }
+			, m_constants { {},{},{-1, -1} }
 			, m_vertexShaderFunc(nullptr)
 			, m_pixelShaderFunc(nullptr)
 		{
@@ -264,6 +269,21 @@ namespace Graphics
 			m_depthBuffer = Buffer(width, height, 4, 4);
 			m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
 			m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
+		}
+
+		void Context::LoadTexture(LPCWSTR lpFilePath)
+		{
+			LONG width, height;
+			LPVOID data;
+
+			win32::LoadBMP(lpFilePath, &width, &height, &data);
+
+			Buffer bmpData = Buffer(width, height, 4, 4);
+			memcpy(bmpData.Data(), data, width * height * 4);
+
+			delete[] data;
+
+			m_textureBuffers.emplace_back(std::move(bmpData));
 		}
 
 		namespace Shader
@@ -493,27 +513,6 @@ namespace Graphics
 
 	namespace DB
 	{
-		const Texture2D & Textures::Duang()
-		{
-			static Buffer bitmapData;
-			static Texture2D texture(bitmapData);
-
-			if ( !bitmapData.Data() )
-			{
-				LONG width, height;
-				LPVOID data;
-
-				win32::LoadBMP(L"Resources/duang.bmp", &width, &height, &data);
-				bitmapData = Buffer(width, height, 4, 4);
-				
-				memcpy(bitmapData.Data(), data, width * height * 4);
-
-				delete[] data;
-			}
-
-			return texture;
-		}
-
 		const std::vector<std::vector<Vertex>> & Scene::One()
 		{
 			static std::vector<std::vector<Vertex>> vertices =

@@ -52,6 +52,7 @@ namespace Graphics
 	public:
 		// Constructors
 		
+		Texture2D();
 		Texture2D(const Buffer & bitmap);
 
 		Texture2D(const Texture2D &) = default;
@@ -67,20 +68,20 @@ namespace Graphics
 			ASSERT(0.0f <= v && v <= 1.0001f);
 			ASSERT(u + v <= 2.0f);
 
-			LONG width = m_bitmap.Width();
-			LONG height = m_bitmap.Height();
+			LONG width = m_bitmap->Width();
+			LONG height = m_bitmap->Height();
 
 			LONG col = static_cast< LONG >( width * u );
 			LONG row = static_cast< LONG >( height * v );
 
-			const Byte * bgra = ( Byte * ) m_bitmap.At(row, col);
+			const Byte * bgra = ( Byte * ) m_bitmap->At(row, col);
 			rgb[ 0 ] = static_cast< float >( bgra[ 2 ] ) / 255.f;
 			rgb[ 1 ] = static_cast< float >( bgra[ 1 ] ) / 255.f;
 			rgb[ 2 ] = static_cast< float >( bgra[ 0 ] ) / 255.f;
 		}
 
 	private:
-		const Buffer &	m_bitmap;
+		const Buffer *	m_bitmap;
 	};
 
 	class RenderTarget
@@ -178,6 +179,7 @@ namespace Graphics
 			Matrix4x4		CameraToNDC;
 
 			int			DebugPixel[ 2 ];
+
 			Texture2D		Texture;
 
 			Vec3			CameraPosition; // world coordinates
@@ -237,6 +239,7 @@ namespace Graphics
 
 			// Operations
 
+			void			LoadTexture(LPCWSTR lpFilePath);
 			void			Resize(Integer width, Integer height)
 			{
 				m_width = width;
@@ -262,6 +265,7 @@ namespace Graphics
 			{
 				return m_height;
 			}
+
 			Buffer &		GetFrontBuffer()
 			{
 				return m_swapBuffer[ m_frontId ];
@@ -278,6 +282,11 @@ namespace Graphics
 			{
 				return m_depthBuffer;
 			}
+			Texture2D		GetTexture(Integer id)
+			{
+				return Texture2D(m_textureBuffers[id]);
+			}
+			
 			ContextConstants &	GetConstants()
 			{
 				return m_constants;
@@ -301,8 +310,12 @@ namespace Graphics
 			}
 
 		private:
+			// Dimension
+
 			Integer			m_width;
 			Integer			m_height;
+
+			// Buffers
 
 			Buffer			m_swapBuffer[ 2 ];
 			int			m_frontId;
@@ -310,7 +323,13 @@ namespace Graphics
 
 			Buffer			m_depthBuffer;
 
+			std::vector<Buffer>	m_textureBuffers;
+
+			// Constant data
+
 			ContextConstants	m_constants;
+
+			// Shaders
 
 			VS			m_vertexShaderFunc;
 			PS			m_pixelShaderFunc;
@@ -343,11 +362,6 @@ namespace Graphics
 			static const std::vector<std::vector<Vertex>> & PerspectiveProjectionTest();
 			static const std::vector<std::vector<Vertex>> & CameraTest();
 			static const std::vector<std::vector<Vertex>> & LightingTest();
-		};
-
-		struct Textures
-		{
-			static const Graphics::Texture2D & Duang();
 		};
 	}
 }
