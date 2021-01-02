@@ -99,6 +99,49 @@ namespace Graphics
 		void *		m_backBuffer;
 	};
 
+	namespace Materials
+	{
+		struct Ambient
+		{
+			RGB color;
+		};
+		struct Diffuse
+		{
+			RGB color;
+		};
+		struct Specular
+		{
+			RGB color;
+		};
+		struct BlinnPhong
+		{
+			Ambient ambient;
+			Diffuse diffuse;
+			Specular specular;
+			float ambientRatio;
+			float diffuseRatio;
+			float specularRatio;
+		};
+	}
+	namespace Lights
+	{
+		struct Light
+		{
+			RGB color;
+			Vec3 pos;
+			Vec3 attenuation;
+		};
+		struct Sphere
+		{
+			Light light;
+			float radius;
+		};
+		struct Plane
+		{
+			Light light;
+		};
+	}
+
 	namespace Pipeline
 	{
 		typedef int64_t TextureId;
@@ -129,27 +172,17 @@ namespace Graphics
 		Vertex MakeVertex(Vec3 pos, Vec2 uv);
 		Vertex MakeVertex(Vec3 pos, Vec3 norm, Vec3 material);
 
-		struct DiffuseLight
-		{
-			Vec3 posWld;
-			RGB color;
-		};
-
-		struct SpecularLight
-		{
-			Vec3 posWld;
-			RGB color;
-		};
-
 		struct ContextConstants
 		{
-			Matrix4x4	WorldToCamera;
-			Matrix4x4	CameraToNDC;
+			Matrix4x4		WorldToCamera;
+			Matrix4x4		CameraToNDC;
 
-			int		DebugPixel[ 2 ];
-			Texture2D	Texture;
-			DiffuseLight	Diffuse;
-			SpecularLight	Specular;
+			int			DebugPixel[ 2 ];
+			Texture2D		Texture;
+
+			Vec3			CameraPosition; // world coordinates
+			Lights::Light		Light;
+			Materials::BlinnPhong	Material;
 		};
 
 		namespace Shader
@@ -169,7 +202,7 @@ namespace Graphics
 
 				static Output VS_RGB(const Input & in, const ContextConstants & constants);
 				static Output VS_TEX(const Input & in, const ContextConstants & constants);
-				static Output VS_LIGHT(const Input & in, const ContextConstants & constants);
+				static Output VS_BlinnPhong(const Input & in, const ContextConstants & constants);
 			};
 
 			class PixelShader
@@ -190,7 +223,7 @@ namespace Graphics
 
 				static Output PS_RGB(const Input & in, const ContextConstants & constants);
 				static Output PS_TEX(const Input & in, const ContextConstants & constants);
-				static Output PS_LIGHT(const Input & in, const ContextConstants & constants);
+				static Output PS_BlinnPhong(const Input & in, const ContextConstants & constants);
 			};
 		}
 
@@ -296,15 +329,12 @@ namespace Graphics
 	}
 
 	void Rasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
-	void ParallelRasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
 
 	namespace DB
 	{
 		using Vertex = Pipeline::Vertex;
-		using DiffuseLight = Pipeline::DiffuseLight;
-		using SpecularLight = Pipeline::SpecularLight;
 
-		struct Triangles
+		struct Scene
 		{
 			static const std::vector<std::vector<Vertex>> & One();
 			static const std::vector<std::vector<Vertex>> & Two();
@@ -318,12 +348,6 @@ namespace Graphics
 		struct Textures
 		{
 			static const Graphics::Texture2D & Duang();
-		};
-
-		struct Lights
-		{
-			static const DiffuseLight & Diffuse();
-			static const SpecularLight & Specular();
 		};
 	}
 }

@@ -242,6 +242,11 @@ struct Matrix4x4
 
 		return m;
 	}
+
+	inline Vec3 GetTranslationVector() const
+	{
+		return { f41, f42, f43 };
+	}
 };
 
 Vec3 Vec3::Transform(const Vec3 & v, const Matrix4x4 & m)
