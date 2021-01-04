@@ -13,6 +13,7 @@ namespace Graphics
 			, m_refRenderInput(nullptr)
 		{
 		}
+		virtual ~Renderable() = default;
 
 		// Operations
 

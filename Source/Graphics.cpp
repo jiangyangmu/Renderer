@@ -310,6 +310,7 @@ namespace Graphics
 	{
 		int rowPadding = ( 4 - ( ( width * 3 ) & 0x3 ) ) & 0x3;
 		m_depthBuffer = Buffer(width, height, 4, 4);
+		m_stencilBuffer = Buffer(width, height, 1);
 		m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
 		m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
 	}
@@ -336,6 +337,7 @@ namespace Graphics
 
 		int rowPadding = ( 4 - ( ( width * 3 ) & 0x3 ) ) & 0x3;
 		m_depthBuffer = Buffer(width, height, 4, 4);
+		m_stencilBuffer = Buffer(width, height, 1);
 		m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
 		m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
 	}
@@ -353,6 +355,7 @@ namespace Graphics
 
 		Buffer & frameBuffer = context.GetBackBuffer();
 		Buffer & depthBuffer = context.GetDepthBuffer();
+		Buffer & stencilBuffer = context.GetStencilBuffer();
 
 		Integer width = frameBuffer.Width();
 		Integer height = frameBuffer.Height();
@@ -457,6 +460,13 @@ namespace Graphics
 						continue;
 					}
 					*depth = zNDC;
+
+					// Stencil test
+					bool visible = *static_cast< Byte * >( stencilBuffer.At(yPix, xPix) );
+					if ( !visible )
+					{
+						continue;
+					}
 
 					// Vertex properties
 					float w0 = zNDC * z0NDCInv * bary0;

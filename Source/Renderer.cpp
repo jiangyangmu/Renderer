@@ -10,6 +10,10 @@ namespace Graphics
 		m_refRenderTarget	= std::move(renderTarget);
 		m_refRenderInput	= Ptr<RenderInput>(new RenderInput());
 
+		ResetBackBuffer(m_refRenderContext->GetBackBuffer());
+		ResetDepthBuffer(m_refRenderContext->GetDepthBuffer());
+		ResetStencilBuffer(GetRenderContext().GetStencilBuffer());
+
 		for (Ref<Renderable> & renderable : m_renderables)
 		{
 			renderable->Initialize(*m_refRenderContext, *m_refRenderInput);
@@ -28,8 +32,8 @@ namespace Graphics
 
 	void Renderer::Clear()
 	{
-		m_refRenderContext->GetBackBuffer().SetAll(0);
-		m_refRenderContext->GetDepthBuffer().SetAllAs<float>(1.0f);
+		ResetBackBuffer(m_refRenderContext->GetBackBuffer());
+		ResetDepthBuffer(m_refRenderContext->GetDepthBuffer());
 	}
 
 	void Renderer::Update(double milliSeconds)
@@ -78,7 +82,9 @@ namespace Graphics
 
 	_RECV_EVENT_IMPL(Renderable, OnWndResize) ( void * sender, const win32::WindowRect & args )
 	{
-		// ...
+		ResetBackBuffer(m_refRenderContext->GetBackBuffer());
+		ResetDepthBuffer(m_refRenderContext->GetDepthBuffer());
+		ResetStencilBuffer(GetRenderContext().GetStencilBuffer());
 	}
 
 	void SceneRenderable::Initialize(RenderContext & renderContext, RenderInput & renderInput)
@@ -112,5 +118,4 @@ namespace Graphics
 
 		// Update render input
 	}
-
 }

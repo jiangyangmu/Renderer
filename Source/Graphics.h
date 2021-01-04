@@ -339,6 +339,10 @@ namespace Graphics
 		{
 			return m_depthBuffer;
 		}
+		Buffer &		GetStencilBuffer()
+		{
+			return m_stencilBuffer;
+		}
 		Texture2D		GetTexture(Integer id)
 		{
 			return Texture2D(m_textureBuffers[ id ]);
@@ -383,6 +387,7 @@ namespace Graphics
 		int			m_backId;
 
 		Buffer			m_depthBuffer;
+		Buffer			m_stencilBuffer;
 
 		std::vector<Buffer>	m_textureBuffers;
 
@@ -395,6 +400,27 @@ namespace Graphics
 		VS			m_vertexShaderFunc;
 		PS			m_pixelShaderFunc;
 	};
+
+	inline void ResetBackBuffer(Buffer & backBuffer)
+	{
+		backBuffer.SetAll(0);
+	}
+	inline void ResetDepthBuffer(Buffer & depthBuffer)
+	{
+		depthBuffer.SetAllAs<float>(1.0f);
+	}
+	inline void ResetStencilBuffer(Buffer & stencilBuffer)
+	{
+		Integer xMid = stencilBuffer.Width() / 2;
+		Integer yMid = stencilBuffer.Height() / 2;
+		for ( Integer y = 0; y < stencilBuffer.Height(); ++y )
+		{
+			for ( Integer x = 0; x < stencilBuffer.Width(); ++x )
+			{
+				*static_cast< Byte * >( stencilBuffer.At(y, x) ) = ( ( x - xMid ) * ( x - xMid ) + ( y - yMid ) * ( y - yMid ) ) < 100 * 100 ? 1 : 0;
+			}
+		}
+	}
 
 	void Rasterize(RenderContext & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
 }
