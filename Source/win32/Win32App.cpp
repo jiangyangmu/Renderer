@@ -16,8 +16,8 @@ namespace win32
 	HWND CreateDesktopWindow(
 		HINSTANCE hInstance,
 		LPCWSTR lpWndTitle,
-		int width,
-		int height,
+		int nWidth,
+		int nHeight,
 		WNDPROC lpfnWndProc,
 		LPVOID lpParam)
 	{
@@ -53,8 +53,8 @@ namespace win32
 			WS_OVERLAPPEDWINDOW,
 			x,
 			y,
-			width,
-			height,
+			nWidth,
+			nHeight,
 			NULL, // hWndParent
 			NULL, // hMenu
 			hInstance,
@@ -177,13 +177,13 @@ namespace win32
 	// Application
 	// --------------------------------------------------------------------------
 
-	Window::Window(LPCWSTR lpTitle, HINSTANCE hInstance)
+	Window::Window(LPCWSTR lpTitle, HINSTANCE hInstance, int nWidth, int nHeight)
 	{
 		m_hInstance = hInstance;
 		m_hWnd = CreateDesktopWindow(m_hInstance,
 					     lpTitle,
-					     800,
-					     600,
+					     nWidth,
+					     nHeight,
 					     Window::WindowProc,
 					     this);
 		ENSURE_NOT_NULL(m_hWnd);

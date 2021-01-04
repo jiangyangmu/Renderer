@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-namespace Rendering
+namespace Graphics
 {
 	class Camera;
 
@@ -45,7 +45,6 @@ namespace Rendering
 	class Camera
 	{
 	public:
-
 		Camera(float zNear, float zFar, float fov, float aspectRatio, const Vec3 pos)
 			: m_zNear(zNear)
 			, m_zFar(zFar)
@@ -64,6 +63,11 @@ namespace Rendering
 			, m_controller(this)
 		{
 		}
+
+		Camera(const Camera &) = delete;
+		Camera(Camera && other) = delete;
+		Camera & operator = (const Camera &) = delete;
+		Camera & operator = (Camera && other) = delete;
 
 		// Operations
 

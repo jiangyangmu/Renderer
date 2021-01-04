@@ -7,7 +7,7 @@
 namespace win32
 {
 	// Window
-	HWND		CreateDesktopWindow(HINSTANCE hInstance, LPCWSTR lpWndTitle, int width, int height, WNDPROC lpfnWndProc, LPVOID lpParam);
+	HWND		CreateDesktopWindow(HINSTANCE hInstance, LPCWSTR lpWndTitle, int nWidth, int nHeight, WNDPROC lpfnWndProc, LPVOID lpParam);
 
 	// GDI+
 	ULONG_PTR	InitializeGdiplus();
@@ -36,7 +36,7 @@ namespace win32
 	class Window
 	{
 	public:
-		Window(LPCWSTR lpTitle, HINSTANCE hInstance);
+		Window(LPCWSTR lpTitle, HINSTANCE hInstance, int nWidth, int nHeight);
 
 		virtual         ~Window() = default;
 

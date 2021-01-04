@@ -10,7 +10,7 @@
 #undef min
 #endif
 
-namespace Rendering
+namespace Graphics
 {
 
 	void Camera::Move(const Vec3 & delta)

@@ -7,9 +7,6 @@
     <Filter Include="Event">
       <UniqueIdentifier>{7f757fac-f4ff-42c5-9079-5a9354459fb6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Renderer">
-      <UniqueIdentifier>{8440a57f-92f8-4c27-9aa4-e34c736a28bc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Win32">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
@@ -21,10 +18,13 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{8440a57f-92f8-4c27-9aa4-e34c736a28bc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Renderer.h">
-      <Filter>Renderer</Filter>
+      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
       <Filter>Win32\Misc</Filter>
@@ -42,25 +42,37 @@
       <Filter>Event</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Graphics.h">
-      <Filter>Renderer</Filter>
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Scene.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Camera.h">
-      <Filter>Renderer</Filter>
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\RenderWindow.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Renderer.cpp">
-      <Filter>Renderer</Filter>
+      <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\win32\Win32App.cpp">
       <Filter>Win32</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Graphics.cpp">
-      <Filter>Renderer</Filter>
+      <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Camera.cpp">
-      <Filter>Renderer</Filter>
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\RenderWindow.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Scene.cpp">
+      <Filter>Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

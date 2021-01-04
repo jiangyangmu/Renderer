@@ -1,69 +1,51 @@
 #include "Renderer.h"
 #include "Common.h"
-#include "Graphics.h"
-#include "win32/Win32App.h"
 
-#include <algorithm>
-
-namespace Rendering
+namespace Graphics
 {
-	HardcodedRenderer::HardcodedRenderer(Integer width, Integer height)
-		: m_context(width, height)
-		, m_camera(0.1f,			// z near
-			   1000.0f,			// z far (use smaller value for better depth test.)
-			   DegreeToRadian(90.0f),	// field of view
-			   ((float)width) / height,	// aspect ratio
-			   Vec3::Zero())		// position
+
+	void Renderer::Initialize(Ptr<RenderContext> renderContext, Ptr<RenderTarget> renderTarget)
 	{
-		m_context.LoadTexture(L"Resources/duang.bmp");
-		m_context.GetConstants().Light = Graphics::Lights::Light
+		m_refRenderContext	= std::move(renderContext);
+		m_refRenderTarget	= std::move(renderTarget);
+		m_refRenderInput	= Ptr<RenderInput>(new RenderInput());
+
+		for (Ref<Renderable> & renderable : m_renderables)
 		{
-			{ 1.0f, 1.0f, 1.0f }, // color
-			{ 0.3f, 0.3f, 0.1f }, // position
-			{ 0.0f, 0.0f, 1.0f }, // attenuation
-		};
-		m_context.GetConstants().Material = Graphics::Materials::BlinnPhong
+			renderable->Initialize(*m_refRenderContext, *m_refRenderInput);
+		}
+	}
+
+	void Renderer::Present()
+	{
+		m_refRenderContext->SwapBuffer();
+
+		Buffer & frameBuffer = m_refRenderContext->GetFrontBuffer();
+
+		m_refRenderTarget->CopyPixelData((Byte *)frameBuffer.Data(),
+						frameBuffer.SizeInBytes());
+	}
+
+	void Renderer::Clear()
+	{
+		m_refRenderContext->GetBackBuffer().SetAll(0);
+		m_refRenderContext->GetDepthBuffer().SetAllAs<float>(1.0f);
+	}
+
+	void Renderer::Update(double milliSeconds)
+	{
+		for (Ref<Renderable> & renderable : m_renderables)
 		{
-			Graphics::Materials::Ambient{{1.0f, 1.0f, 1.0f}},
-			Graphics::Materials::Diffuse{{1.0f, 1.0f, 1.0f}},
-			Graphics::Materials::Specular{{1.0f, 1.0f, 1.0f}},
-			0.0f,
-			0.8f,
-			0.2f,
-		};
+			renderable->Update(milliSeconds);
+		}
 	}
 
-	void HardcodedRenderer::Resize(Integer width, Integer height)
-	{
-		m_context.Resize(width, height);
-		m_camera.SetAspectRatio(((float)width) / height);
-	}
-
-	void HardcodedRenderer::ClearSurface()
-	{
-		m_context.GetBackBuffer().SetAll(0);
-
-		std::fill_n(static_cast< float * >( m_context.GetDepthBuffer().Data() ),
-			    m_context.GetDepthBuffer().ElementCount(),
-			    1.0f);
-	}
-
-	void HardcodedRenderer::Update(float milliSeconds)
-	{
-		GetCamera().GetController().Update(milliSeconds);
-
-		m_context.GetConstants().WorldToCamera = GetCamera().GetViewMatrix();
-		m_context.GetConstants().CameraToNDC = GetCamera().GetProjMatrix();
-		m_context.GetConstants().CameraPosition = GetCamera().GetPos();
-		m_context.GetConstants().Texture = m_context.GetTexture(0);
-	}
-
-	void HardcodedRenderer::Draw()
+	void Renderer::Draw()
 	{
 		using namespace Graphics;
 
 		// Input
-		const auto & triangles = DB::Scene::LightingTest();
+		const auto & triangles = m_refRenderInput->m_vertices;
 
 		// Rasterization
 		Pipeline::VertexFormat formats[] =
@@ -84,13 +66,51 @@ namespace Rendering
 			Pipeline::Shader::PixelShader::PS_TEX,
 			Pipeline::Shader::PixelShader::PS_BlinnPhong,
 		};
-		for (int index = 0; index < triangles.size() && index < (sizeof(formats)/sizeof(Pipeline::VertexFormat)); ++index)
+		for ( int index = 0; index < triangles.size() && index < ( sizeof(formats) / sizeof(Pipeline::VertexFormat) ); ++index )
 		{
-			m_context.SetVertexShader(vss[index]);
-			m_context.SetPixelShader(pss[index]);
+			m_refRenderContext->SetVertexShader(vss[ index ]);
+			m_refRenderContext->SetPixelShader(pss[ index ]);
 
-			auto & vertices = triangles[index];
-			Rasterize(m_context, vertices.data(), vertices.size(), formats[index]);
+			auto & vertices = triangles[ index ];
+			Rasterize(*m_refRenderContext, vertices.data(), vertices.size(), formats[ index ]);
 		}
 	}
+
+	_RECV_EVENT_IMPL(Renderable, OnWndResize) ( void * sender, const win32::WindowRect & args )
+	{
+		// ...
+	}
+
+	void SceneRenderable::Initialize(RenderContext & renderContext, RenderInput & renderInput)
+	{
+		Renderable::Initialize(renderContext, renderInput);
+
+		m_refSceneState.reset(new SceneState(SceneLoader::Default(
+			renderContext.GetWidth(),
+			renderContext.GetHeight()
+		)));
+		
+		GetRenderContext().LoadTexture(m_refSceneState->textureURL);
+		GetRenderContext().GetConstants().Texture = GetRenderContext().GetTexture(0);
+		GetRenderContext().GetConstants().Light = m_refSceneState->light;
+		GetRenderContext().GetConstants().Material = m_refSceneState->material;
+
+		GetRenderInput().m_vertices = m_refSceneState->vertices;
+	}
+
+	void SceneRenderable::Update(double milliSeconds)
+	{
+		Camera & camera = *m_refSceneState->camera;
+		
+		// Update scene
+		camera.GetController().Update(milliSeconds);
+
+		// Update render context
+		GetRenderContext().GetConstants().WorldToCamera = camera.GetViewMatrix();
+		GetRenderContext().GetConstants().CameraToNDC = camera.GetProjMatrix();
+		GetRenderContext().GetConstants().CameraPosition = camera.GetPos();
+
+		// Update render input
+	}
+
 }

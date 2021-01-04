@@ -1,5 +1,6 @@
 #include "Graphics.h"
 #include "Common.h"
+#include "RenderWindow.h"
 #include "win32/Win32App.h"
 
 #include <Windows.h>
@@ -30,6 +31,7 @@ namespace Graphics
 	Buffer::Buffer()
 		: m_width(0)
 		, m_height(0)
+		, m_alignment(0)
 		, m_elementSize(0)
 		, m_sizeInBytes(0)
 		, m_rowSizeInBytes(0)
@@ -40,6 +42,7 @@ namespace Graphics
 	Buffer::Buffer(Integer width, Integer height, Integer elementSize, Integer alignment, Integer rowPadding)
 		: m_width(width)
 		, m_height(height)
+		, m_alignment(alignment)
 		, m_elementSize(elementSize)
 		, m_sizeInBytes(0)
 		, m_rowSizeInBytes(0)
@@ -66,6 +69,7 @@ namespace Graphics
 	Buffer::Buffer(Buffer && other)
 		: m_width(other.m_width)
 		, m_height(other.m_height)
+		, m_alignment(other.m_alignment)
 		, m_elementSize(other.m_elementSize)
 		, m_sizeInBytes(other.m_sizeInBytes)
 		, m_rowSizeInBytes(other.m_rowSizeInBytes)
@@ -99,6 +103,11 @@ namespace Graphics
 		return m_height;
 	}
 
+	Integer Buffer::Alignment() const
+	{
+		return m_alignment;
+	}
+
 	Integer Buffer::SizeInBytes() const
 	{
 		return m_sizeInBytes;
@@ -129,18 +138,6 @@ namespace Graphics
 		return m_data;
 	}
 
-	void * Buffer::At(Integer row, Integer col)
-	{
-		ASSERT(m_data);
-		return m_data + row * m_rowSizeInBytes + col * m_elementSize;
-	}
-
-	const void * Buffer::At(Integer row, Integer col) const
-	{
-		ASSERT(m_data);
-		return m_data + row * m_rowSizeInBytes + col * m_elementSize;
-	}
-
 	Texture2D::Texture2D()
 		: m_bitmap(nullptr)
 	{
@@ -151,33 +148,28 @@ namespace Graphics
 	{
 	}
 
-	RenderTarget::RenderTarget(Integer width, Integer height, Integer rowSizeInBytes, void * backBuffer)
-		: m_width(width)
-		, m_height(height)
-		, m_rowSizeInBytes(rowSizeInBytes)
-		, m_backBuffer(backBuffer)
+	Ptr<RenderTarget> RenderTarget::FromRenderWindow(RenderWindow & renderWindow)
 	{
+		Ptr<RenderTarget> pRenderTarget(new RenderTarget());
 
+		pRenderTarget->m_width			= renderWindow.GetWidth();
+		pRenderTarget->m_height			= renderWindow.GetHeight();
+		pRenderTarget->m_refRenderWindow	= &renderWindow;
+
+		return pRenderTarget;
 	}
 
-	Integer RenderTarget::Width()
+	void RenderTarget::CopyPixelData(Byte * pBytes, Integer nBytes)
 	{
-		return m_width;
+		m_refRenderWindow->Paint(m_width,
+					 m_height,
+					 pBytes);
 	}
 
-	Integer RenderTarget::Height()
+	_RECV_EVENT_IMPL(RenderTarget, OnWndResize) ( void * sender, const win32::WindowRect & args )
 	{
-		return m_height;
-	}
-
-	void RenderTarget::SetPixel(Integer x, Integer y, Byte r, Byte g, Byte b)
-	{
-		unsigned char * pixel = ( unsigned char * ) m_backBuffer + y * m_rowSizeInBytes + x * 3;
-		ASSERT(( pixel + 3 ) <= ( ( unsigned char * ) m_backBuffer + m_height * m_rowSizeInBytes ));
-
-		pixel[ 0 ] = b;
-		pixel[ 1 ] = g;
-		pixel[ 2 ] = r;
+		m_width = args.width;
+		m_height = args.height;
 	}
 
 	static inline RGB ComputeBlinnPhong(Vec3 posWld, Vec3 eyeWld, Vec3 normWld, const Materials::BlinnPhong & material, const Lights::Light & light)
@@ -286,6 +278,22 @@ namespace Graphics
 			m_textureBuffers.emplace_back(std::move(bmpData));
 		}
 
+		void Context::Resize(Integer width, Integer height)
+		{
+			m_width = width;
+			m_height = height;
+
+			int rowPadding = ( 4 - ( ( width * 3 ) & 0x3 ) ) & 0x3;
+			m_depthBuffer = Buffer(width, height, 4, 4);
+			m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
+			m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
+		}
+
+		_RECV_EVENT_IMPL(Context, OnWndResize) ( void * sender, const win32::WindowRect & args )
+		{
+			Resize(args.width, args.height);
+		}
+
 		namespace Shader
 		{
 			VertexShader::Output VertexShader::VS_RGB(const VertexShader::Input & in, const ContextConstants & constants)
@@ -342,11 +350,11 @@ namespace Graphics
 		using VertexShader = Shader::VertexShader;
 		using PixelShader = Shader::PixelShader;
 
-		RenderTarget renderTarget = context.GetRenderTarget();
+		Buffer & frameBuffer = context.GetBackBuffer();
 		Buffer & depthBuffer = context.GetDepthBuffer();
 
-		Integer width = renderTarget.Width();
-		Integer height = renderTarget.Height();
+		Integer width = frameBuffer.Width();
+		Integer height = frameBuffer.Height();
 
 		VertexShader::Func vertexShader = context.GetVertexShader();
 		PixelShader::Func pixelShader = context.GetPixelShader();
@@ -501,173 +509,12 @@ namespace Graphics
 					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
 
 					// Draw pixel
-					renderTarget.SetPixel(xPix,
-							      yPix,
-							      static_cast< Byte >( color.r * 255.0f ),
-							      static_cast< Byte >( color.g * 255.0f ),
-							      static_cast< Byte >( color.b * 255.0f ));
+					Byte * pixelData = (Byte *)frameBuffer.At(yPix, xPix);
+					pixelData[0] = static_cast< Byte >( color.r * 255.0f );
+					pixelData[1] = static_cast< Byte >( color.g * 255.0f );
+					pixelData[2] = static_cast< Byte >( color.b * 255.0f );
 				}
 			}
 		}
-	}
-
-	namespace DB
-	{
-		const std::vector<std::vector<Vertex>> & Scene::One()
-		{
-			static std::vector<std::vector<Vertex>> vertices =
-			{
-				// RGB
-				{
-					Pipeline::MakeVertex({0.0f,   0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}),
-					Pipeline::MakeVertex({1.0f,   0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}),
-					Pipeline::MakeVertex({0.5f, 0.866f, 1.0f}, {0.0f, 0.0f, 1.0f}),
-				},
-				// Texture
-				{}
-			};
-			return vertices;
-		}
-
-		const std::vector<std::vector<Vertex>> & Scene::Two()
-		{
-			static std::vector<std::vector<Vertex>> vertices =
-			{
-				// RGB
-				{
-					Pipeline::MakeVertex({0.0f,   0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}),
-					Pipeline::MakeVertex({1.0f,   0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}),
-					Pipeline::MakeVertex({0.5f, 0.866f, 1.0f}, {0.0f, 0.0f, 1.0f}),
-					Pipeline::MakeVertex({-1.0f,   0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}),
-					Pipeline::MakeVertex({ 0.0f,   0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}),
-					Pipeline::MakeVertex({-0.5f, 0.866f, 1.0f}, {0.0f, 0.0f, 1.0f}),
-				},
-				// Texture
-				{}
-			};
-			return vertices;
-		}
-
-		const std::vector<std::vector<Vertex>> & Scene::IntersectionTest()
-		{
-			static std::vector<std::vector<Vertex>> vertices =
-			{
-				// RGB
-				{
-					Pipeline::MakeVertex({-1.0f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}),
-					Pipeline::MakeVertex({ 0.5f,  0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}),
-					Pipeline::MakeVertex({-1.0f,  0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}),
-					Pipeline::MakeVertex({ 1.0f, -0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}),
-					Pipeline::MakeVertex({ 1.0f,  0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}),
-					Pipeline::MakeVertex({-0.5f,  0.0f, 0.5f}, {1.0f, 0.0f, 0.0f}),
-				},
-				// Texture
-				{}
-			};
-			return vertices;
-		}
-
-		const std::vector<std::vector<Vertex>> & Scene::TextureTest()
-		{
-			static std::vector<std::vector<Vertex>> vertices =
-			{
-				// RGB
-				{},
-				// Texture
-				{
-					Pipeline::MakeVertex({0.0f, 0.0f, 1.0f}, Vec2{0.0f, 0.0f}),
-					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
-					Pipeline::MakeVertex({0.0f, 1.0f, 1.0f}, Vec2{0.0f, 1.0f}),
-					Pipeline::MakeVertex({1.0f, 1.0f, 1.0f}, Vec2{1.0f, 1.0f}),
-					Pipeline::MakeVertex({0.0f, 1.0f, 1.0f}, Vec2{0.0f, 1.0f}),
-					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
-				}
-			};
-			return vertices;
-		}
-
-		const std::vector<std::vector<Graphics::Pipeline::Vertex>> & Scene::PerspectiveProjectionTest()
-		{
-			static std::vector<std::vector<Vertex>> vertices =
-			{
-				// RGB
-				{
-					Pipeline::MakeVertex({-1.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}),
-					Pipeline::MakeVertex({ 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}),
-					Pipeline::MakeVertex({-0.5f, 3.0f, 5.0f}, {0.0f, 0.0f, 1.0f}),
-				},
-				// Texture
-				{
-					Pipeline::MakeVertex({0.0f, 0.0f, 1.0f}, Vec2{0.0f, 0.0f}),
-					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
-					Pipeline::MakeVertex({0.0f, 1.0f, 1.7f}, Vec2{0.0f, 1.0f}),
-					Pipeline::MakeVertex({1.0f, 1.0f, 1.7f}, Vec2{1.0f, 1.0f}),
-					Pipeline::MakeVertex({0.0f, 1.0f, 1.7f}, Vec2{0.0f, 1.0f}),
-					Pipeline::MakeVertex({1.0f, 0.0f, 1.0f}, Vec2{1.0f, 0.0f}),
-				}
-			};
-			return vertices;
-		}
-
-		const std::vector<std::vector<Vertex>> & Scene::CameraTest()
-		{
-			static std::vector<std::vector<Vertex>> vertices;
-
-			if (vertices.empty())
-			{
-				std::vector<Vertex> v;
-
-				constexpr int len = 5;
-				constexpr float edge = 1.0f;
-
-				float d = 0.5f * edge;
-				v.resize(( len + 1 ) * ( len + 1 ) * 6);
-				for ( int x = -len; x <= len; ++x )
-				{
-					for ( int z = -len; z <= len; ++z )
-					{
-						Vec3 color = ( ( x + z ) % 2 == 0 ) ? Vec3 { 0.0f, 0.8f, 0.0f } : Vec3 { 1.0f, 1.0f, 1.0f };
-
-						std::vector<Vertex> square =
-						{
-							Pipeline::MakeVertex({ x-d, -1.0f, z-d }, color),
-							Pipeline::MakeVertex({ x+d, -1.0f, z-d }, color),
-							Pipeline::MakeVertex({ x+d, -1.0f, z+d }, color),
-							Pipeline::MakeVertex({ x-d, -1.0f, z-d }, color),
-							Pipeline::MakeVertex({ x+d, -1.0f, z+d }, color),
-							Pipeline::MakeVertex({ x-d, -1.0f, z+d }, color),
-						};
-						v.insert(v.end(), square.begin(), square.end());
-					}
-				}
-
-				vertices.resize(2);
-				vertices[ 0 ] = std::move(v);
-			}
-
-			return vertices;
-		}
-
-		const std::vector<std::vector<Vertex>> & Scene::LightingTest()
-		{
-			static std::vector<std::vector<Vertex>> vertices =
-			{
-				// RGB
-				{},
-				// Texture
-				{},
-				// Normal, material
-				{
-					Pipeline::MakeVertex({-0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
-					Pipeline::MakeVertex({ 0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
-					Pipeline::MakeVertex({ 0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
-					Pipeline::MakeVertex({-0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
-					Pipeline::MakeVertex({ 0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
-					Pipeline::MakeVertex({-0.5f,  0.5f, 1.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}),
-				},
-			};
-			return vertices;
-		}
-
 	}
 }

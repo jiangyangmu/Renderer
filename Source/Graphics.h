@@ -2,6 +2,7 @@
 
 #include "Camera.h"
 #include "Common.h"
+#include "Event.h"
 
 #include <functional>
 #include <memory>
@@ -9,6 +10,8 @@
 
 namespace Graphics
 {
+	class RenderWindow;
+
 	class Buffer
 	{
 	public:
@@ -24,23 +27,51 @@ namespace Graphics
 		// Operations
 
 		void		SetAll(Byte value);
+		template <typename T>
+		void		SetAllAs(T value)
+		{
+			ASSERT(sizeof(T) == m_elementSize);
+			Byte * pRow = m_data;
+			T * pData;
+			for (Integer r = 0; r < m_height; ++r)
+			{
+				pData = reinterpret_cast<T *>(pRow);
+				for (Integer c = 0; c < m_width; ++c)
+				{
+					*pData++ = value;
+				}
+				pRow += m_rowSizeInBytes;
+			}
+		}
+		// TODO: resize (keep properties)
 
 		// Properties
 
 		Integer		Width() const;
 		Integer		Height() const;
+		Integer		Alignment() const;
 		Integer		SizeInBytes() const;
 		Integer		RowSizeInBytes() const;
 		Integer		ElementCount() const;
 		Integer		ElementSize() const;
 		const void *	Data() const;
 		void *		Data();
-		const void *	At(Integer row, Integer col) const;
-		void *		At(Integer row, Integer col);
+		const void *	At(Integer row, Integer col) const
+		{
+			ASSERT(m_data);
+			return m_data + row * m_rowSizeInBytes + col * m_elementSize;
+		}
+		void *		At(Integer row, Integer col)
+		{
+			ASSERT(m_data);
+			return m_data + row * m_rowSizeInBytes + col * m_elementSize;
+		}
+
 
 	private:
 		Integer		m_width;
 		Integer		m_height;
+		Integer		m_alignment;
 		Integer		m_elementSize;
 		Integer		m_sizeInBytes;
 		Integer		m_rowSizeInBytes;
@@ -84,20 +115,44 @@ namespace Graphics
 		const Buffer *	m_bitmap;
 	};
 
+	// TODO: remove pixel format assumption
 	class RenderTarget
 	{
 	public:
-		RenderTarget(Integer width, Integer height, Integer rowSizeInBytes, void * backBuffer);
+		// Constructors
 
-		Integer		Width();
-		Integer		Height();
-		void		SetPixel(Integer x, Integer y, Byte r, Byte g, Byte b);
+		static Ptr<RenderTarget>	FromRenderWindow(RenderWindow & renderWindow);
+		
+		RenderTarget(const RenderTarget &) = delete;
+		RenderTarget(RenderTarget && other) = default;
+		RenderTarget & operator = (const RenderTarget &) = delete;
+		RenderTarget & operator = (RenderTarget && other) = default;
+
+		// Operations
+
+		void			CopyPixelData(Byte * pBytes, Integer nBytes);
+
+		// Properties
+
+		Integer			Width()
+		{
+			return m_width;
+		}
+		Integer			Height()
+		{
+			return m_height;
+		}
+
+		// Events
+
+	public: _RECV_EVENT_DECL1(RenderTarget, OnWndResize);
 
 	private:
-		Integer		m_width;
-		Integer		m_height;
-		Integer		m_rowSizeInBytes;
-		void *		m_backBuffer;
+		RenderTarget() : m_refRenderWindow(nullptr) {}
+
+		Integer			m_width;
+		Integer			m_height;
+		RenderWindow *		m_refRenderWindow;
 	};
 
 	namespace Materials
@@ -240,21 +295,12 @@ namespace Graphics
 			// Operations
 
 			void			LoadTexture(LPCWSTR lpFilePath);
-			void			Resize(Integer width, Integer height)
-			{
-				m_width = width;
-				m_height = height;
-
-				int rowPadding = (4 - ((width * 3) & 0x3)) & 0x3;
-				m_depthBuffer = Buffer(width, height, 4, 4);
-				m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
-				m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
-			}
+			void			Resize(Integer width, Integer height);
 			void			SwapBuffer()
 			{
 				std::swap(m_frontId, m_backId);
 			}
-
+			
 			// Properties
 
 			Integer			GetWidth()
@@ -273,10 +319,6 @@ namespace Graphics
 			Buffer &		GetBackBuffer()
 			{
 				return m_swapBuffer[ m_backId ];
-			}
-			RenderTarget		GetRenderTarget()
-			{
-				return RenderTarget(m_width, m_height, GetBackBuffer().RowSizeInBytes(), GetBackBuffer().Data());
 			}
 			Buffer &		GetDepthBuffer()
 			{
@@ -308,6 +350,10 @@ namespace Graphics
 			{
 				return m_pixelShaderFunc;
 			}
+
+			// Events
+
+		public: _RECV_EVENT_DECL1(Context, OnWndResize);
 
 		private:
 			// Dimension
@@ -343,25 +389,9 @@ namespace Graphics
 				TRIANGLE_LIST,
 			};
 
-			std::vector<Vertex>	m_vertices[2];
+			std::vector<std::vector<Vertex>> m_vertices;
 		};
 	}
 
 	void Rasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
-
-	namespace DB
-	{
-		using Vertex = Pipeline::Vertex;
-
-		struct Scene
-		{
-			static const std::vector<std::vector<Vertex>> & One();
-			static const std::vector<std::vector<Vertex>> & Two();
-			static const std::vector<std::vector<Vertex>> & IntersectionTest();
-			static const std::vector<std::vector<Vertex>> & TextureTest();
-			static const std::vector<std::vector<Vertex>> & PerspectiveProjectionTest();
-			static const std::vector<std::vector<Vertex>> & CameraTest();
-			static const std::vector<std::vector<Vertex>> & LightingTest();
-		};
-	}
 }
