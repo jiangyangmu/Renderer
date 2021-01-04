@@ -249,51 +249,6 @@ namespace Graphics
 			return v;
 		}
 
-		Context::Context(Integer width, Integer height) : m_width(width)
-			, m_height(height)
-			, m_frontId(0)
-			, m_backId(1)
-			, m_constants { {},{},{-1, -1} }
-			, m_vertexShaderFunc(nullptr)
-			, m_pixelShaderFunc(nullptr)
-		{
-			int rowPadding = ( 4 - ( ( width * 3 ) & 0x3 ) ) & 0x3;
-			m_depthBuffer = Buffer(width, height, 4, 4);
-			m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
-			m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
-		}
-
-		void Context::LoadTexture(LPCWSTR lpFilePath)
-		{
-			LONG width, height;
-			LPVOID data;
-
-			win32::LoadBMP(lpFilePath, &width, &height, &data);
-
-			Buffer bmpData = Buffer(width, height, 4, 4);
-			memcpy(bmpData.Data(), data, width * height * 4);
-
-			delete[] data;
-
-			m_textureBuffers.emplace_back(std::move(bmpData));
-		}
-
-		void Context::Resize(Integer width, Integer height)
-		{
-			m_width = width;
-			m_height = height;
-
-			int rowPadding = ( 4 - ( ( width * 3 ) & 0x3 ) ) & 0x3;
-			m_depthBuffer = Buffer(width, height, 4, 4);
-			m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
-			m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
-		}
-
-		_RECV_EVENT_IMPL(Context, OnWndResize) ( void * sender, const win32::WindowRect & args )
-		{
-			Resize(args.width, args.height);
-		}
-
 		namespace Shader
 		{
 			VertexShader::Output VertexShader::VS_RGB(const VertexShader::Input & in, const ContextConstants & constants)
@@ -344,7 +299,53 @@ namespace Graphics
 
 	}
 
-	void Rasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat)
+	RenderContext::RenderContext(Integer width, Integer height)
+		: m_width(width)
+		, m_height(height)
+		, m_frontId(0)
+		, m_backId(1)
+		, m_constants { {},{},{-1, -1} }
+		, m_vertexShaderFunc(nullptr)
+		, m_pixelShaderFunc(nullptr)
+	{
+		int rowPadding = ( 4 - ( ( width * 3 ) & 0x3 ) ) & 0x3;
+		m_depthBuffer = Buffer(width, height, 4, 4);
+		m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
+		m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
+	}
+
+	void RenderContext::LoadTexture(LPCWSTR lpFilePath)
+	{
+		LONG width, height;
+		LPVOID data;
+
+		win32::LoadBMP(lpFilePath, &width, &height, &data);
+
+		Buffer bmpData = Buffer(width, height, 4, 4);
+		memcpy(bmpData.Data(), data, width * height * 4);
+
+		delete[] data;
+
+		m_textureBuffers.emplace_back(std::move(bmpData));
+	}
+
+	void RenderContext::Resize(Integer width, Integer height)
+	{
+		m_width = width;
+		m_height = height;
+
+		int rowPadding = ( 4 - ( ( width * 3 ) & 0x3 ) ) & 0x3;
+		m_depthBuffer = Buffer(width, height, 4, 4);
+		m_swapBuffer[ 0 ] = Buffer(width, height, 3, 4, rowPadding);
+		m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
+	}
+
+	_RECV_EVENT_IMPL(RenderContext, OnWndResize) ( void * sender, const win32::WindowRect & args )
+	{
+		Resize(args.width, args.height);
+	}
+
+	void Rasterize(RenderContext & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat)
 	{
 		using namespace Graphics::Pipeline;
 		using VertexShader = Shader::VertexShader;

@@ -283,115 +283,118 @@ namespace Graphics
 				static Output PS_BlinnPhong(const Input & in, const ContextConstants & constants);
 			};
 		}
-
-		class Context
-		{
-		public:
-			using VS = Shader::VertexShader::Func;
-			using PS = Shader::PixelShader::Func;
-
-			Context(Integer width, Integer height);
-
-			// Operations
-
-			void			LoadTexture(LPCWSTR lpFilePath);
-			void			Resize(Integer width, Integer height);
-			void			SwapBuffer()
-			{
-				std::swap(m_frontId, m_backId);
-			}
-			
-			// Properties
-
-			Integer			GetWidth()
-			{
-				return m_width;
-			}
-			Integer			GetHeight()
-			{
-				return m_height;
-			}
-
-			Buffer &		GetFrontBuffer()
-			{
-				return m_swapBuffer[ m_frontId ];
-			}
-			Buffer &		GetBackBuffer()
-			{
-				return m_swapBuffer[ m_backId ];
-			}
-			Buffer &		GetDepthBuffer()
-			{
-				return m_depthBuffer;
-			}
-			Texture2D		GetTexture(Integer id)
-			{
-				return Texture2D(m_textureBuffers[id]);
-			}
-			
-			ContextConstants &	GetConstants()
-			{
-				return m_constants;
-			}
-
-			void			SetVertexShader(VS vertexShader)
-			{
-				m_vertexShaderFunc = vertexShader;
-			}
-			void			SetPixelShader(PS pixelShader)
-			{
-				m_pixelShaderFunc = pixelShader;
-			}
-			VS			GetVertexShader() const
-			{
-				return m_vertexShaderFunc;
-			}
-			PS			GetPixelShader() const
-			{
-				return m_pixelShaderFunc;
-			}
-
-			// Events
-
-		public: _RECV_EVENT_DECL1(Context, OnWndResize);
-
-		private:
-			// Dimension
-
-			Integer			m_width;
-			Integer			m_height;
-
-			// Buffers
-
-			Buffer			m_swapBuffer[ 2 ];
-			int			m_frontId;
-			int			m_backId;
-
-			Buffer			m_depthBuffer;
-
-			std::vector<Buffer>	m_textureBuffers;
-
-			// Constant data
-
-			ContextConstants	m_constants;
-
-			// Shaders
-
-			VS			m_vertexShaderFunc;
-			PS			m_pixelShaderFunc;
-		};
-
-		class Input
-		{
-		public:
-			enum class Topology
-			{
-				TRIANGLE_LIST,
-			};
-
-			std::vector<std::vector<Vertex>> m_vertices;
-		};
 	}
 
-	void Rasterize(Pipeline::Context & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
+	class RenderInput
+	{
+	public:
+		using Vertex = Pipeline::Vertex;
+
+		enum class Topology
+		{
+			TRIANGLE_LIST,
+		};
+
+		std::vector<std::vector<Vertex>> m_vertices;
+	};
+
+	class RenderContext
+	{
+	public:
+		using VS = Pipeline::Shader::VertexShader::Func;
+		using PS = Pipeline::Shader::PixelShader::Func;
+		using ContextConstants = Pipeline::ContextConstants;
+
+		RenderContext(Integer width, Integer height);
+
+		// Operations
+
+		void			LoadTexture(LPCWSTR lpFilePath);
+		void			Resize(Integer width, Integer height);
+		void			SwapBuffer()
+		{
+			std::swap(m_frontId, m_backId);
+		}
+
+		// Properties
+
+		Integer			GetWidth()
+		{
+			return m_width;
+		}
+		Integer			GetHeight()
+		{
+			return m_height;
+		}
+
+		Buffer &		GetFrontBuffer()
+		{
+			return m_swapBuffer[ m_frontId ];
+		}
+		Buffer &		GetBackBuffer()
+		{
+			return m_swapBuffer[ m_backId ];
+		}
+		Buffer &		GetDepthBuffer()
+		{
+			return m_depthBuffer;
+		}
+		Texture2D		GetTexture(Integer id)
+		{
+			return Texture2D(m_textureBuffers[ id ]);
+		}
+
+		ContextConstants &	GetConstants()
+		{
+			return m_constants;
+		}
+
+		void			SetVertexShader(VS vertexShader)
+		{
+			m_vertexShaderFunc = vertexShader;
+		}
+		void			SetPixelShader(PS pixelShader)
+		{
+			m_pixelShaderFunc = pixelShader;
+		}
+		VS			GetVertexShader() const
+		{
+			return m_vertexShaderFunc;
+		}
+		PS			GetPixelShader() const
+		{
+			return m_pixelShaderFunc;
+		}
+
+		// Events
+
+	public: _RECV_EVENT_DECL1(RenderContext, OnWndResize);
+
+	private:
+		// Dimension
+
+		Integer			m_width;
+		Integer			m_height;
+
+		// Buffers
+
+		Buffer			m_swapBuffer[ 2 ];
+		int			m_frontId;
+		int			m_backId;
+
+		Buffer			m_depthBuffer;
+
+		std::vector<Buffer>	m_textureBuffers;
+
+		// Constant data
+
+		ContextConstants	m_constants;
+
+		// Shaders
+
+		VS			m_vertexShaderFunc;
+		PS			m_pixelShaderFunc;
+	};
+
+	void Rasterize(RenderContext & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
 }

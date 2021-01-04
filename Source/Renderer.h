@@ -5,9 +5,6 @@
 
 namespace Graphics
 {
-	using RenderContext = Pipeline::Context;
-	using RenderInput = Pipeline::Input;
-
 	class Renderable
 	{
 	public:
