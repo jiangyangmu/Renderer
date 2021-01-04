@@ -410,15 +410,17 @@ namespace Graphics
 			areaInv = ( areaInv < 0.0001f ) ? 1000.0f : 1.0f / areaInv;
 			ASSERT(areaInv >= 0.0f);
 
-			for ( Integer yPix = yRasMin; yPix <= yRasMax; ++yPix )
+			Integer xPix, yPix;
+			float xPixF, yPixF;
+			float xPixMinF = static_cast< float >( xRasMin );
+			float yPixMinF = static_cast< float >( yRasMin );
+			yPixF = static_cast< float >( yRasMin );
+			for ( yPix = yRasMin, yPixF = yPixMinF; yPix <= yRasMax; ++yPix, yPixF += 1.0f )
 			{
-				for ( Integer xPix = xRasMin; xPix <= xRasMax; ++xPix )
+				for ( xPix = xRasMin, xPixF = xPixMinF; xPix <= xRasMax; ++xPix, xPixF += 1.0f )
 				{
 					//renderTarget.SetPixel(x, y, 100, 100, 100);
 					if ( dbgX != -1 && dbgY != -1 && ( xPix != dbgX || yPix != dbgY ) ) continue;
-
-					float xPixF = static_cast<float>(xPix);
-					float yPixF = static_cast<float>(yPix);
 
 					// Intersection test
 					Vec2 pixel = { xPixF, yPixF };
