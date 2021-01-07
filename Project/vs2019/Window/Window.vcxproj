@@ -168,6 +168,7 @@
     <ClInclude Include="..\..\..\Source\Event.h" />
     <ClInclude Include="..\..\..\Source\Renderer.h" />
     <ClInclude Include="..\..\..\Source\RenderWindow.h" />
+    <ClInclude Include="..\..\..\Source\Resource.h" />
     <ClInclude Include="..\..\..\Source\Scene.h" />
     <ClInclude Include="..\..\..\Source\win32\Win32App.h" />
     <ClInclude Include="Resource.h" />
@@ -179,6 +180,7 @@
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Renderer.cpp" />
     <ClCompile Include="..\..\..\Source\RenderWindow.cpp" />
+    <ClCompile Include="..\..\..\Source\Resource.cpp" />
     <ClCompile Include="..\..\..\Source\Scene.cpp" />
     <ClCompile Include="..\..\..\Source\win32\Win32App.cpp" />
   </ItemGroup>

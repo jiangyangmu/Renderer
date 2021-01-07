@@ -8,24 +8,6 @@
 #include <vector>
 #include <memory>
 
-inline float Min3(float a, float b, float c)
-{
-	return	a < b
-		? ( a < c ? a : c )
-		: ( b < c ? b : c );
-}
-inline float Max3(float a, float b, float c)
-{
-	return	a > b
-		? ( a > c ? a : c )
-		: ( b > c ? b : c );
-}
-inline float EdgeFunction(const Vec2 & a, const Vec2 & b, const Vec2 & c)
-{
-	return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
-}
-
-
 namespace Graphics
 {
 	Buffer::Buffer()

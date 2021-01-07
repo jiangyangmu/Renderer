@@ -188,7 +188,7 @@ namespace Graphics
 				0.2f,
 			},
 			TEXT("Resources/duang.bmp"),
-			CameraTest()
+			One()
 		};
 
 		return defaultScene;

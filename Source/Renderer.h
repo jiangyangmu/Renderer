@@ -63,7 +63,17 @@ namespace Graphics
 		Ptr<SceneState>		m_refSceneState;
 	};
 
-	class Renderer
+	class IRenderer
+	{
+	public:
+		virtual			~IRenderer() = default;
+		virtual void		Present() = 0;
+		virtual void		Clear() = 0;
+		virtual void		Update(double milliSeconds) = 0;
+		virtual void		Draw() = 0;
+	};
+
+	class Renderer : public IRenderer
 	{
 	public:
 
@@ -81,10 +91,10 @@ namespace Graphics
 
 		void			Initialize(Ptr<RenderContext> renderContext, Ptr<RenderTarget> renderTarget);
 
-		void			Present();
-		void			Clear();
-		void			Update(double milliSeconds);
-		void			Draw();
+		virtual void		Present() override;
+		virtual void		Clear() override;
+		virtual void		Update(double milliSeconds) override;
+		virtual void		Draw() override;
 
 		// Properties
 

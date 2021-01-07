@@ -4,7 +4,7 @@
 
 namespace Graphics
 {
-	class Renderer;
+	class IRenderer;
 
 	class RenderWindow : public win32::Window
 	{
@@ -17,7 +17,7 @@ namespace Graphics
 
 		// Properties
 
-		void			SetRenderer(Renderer & renderer);
+		void			SetRenderer(IRenderer & renderer);
 
 		// Events
 
@@ -31,7 +31,7 @@ namespace Graphics
 	private:
 
 		// Rendering
-		Renderer *		m_refRender;
+		IRenderer *		m_refRender;
 
 		// FPS control
 		LARGE_INTEGER		m_timerFrequence;
