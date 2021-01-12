@@ -7,13 +7,13 @@
 
 namespace Graphics
 {
-	class Camera;
+	class Camera1;
 
 	class CameraController
 	{
 	public:
 
-		CameraController(Camera * pCamera) : m_camera(pCamera)
+		CameraController(Camera1 * pCamera) : m_camera(pCamera)
 		{
 		}
 
@@ -25,7 +25,7 @@ namespace Graphics
 
 	private:
 
-		Camera *	m_camera;
+		Camera1 *	m_camera;
 		bool		m_init = true;
 		int		m_pixelX = 0;
 		int		m_pixelY = 0;
@@ -42,10 +42,10 @@ namespace Graphics
 		float		m_vFactor = 0.0f;
 	};
 
-	class Camera
+	class Camera1
 	{
 	public:
-		Camera(float zNear, float zFar, float fov, float aspectRatio, const Vec3 pos)
+		Camera1(float zNear, float zFar, float fov, float aspectRatio, const Vec3 pos)
 			: m_zNear(zNear)
 			, m_zFar(zFar)
 			, m_fov(fov)
@@ -64,10 +64,10 @@ namespace Graphics
 		{
 		}
 
-		Camera(const Camera &) = delete;
-		Camera(Camera && other) = delete;
-		Camera & operator = (const Camera &) = delete;
-		Camera & operator = (Camera && other) = delete;
+		Camera1(const Camera1 &) = delete;
+		Camera1(Camera1 && other) = delete;
+		Camera1 & operator = (const Camera1 &) = delete;
+		Camera1 & operator = (Camera1 && other) = delete;
 
 		// Operations
 
@@ -100,7 +100,7 @@ namespace Graphics
 
 	public: _SEND_EVENT(OnCameraDirChange);
 	public: _SEND_EVENT(OnCameraPosChange);
-	public: _RECV_EVENT_DECL1(Camera, OnAspectRatioChange);
+	public: _RECV_EVENT_DECL1(Camera1, OnAspectRatioChange);
 
 	private:
 

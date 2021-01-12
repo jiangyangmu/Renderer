@@ -1,89 +1,128 @@
 #include "Renderer.h"
 #include "RenderWindow.h"
 #include "Resource.h"
+#include "Scene.h"
 #include "win32/Win32App.h"
 
 namespace Graphics
 {
-	class RenderV2 : public IRenderer
+	class MyScene
 	{
 	public:
-		RenderV2(Graphics::RenderWindow & window)
-			: m_window(window)
-			, m_device(v2::Device::Default())
+		void			OnLoad(Device & device, RenderContext & context)
 		{
-			using namespace v2;
-			using v2::RenderContext;
-			using v2::RenderTarget;
+			m_device		= &device;
+			m_context		= &context;
+			m_vertexBuffer		= m_device->CreateVertexBuffer(VertexFormat::POS_RGB);
 
-			struct VertexPosRgb
-			{
-				Vec3 pos, rgb;
-			};
+			Scene * scene		= SceneManager::Default().CreateScene();
+			Light * light		= SceneManager::Default().CreateLight();
+			Player * player		= SceneManager::Default().CreatePlayer();
+			Terrain * terrain	= SceneManager::Default().CreateTerrain();
+			Camera * camera		= SceneManager::Default().CreateCamera();
+			Controller * controller	= SceneManager::Default().CreateController();
 
+			scene->AddChild(light);
+			scene->AddChild(player);
+			scene->AddChild(terrain);
+			player->AddChild(camera, Connector::THIRD_PERSON_VIEW);
+			player->AddChild(controller);
+
+			m_scene			= scene;
+
+			SceneObject::InitializeAll(m_scene, *m_context, m_vertexBuffer);
+		}
+		void			OnUnload()
+		{
+		}
+		void			OnUpdate(double ms)
+		{
+			SceneObject::UpdateAll(m_scene, ms);
+		}
+		void			OnDraw()
+		{
+			m_context->Draw(m_vertexBuffer, 0, m_vertexBuffer.Count());
+		}
+
+	private:
+		Device *		m_device;
+		RenderContext *		m_context;
+		VertexBuffer		m_vertexBuffer;
+		Scene *			m_scene;
+	};
+
+	class SceneRenderer : public IRenderer
+	{
+	public:
+		SceneRenderer(RenderWindow & window)
+			: m_window(window)
+			, m_scene(nullptr)
+		{
 			RenderTarget target;
-			Matrix4x4 viewTrans;
-			Matrix4x4 projTrans;
 			VertexShader vs;
 			PixelShader ps;
 
-			VertexPosRgb vertices[ 3 ] =
-			{
-				{{0.0f,   0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-				{{1.0f,   0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-				{{0.5f, 0.866f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-			};
+			m_device		= Device::Default();
 
-			target			= m_device.CreateRenderTarget(window.GetHWND());
-			
+			target			= m_device.CreateRenderTarget(&m_window);
+
 			m_context		= m_device.CreateRenderContext();
 			m_swapChain		= m_device.CreateSwapChain(target.GetWidth(), target.GetHeight());
 			m_depthStencilBuffer	= m_device.CreateDepthStencilBuffer(target.GetWidth(), target.GetHeight());
 
-			m_vertexBuffer		= m_device.CreateVertexBuffer(VertexFormat::POS_RGB);
-			memcpy(m_vertexBuffer.Data(), &vertices, sizeof(vertices));
-
-			viewTrans		= Matrix4x4::Identity();
-			projTrans		= Matrix4x4::PerspectiveFovLH(DegreeToRadian(90),
-									      ( double(target.GetWidth()) ) / target.GetHeight(),
-									      0.1f,
-									      1000.0f);
 			vs			= m_device.CreateVertexShader();
 			ps			= m_device.CreatePixelShader();
 
 			m_context.SetSwapChain(m_swapChain);
-			m_context.SetViewTransform(viewTrans);
-			m_context.SetProjectionTransform(projTrans);
+			m_context.SetViewTransform(Matrix4x4::Identity());
+			m_context.SetProjectionTransform(Matrix4x4::Identity());
 			m_context.SetVertexShader(vs);
 			m_context.SetPixelShader(ps);
 			m_context.SetDepthStencilBuffer(m_depthStencilBuffer);
 			m_context.SetOutputTarget(target);
 		}
 
-		virtual void Present() override
+		void			SwitchScene(MyScene & scene)
+		{
+			if (m_scene)
+			{
+				m_scene->OnUnload();
+			}
+			m_scene = &scene;
+			m_scene->OnLoad(m_device, m_context);
+		}
+
+		virtual void		Present() override
 		{
 			m_swapChain.Swap();
 			m_window.Paint(m_window.GetWidth(), m_window.GetHeight(), m_swapChain.FrameBuffer());
 		}
-		virtual void Clear() override
+		virtual void		Clear() override
 		{
 			m_depthStencilBuffer.Reset();
 		}
-		virtual void Update(double milliSeconds) override
+		virtual void		Update(double ms) override
 		{
+			if ( m_scene )
+			{
+				m_scene->OnUpdate(ms);
+			}
 		}
-		virtual void Draw() override
+		virtual void		Draw() override
 		{
-			m_context.Draw(m_vertexBuffer, 0, 3);
+			if ( m_scene )
+			{
+				m_scene->OnDraw();
+			}
 		}
 
 	private:
 		RenderWindow &		m_window;
-		v2::Device		m_device;
-		v2::RenderContext	m_context;
-		v2::SwapChain		m_swapChain;
-		v2::DepthStencilBuffer	m_depthStencilBuffer;
-		v2::VertexBuffer	m_vertexBuffer;
+		Device			m_device;
+		RenderContext		m_context;
+		SwapChain		m_swapChain;
+		DepthStencilBuffer	m_depthStencilBuffer;
+		MyScene *		m_scene;
 	};
 }
 
@@ -111,25 +150,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 #define USE_V2
 #ifdef USE_V2
-		Graphics::RenderV2 renderer(renderWindow);
+		Graphics::SceneRenderer renderer(renderWindow);
 		renderWindow.SetRenderer(renderer);
+
+		Graphics::MyScene scene;
+		renderer.SwitchScene(scene);
 #else
 		// Setup renderer
 
-		Graphics::RenderTarget * renderTarget		= Graphics::RenderTarget::FromRenderWindow(renderWindow).release();
-		Graphics::RenderContext * renderContext		= new Graphics::RenderContext(W, H);
+		Graphics::RenderTarget1 * renderTarget		= Graphics::RenderTarget1::FromRenderWindow(renderWindow).release();
+		Graphics::RenderContext1 * renderContext	= new Graphics::RenderContext1(W, H);
 		Graphics::SceneRenderable * renderable		= new Graphics::SceneRenderable();
 
-		Graphics::Renderer renderer;
+		Graphics::Renderer1 renderer;
 		
-		renderer.AddRenderable(Ref<Graphics::Renderable>(renderable));
-		renderer.Initialize(Ptr<Graphics::RenderContext>(renderContext),
-				    Ptr<Graphics::RenderTarget>(renderTarget));
+		renderer.AddRenderable(Ref<Graphics::Renderable1>(renderable));
+		renderer.Initialize(Ptr<Graphics::RenderContext1>(renderContext),
+				    Ptr<Graphics::RenderTarget1>(renderTarget));
 		
 		// Setup event handling
 
 		Graphics::SceneState & scene = renderable->GetSceneState();
-		Graphics::Camera & camera = *scene.camera;
+		Graphics::Camera1 & camera = *scene.camera;
 		// keyboard, mouse -> camera
 		_BIND_EVENT(OnMouseMove, renderWindow, camera.GetController());
 		_BIND_EVENT(OnKeyDown, renderWindow, camera.GetController());

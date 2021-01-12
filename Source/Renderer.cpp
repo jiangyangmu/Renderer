@@ -1,50 +1,52 @@
 #include "Renderer.h"
+
+#include "Scene.h"
 #include "Common.h"
 
 namespace Graphics
 {
 
-	void Renderer::Initialize(Ptr<RenderContext> renderContext, Ptr<RenderTarget> renderTarget)
+	void Renderer1::Initialize(Ptr<RenderContext1> renderContext, Ptr<RenderTarget1> renderTarget)
 	{
-		m_refRenderContext	= std::move(renderContext);
-		m_refRenderTarget	= std::move(renderTarget);
+		m_refRenderContext1	= std::move(renderContext);
+		m_refRenderTarget1	= std::move(renderTarget);
 		m_refRenderInput	= Ptr<RenderInput>(new RenderInput());
 
-		ResetBackBuffer(m_refRenderContext->GetBackBuffer());
-		ResetDepthBuffer(m_refRenderContext->GetDepthBuffer());
-		ResetStencilBuffer(GetRenderContext().GetStencilBuffer());
+		ResetBackBuffer(m_refRenderContext1->GetBackBuffer());
+		ResetDepthBuffer(m_refRenderContext1->GetDepthBuffer());
+		ResetStencilBuffer(GetRenderContext1().GetStencilBuffer());
 
-		for (Ref<Renderable> & renderable : m_renderables)
+		for (Ref<Renderable1> & renderable : m_renderables)
 		{
-			renderable->Initialize(*m_refRenderContext, *m_refRenderInput);
+			renderable->Initialize(*m_refRenderContext1, *m_refRenderInput);
 		}
 	}
 
-	void Renderer::Present()
+	void Renderer1::Present()
 	{
-		m_refRenderContext->SwapBuffer();
+		m_refRenderContext1->SwapBuffer();
 
-		Buffer & frameBuffer = m_refRenderContext->GetFrontBuffer();
+		Buffer & frameBuffer = m_refRenderContext1->GetFrontBuffer();
 
-		m_refRenderTarget->CopyPixelData((Byte *)frameBuffer.Data(),
-						frameBuffer.SizeInBytes());
+		m_refRenderTarget1->CopyPixelData((Byte *)frameBuffer.Data(),
+						  frameBuffer.SizeInBytes());
 	}
 
-	void Renderer::Clear()
+	void Renderer1::Clear()
 	{
-		ResetBackBuffer(m_refRenderContext->GetBackBuffer());
-		ResetDepthBuffer(m_refRenderContext->GetDepthBuffer());
+		ResetBackBuffer(m_refRenderContext1->GetBackBuffer());
+		ResetDepthBuffer(m_refRenderContext1->GetDepthBuffer());
 	}
 
-	void Renderer::Update(double milliSeconds)
+	void Renderer1::Update(double milliSeconds)
 	{
-		for (Ref<Renderable> & renderable : m_renderables)
+		for (Ref<Renderable1> & renderable : m_renderables)
 		{
 			renderable->Update(milliSeconds);
 		}
 	}
 
-	void Renderer::Draw()
+	void Renderer1::Draw()
 	{
 		using namespace Graphics;
 
@@ -72,49 +74,49 @@ namespace Graphics
 		};
 		for ( int index = 0; index < triangles.size() && index < ( sizeof(formats) / sizeof(Pipeline::VertexFormat) ); ++index )
 		{
-			m_refRenderContext->SetVertexShader(vss[ index ]);
-			m_refRenderContext->SetPixelShader(pss[ index ]);
+			m_refRenderContext1->SetVertexShader(vss[ index ]);
+			m_refRenderContext1->SetPixelShader(pss[ index ]);
 
 			auto & vertices = triangles[ index ];
-			Rasterize(*m_refRenderContext, vertices.data(), vertices.size(), formats[ index ]);
+			Rasterize(*m_refRenderContext1, vertices.data(), vertices.size(), formats[ index ]);
 		}
 	}
 
-	_RECV_EVENT_IMPL(Renderable, OnWndResize) ( void * sender, const win32::WindowRect & args )
+	_RECV_EVENT_IMPL(Renderable1, OnWndResize) ( void * sender, const win32::WindowRect & args )
 	{
-		ResetBackBuffer(m_refRenderContext->GetBackBuffer());
-		ResetDepthBuffer(m_refRenderContext->GetDepthBuffer());
-		ResetStencilBuffer(GetRenderContext().GetStencilBuffer());
+		ResetBackBuffer(m_refRenderContext1->GetBackBuffer());
+		ResetDepthBuffer(m_refRenderContext1->GetDepthBuffer());
+		ResetStencilBuffer(GetRenderContext1().GetStencilBuffer());
 	}
 
-	void SceneRenderable::Initialize(RenderContext & renderContext, RenderInput & renderInput)
+	void SceneRenderable::Initialize(RenderContext1 & renderContext, RenderInput & renderInput)
 	{
-		Renderable::Initialize(renderContext, renderInput);
+		Renderable1::Initialize(renderContext, renderInput);
 
 		m_refSceneState.reset(new SceneState(SceneLoader::Default(
 			renderContext.GetWidth(),
 			renderContext.GetHeight()
 		)));
 		
-		GetRenderContext().LoadTexture(m_refSceneState->textureURL);
-		GetRenderContext().GetConstants().Texture = GetRenderContext().GetTexture(0);
-		GetRenderContext().GetConstants().Light = m_refSceneState->light;
-		GetRenderContext().GetConstants().Material = m_refSceneState->material;
+		GetRenderContext1().LoadTexture(m_refSceneState->textureURL);
+		GetRenderContext1().GetConstants().Texture = GetRenderContext1().GetTexture(0);
+		GetRenderContext1().GetConstants().Light = m_refSceneState->light;
+		GetRenderContext1().GetConstants().Material = m_refSceneState->material;
 
 		GetRenderInput().m_vertices = m_refSceneState->vertices;
 	}
 
 	void SceneRenderable::Update(double milliSeconds)
 	{
-		Camera & camera = *m_refSceneState->camera;
+		Camera1 & camera = *m_refSceneState->camera;
 		
 		// Update scene
 		camera.GetController().Update(milliSeconds);
 
 		// Update render context
-		GetRenderContext().GetConstants().WorldToCamera = camera.GetViewMatrix();
-		GetRenderContext().GetConstants().CameraToNDC = camera.GetProjMatrix();
-		GetRenderContext().GetConstants().CameraPosition = camera.GetPos();
+		GetRenderContext1().GetConstants().WorldToCamera = camera.GetViewMatrix();
+		GetRenderContext1().GetConstants().CameraToNDC = camera.GetProjMatrix();
+		GetRenderContext1().GetConstants().CameraPosition = camera.GetPos();
 
 		// Update render input
 	}

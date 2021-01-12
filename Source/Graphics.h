@@ -78,18 +78,18 @@ namespace Graphics
 		Byte *		m_data;
 	};
 
-	class Texture2D
+	class Texture2D1
 	{
 	public:
 		// Constructors
 		
-		Texture2D();
-		Texture2D(const Buffer & bitmap);
+		Texture2D1();
+		Texture2D1(const Buffer & bitmap);
 
-		Texture2D(const Texture2D &) = default;
-		Texture2D(Texture2D &&) = default;
-		Texture2D & operator = (const Texture2D &) = default;
-		Texture2D & operator = (Texture2D &&) = default;
+		Texture2D1(const Texture2D1 &) = default;
+		Texture2D1(Texture2D1 &&) = default;
+		Texture2D1 & operator = (const Texture2D1 &) = default;
+		Texture2D1 & operator = (Texture2D1 &&) = default;
 
 		// Operations
 
@@ -116,43 +116,43 @@ namespace Graphics
 	};
 
 	// TODO: remove pixel format assumption
-	class RenderTarget
+	class RenderTarget1
 	{
 	public:
 		// Constructors
 
-		static Ptr<RenderTarget>	FromRenderWindow(RenderWindow & renderWindow);
+		static Ptr<RenderTarget1>	FromRenderWindow(RenderWindow & renderWindow);
 		
-		RenderTarget(const RenderTarget &) = delete;
-		RenderTarget(RenderTarget && other) = default;
-		RenderTarget & operator = (const RenderTarget &) = delete;
-		RenderTarget & operator = (RenderTarget && other) = default;
+		RenderTarget1(const RenderTarget1 &) = delete;
+		RenderTarget1(RenderTarget1 && other) = default;
+		RenderTarget1 &			operator = (const RenderTarget1 &) = delete;
+		RenderTarget1 &			operator = (RenderTarget1 && other) = default;
 
 		// Operations
 
-		void			CopyPixelData(Byte * pBytes, Integer nBytes);
+		void				CopyPixelData(Byte * pBytes, Integer nBytes);
 
 		// Properties
 
-		Integer			Width()
+		Integer				Width()
 		{
 			return m_width;
 		}
-		Integer			Height()
+		Integer				Height()
 		{
 			return m_height;
 		}
 
 		// Events
 
-	public: _RECV_EVENT_DECL1(RenderTarget, OnWndResize);
+	public: _RECV_EVENT_DECL1(RenderTarget1, OnWndResize);
 
 	private:
-		RenderTarget() : m_refRenderWindow(nullptr) {}
+		RenderTarget1() : m_refRenderWindow(nullptr) {}
 
-		Integer			m_width;
-		Integer			m_height;
-		RenderWindow *		m_refRenderWindow;
+		Integer				m_width;
+		Integer				m_height;
+		RenderWindow *			m_refRenderWindow;
 	};
 
 	namespace Materials
@@ -235,7 +235,7 @@ namespace Graphics
 
 			int			DebugPixel[ 2 ];
 
-			Texture2D		Texture;
+			Texture2D1		Texture;
 
 			Vec3			CameraPosition; // world coordinates
 			Lights::Light		Light;
@@ -298,14 +298,14 @@ namespace Graphics
 		std::vector<std::vector<Vertex>> m_vertices;
 	};
 
-	class RenderContext
+	class RenderContext1
 	{
 	public:
 		using VS = Pipeline::Shader::VertexShader::Func;
 		using PS = Pipeline::Shader::PixelShader::Func;
 		using ContextConstants = Pipeline::ContextConstants;
 
-		RenderContext(Integer width, Integer height);
+		RenderContext1(Integer width, Integer height);
 
 		// Operations
 
@@ -343,9 +343,9 @@ namespace Graphics
 		{
 			return m_stencilBuffer;
 		}
-		Texture2D		GetTexture(Integer id)
+		Texture2D1		GetTexture(Integer id)
 		{
-			return Texture2D(m_textureBuffers[ id ]);
+			return Texture2D1(m_textureBuffers[ id ]);
 		}
 
 		ContextConstants &	GetConstants()
@@ -372,7 +372,7 @@ namespace Graphics
 
 		// Events
 
-	public: _RECV_EVENT_DECL1(RenderContext, OnWndResize);
+	public: _RECV_EVENT_DECL1(RenderContext1, OnWndResize);
 
 	private:
 		// Dimension
@@ -422,5 +422,5 @@ namespace Graphics
 		}
 	}
 
-	void Rasterize(RenderContext & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
+	void Rasterize(RenderContext1 & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat);
 }

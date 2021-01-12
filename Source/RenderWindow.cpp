@@ -69,6 +69,19 @@ namespace Graphics
 		++m_presentedFrame;
 	}
 
+	bool RenderWindow::QueryInterface(Integer guid, void ** ppInterface)
+	{
+		if (_INTERFACE_IID(RenderWindow) == guid)
+		{
+			*ppInterface = this;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 	void RenderWindow::SetRenderer(IRenderer & renderer)
 	{
 		m_refRender = &renderer;

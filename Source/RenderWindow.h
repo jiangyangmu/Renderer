@@ -1,19 +1,23 @@
 #pragma once
 
 #include "win32/Win32App.h"
+#include "Resource.h"
 
 namespace Graphics
 {
 	class IRenderer;
 
-	class RenderWindow : public win32::Window
+	class RenderWindow : public win32::Window, public IUnknown
 	{
+		_INTERFACE_DEFINE_IID(1610280267);
 	public:
+
 		RenderWindow(LPCWSTR lpTitle, HINSTANCE hInstance, int nWidth, int nHeight);
 
 		// Operations
 
 		void			Paint(LONG width, LONG height, LPVOID data);
+		virtual bool		QueryInterface(Integer guid, void **  ppInterface) override;
 
 		// Properties
 

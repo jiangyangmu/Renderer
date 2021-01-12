@@ -1,12 +1,9 @@
 #pragma once
 
-//#include "Common.h"
 #include "Graphics.h"
 #include <Windows.h>
 
 namespace Graphics
-{
-namespace v2
 {
 	// ---------------------------------------------------------------
 	// Handle
@@ -51,9 +48,27 @@ namespace v2
 		POS_RGB,
 	};
 	
+	struct VertexRange
+	{
+		void *		pVertexBegin;
+		Integer		nVertexCount;
+		VertexFormat	eVertexFormat;
+
+		VertexRange()
+			: pVertexBegin(nullptr)
+			, nVertexCount(0)
+			, eVertexFormat(VertexFormat::POS_RGB)
+		{
+		}
+		void *		At(Integer i);
+	};
 	class VertexBuffer : public Handle
 	{
 	public:
+		VertexRange	Alloc(Integer nCount);
+		void		Free(VertexRange v);
+		
+		Integer		Count();
 		void *		Data();
 	};
 
@@ -100,11 +115,19 @@ namespace v2
 
 		HWND			GetHWND();
 	};
-	struct RenderTarget : public Handle
+
+	struct RenderTarget : public Handle, public IUnknown
 	{
 	public:
+		RenderTarget() : pCache(nullptr) {}
+
 		Integer			GetWidth();
 		Integer			GetHeight();
+		virtual bool		QueryInterface(Integer iid, void ** ppvObject) override;
+	private:
+		void			InitCache();
+
+		void *			pCache;
 	};
 
 
@@ -123,6 +146,7 @@ namespace v2
 
 		void			SetDepthStencilBuffer(DepthStencilBuffer dsb);
 		void			SetOutputTarget(RenderTarget target);
+		RenderTarget		GetOutputTarget();
 
 		void			Draw(VertexBuffer vb, Integer nOffset, Integer nCount);
 		// void			DrawIndexed(VertexBuffer vb, IndexBuffer ib, Integer nOffset, Integer nCount);
@@ -140,7 +164,7 @@ namespace v2
 		RenderContext		CreateRenderContext();
 		SwapChain		CreateSwapChain(Integer width, Integer height, bool enableAutoResize = true);
 		DepthStencilBuffer	CreateDepthStencilBuffer(Integer width, Integer height, bool enableAutoResize = true);
-		RenderTarget		CreateRenderTarget(HWND hWnd);
+		RenderTarget		CreateRenderTarget(IUnknown * pUnknown);
 		VertexShader		CreateVertexShader();
 		PixelShader		CreatePixelShader();
 		
@@ -149,5 +173,4 @@ namespace v2
 	private:
 		void *			pImpl;
 	};
-}
 }

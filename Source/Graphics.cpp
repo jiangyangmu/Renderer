@@ -120,35 +120,35 @@ namespace Graphics
 		return m_data;
 	}
 
-	Texture2D::Texture2D()
+	Texture2D1::Texture2D1()
 		: m_bitmap(nullptr)
 	{
 	}
 
-	Texture2D::Texture2D(const Buffer & bitmap)
+	Texture2D1::Texture2D1(const Buffer & bitmap)
 		: m_bitmap(&bitmap)
 	{
 	}
 
-	Ptr<RenderTarget> RenderTarget::FromRenderWindow(RenderWindow & renderWindow)
+	Ptr<RenderTarget1> RenderTarget1::FromRenderWindow(RenderWindow & renderWindow)
 	{
-		Ptr<RenderTarget> pRenderTarget(new RenderTarget());
+		Ptr<RenderTarget1> pRenderTarget1(new RenderTarget1());
 
-		pRenderTarget->m_width			= renderWindow.GetWidth();
-		pRenderTarget->m_height			= renderWindow.GetHeight();
-		pRenderTarget->m_refRenderWindow	= &renderWindow;
+		pRenderTarget1->m_width			= renderWindow.GetWidth();
+		pRenderTarget1->m_height		= renderWindow.GetHeight();
+		pRenderTarget1->m_refRenderWindow	= &renderWindow;
 
-		return pRenderTarget;
+		return pRenderTarget1;
 	}
 
-	void RenderTarget::CopyPixelData(Byte * pBytes, Integer nBytes)
+	void RenderTarget1::CopyPixelData(Byte * pBytes, Integer nBytes)
 	{
 		m_refRenderWindow->Paint(m_width,
 					 m_height,
 					 pBytes);
 	}
 
-	_RECV_EVENT_IMPL(RenderTarget, OnWndResize) ( void * sender, const win32::WindowRect & args )
+	_RECV_EVENT_IMPL(RenderTarget1, OnWndResize) ( void * sender, const win32::WindowRect & args )
 	{
 		m_width = args.width;
 		m_height = args.height;
@@ -281,7 +281,7 @@ namespace Graphics
 
 	}
 
-	RenderContext::RenderContext(Integer width, Integer height)
+	RenderContext1::RenderContext1(Integer width, Integer height)
 		: m_width(width)
 		, m_height(height)
 		, m_frontId(0)
@@ -297,7 +297,7 @@ namespace Graphics
 		m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
 	}
 
-	void RenderContext::LoadTexture(LPCWSTR lpFilePath)
+	void RenderContext1::LoadTexture(LPCWSTR lpFilePath)
 	{
 		LONG width, height;
 		LPVOID data;
@@ -312,7 +312,7 @@ namespace Graphics
 		m_textureBuffers.emplace_back(std::move(bmpData));
 	}
 
-	void RenderContext::Resize(Integer width, Integer height)
+	void RenderContext1::Resize(Integer width, Integer height)
 	{
 		m_width = width;
 		m_height = height;
@@ -324,12 +324,12 @@ namespace Graphics
 		m_swapBuffer[ 1 ] = Buffer(width, height, 3, 4, rowPadding);
 	}
 
-	_RECV_EVENT_IMPL(RenderContext, OnWndResize) ( void * sender, const win32::WindowRect & args )
+	_RECV_EVENT_IMPL(RenderContext1, OnWndResize) ( void * sender, const win32::WindowRect & args )
 	{
 		Resize(args.width, args.height);
 	}
 
-	void Rasterize(RenderContext & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat)
+	void Rasterize(RenderContext1 & context, const Pipeline::Vertex * pVertexBuffer, Integer nVertex, Pipeline::VertexFormat vertexFormat)
 	{
 		using namespace Graphics::Pipeline;
 		using VertexShader = Shader::VertexShader;

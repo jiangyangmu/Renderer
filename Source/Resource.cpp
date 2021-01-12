@@ -1,9 +1,9 @@
 #include "Resource.h"
+
+#include "RenderWindow.h"
 #include "win32/Win32App.h"
 
 namespace Graphics
-{
-namespace v2
 {
 	struct ResourceIndex { Integer value; };
 	struct BufferIndex : public ResourceIndex {};
@@ -37,13 +37,12 @@ namespace v2
 	{
 		BufferIndex		iVertexBuffer;
 		VertexFormat		eFormat;
+		Integer			nAllocated;
 	};
 
 	struct RenderTarget_Desc
 	{
-		HWND			hWnd;
-		Integer			nWidth;
-		Integer			nHeight;
+		IUnknown *		pUnknown;
 	};
 
 	struct VertexShader_Desc
@@ -233,6 +232,26 @@ namespace v2
 
 		return pDevice->buffers[ pVertexBufferDesc->iVertexBuffer.value ];
 	}
+	static inline void			_GetVertexBufferDesc(VertexBuffer vb, VertexBuffer_Desc ** ppVertexBufferDesc, Buffer ** ppBuffer)
+	{
+		Device_Impl *		pDevice;
+		BufferIndex		iVertexBufferDesc;
+		VertexBuffer_Desc *	pVertexBufferDesc;
+
+		_LoadIndex(vb, &iVertexBufferDesc);
+
+		pDevice			= static_cast< Device_Impl * >( vb.pParam );
+		pVertexBufferDesc	= &pDevice->vertexBufferDescs[ iVertexBufferDesc.value ];
+
+		if (ppVertexBufferDesc)
+		{
+			*ppVertexBufferDesc	= pVertexBufferDesc;
+		}
+		if (ppBuffer)
+		{
+			*ppBuffer		= &pDevice->buffers[ pVertexBufferDesc->iVertexBuffer.value ];
+		}
+	}
 
 	static inline void			_ResetDepthBuffer(Buffer & b)
 	{
@@ -291,19 +310,16 @@ namespace v2
 
 		vb.iVertexBuffer	= _CreateBuffer(device, 64, 1, _GetVertexSize(format), _GetVertexAlignment(format));
 		vb.eFormat		= format;
+		vb.nAllocated		= 0;
 
 		return vb;
 	}
-	static inline RenderTarget_Desc		_CreateRenderTarget(Device_Impl & device, HWND hWnd)
+	static inline RenderTarget_Desc		_CreateRenderTarget(Device_Impl & device, IUnknown * pUnknown)
 	{
 		RenderTarget_Desc target;
 		RECT rect;
 
-		ENSURE_TRUE(GetClientRect(hWnd, &rect));
-
-		target.hWnd			= hWnd;
-		target.nWidth			= rect.right - rect.left;
-		target.nHeight			= rect.bottom - rect.top;
+		target.pUnknown			= pUnknown;
 
 		return target;
 	}
@@ -553,6 +569,40 @@ namespace v2
 
 		return _GetFrontBuffer(*pDevice, *pSwapChainDesc).Data();
 	}
+
+	void *			VertexRange::At(Integer i)
+	{
+		ASSERT(0 <= i && i <= nVertexCount);
+		return ((Byte *)pVertexBegin) + _GetVertexSize(eVertexFormat) * i;
+	}
+	VertexRange		VertexBuffer::Alloc(Integer nCount)
+	{
+		VertexBuffer_Desc * pVertexBufferDesc;
+		Buffer * pBuffer;
+
+		_GetVertexBufferDesc(*this, &pVertexBufferDesc, &pBuffer);
+		
+		ASSERT((pVertexBufferDesc->nAllocated + nCount) <= pBuffer->ElementCount());
+
+		VertexRange vr;
+		vr.nVertexCount			= nCount;
+		vr.pVertexBegin			= pBuffer->At(0, pVertexBufferDesc->nAllocated);
+		vr.eVertexFormat		= pVertexBufferDesc->eFormat;
+
+		pVertexBufferDesc->nAllocated	+= nCount;
+
+		return vr;
+	}
+	void			VertexBuffer::Free(VertexRange v)
+	{
+		ASSERT(false);
+	}
+	Integer			VertexBuffer::Count()
+	{
+		VertexBuffer_Desc * pVertexBufferDesc;
+		_GetVertexBufferDesc(*this, &pVertexBufferDesc, nullptr);
+		return pVertexBufferDesc->nAllocated;
+	}
 	void *			VertexBuffer::Data()
 	{
 		return _GetVertexBuffer(*this).Data();
@@ -570,21 +620,43 @@ namespace v2
 
 		_ResetDepthBuffer(pDevice->buffers[ pDepthStencilDesc->iDepthBuffer.value ]);
 	}
-		
-	Integer			RenderTarget::GetWidth()
+
+	void			RenderTarget::InitCache()
 	{
 		Device_Impl *		pDevice;
 		DescIndex		iRenderTargetDesc;
 		RenderTarget_Desc *	pRenderTargetDesc;
+		RenderWindow *		pWindow;
 
 		_LoadIndex(*this, &iRenderTargetDesc);
 
-		pDevice			= static_cast<Device_Impl *>(pParam);
-		pRenderTargetDesc	= &pDevice->renderTargetDescs[iRenderTargetDesc.value];
+		pDevice			= static_cast< Device_Impl * >( pParam );
+		pRenderTargetDesc	= &pDevice->renderTargetDescs[ iRenderTargetDesc.value ];
+		
+		ENSURE_TRUE(pRenderTargetDesc->pUnknown->QueryInterface(&pWindow));
 
-		return pRenderTargetDesc->nWidth;
+
+		pCache = pWindow;
+	}
+	Integer			RenderTarget::GetWidth()
+	{
+		if ( !pCache )
+		{
+			InitCache();
+		}
+
+		return static_cast< RenderWindow * >( pCache )->GetWidth();
 	}
 	Integer			RenderTarget::GetHeight()
+	{
+		if ( !pCache )
+		{
+			InitCache();
+		}
+
+		return static_cast< RenderWindow * >( pCache )->GetHeight();
+	}
+	bool			RenderTarget::QueryInterface(Integer iid, void ** ppvObject)
 	{
 		Device_Impl *		pDevice;
 		DescIndex		iRenderTargetDesc;
@@ -595,7 +667,9 @@ namespace v2
 		pDevice			= static_cast< Device_Impl * >( pParam );
 		pRenderTargetDesc	= &pDevice->renderTargetDescs[ iRenderTargetDesc.value ];
 
-		return pRenderTargetDesc->nHeight;
+		ASSERT(pRenderTargetDesc->pUnknown);
+
+		return pRenderTargetDesc->pUnknown->QueryInterface(iid, ppvObject);
 	}
 
 	void			RenderContext::SetSwapChain(SwapChain sc)
@@ -625,6 +699,16 @@ namespace v2
 	void			RenderContext::SetOutputTarget(RenderTarget target)
 	{
 		_LoadIndex(target, &static_cast< RenderContext_Impl * >( pImpl )->iRenderTargetDesc);
+	}
+
+	RenderTarget		RenderContext::GetOutputTarget()
+	{
+		Device_Impl * pDevice = static_cast< Device_Impl * >( pParam );
+
+		RenderTarget target;
+		_StoreIndex(&target, static_cast< RenderContext_Impl * >( pImpl )->iRenderTargetDesc);
+		target.pParam = pDevice;
+		return target;
 	}
 
 	void			RenderContext::Draw(VertexBuffer vb, Integer nOffset, Integer nCount)
@@ -697,14 +781,14 @@ namespace v2
 		handle.pParam = self;
 		return handle;
 	}
-	RenderTarget		Device::CreateRenderTarget(HWND hWnd)
+	RenderTarget		Device::CreateRenderTarget(IUnknown * pUnknown)
 	{
 		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
 
 		DescIndex iRenderTargetDesc;
 		iRenderTargetDesc.value = self->renderTargetDescs.size();
 
-		self->renderTargetDescs.emplace_back(_CreateRenderTarget(*self, hWnd));
+		self->renderTargetDescs.emplace_back(_CreateRenderTarget(*self, pUnknown));
 
 		RenderTarget handle;
 		_StoreIndex(&handle, iRenderTargetDesc);
@@ -753,5 +837,4 @@ namespace v2
 		handle.pParam = self;
 		return handle;
 	}
-}
 }

@@ -16,7 +16,7 @@ constexpr auto PI = 3.141592653f;
 template <typename T>
 using Ptr = std::unique_ptr<T>;
 template <typename T>
-using Ref = std::shared_ptr<T>;
+using Ref = std::shared_ptr<T>; // TODO: implement a non thread-safe one
 
 // --------------------------------------------------------------------------
 // Linear algebra utils

@@ -165,7 +165,7 @@ namespace Graphics
 	{
 		SceneState defaultScene =
 		{
-			Ptr<Camera>(new Camera(
+			Ptr<Camera1>(new Camera1(
 				0.1f,				// z near
 				1000.0f,			// z far (use smaller value for better depth test.)
 				DegreeToRadian(90.0f),		// field of view
@@ -188,10 +188,40 @@ namespace Graphics
 				0.2f,
 			},
 			TEXT("Resources/duang.bmp"),
-			One()
+			CameraTest()
 		};
 
 		return defaultScene;
 	}
 
+	SceneManager &		SceneManager::Default()
+	{
+		static SceneManager sceneManager;
+		return sceneManager;
+	}
+
+	Scene *			SceneManager::CreateScene()
+	{
+		return new Scene();
+	}
+	Light *			SceneManager::CreateLight()
+	{
+		return new Light();
+	}
+	Player *		SceneManager::CreatePlayer()
+	{
+		return new Player();
+	}
+	Terrain *		SceneManager::CreateTerrain()
+	{
+		return new Terrain();
+	}
+	Camera *		SceneManager::CreateCamera()
+	{
+		return new Camera();
+	}
+	Controller *		SceneManager::CreateController()
+	{
+		return new Controller();
+	}
 }

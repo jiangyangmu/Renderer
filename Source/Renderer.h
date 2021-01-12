@@ -1,34 +1,34 @@
 #pragma once
 
 #include "Graphics.h"
-#include "Scene.h"
+#include "Resource.h"
 
 namespace Graphics
 {
-	class Renderable
+	class Renderable1
 	{
 	public:
-		Renderable()
-			: m_refRenderContext(nullptr)
+		Renderable1()
+			: m_refRenderContext1(nullptr)
 			, m_refRenderInput(nullptr)
 		{
 		}
-		virtual ~Renderable() = default;
+		virtual			~Renderable1() = default;
 
 		// Operations
 
-		virtual void		Initialize(RenderContext & renderContext, RenderInput & renderInput)
+		virtual void		Initialize(RenderContext1 & renderContext, RenderInput & renderInput)
 		{
-			m_refRenderContext = &renderContext;
+			m_refRenderContext1 = &renderContext;
 			m_refRenderInput = &renderInput;
 		}
 		virtual void		Update(double milliSeconds) = 0;
 
 		// Properties
 
-		RenderContext &		GetRenderContext()
+		RenderContext1 &	GetRenderContext1()
 		{
-			return *m_refRenderContext;
+			return *m_refRenderContext1;
 		}
 		RenderInput &		GetRenderInput()
 		{
@@ -37,30 +37,59 @@ namespace Graphics
 
 		// Events
 
-	public: _RECV_EVENT_DECL1(Renderable, OnWndResize);
+	public: _RECV_EVENT_DECL1(Renderable1, OnWndResize);
 
 	private:
-		RenderContext *		m_refRenderContext;
+		RenderContext1 *	m_refRenderContext1;
 		RenderInput *		m_refRenderInput;
 	};
 
-	class SceneRenderable : public Renderable
+	class Renderable
 	{
 	public:
-		// Operations
+		virtual			~Renderable() = default;
+		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) = 0;
+		virtual void		Update(double ms) = 0;
+	};
 
-		virtual void		Initialize(RenderContext & renderContext, RenderInput & renderInput) override;
-		virtual void		Update(double milliSeconds) override;
-
-		// Properties
-
-		SceneState &		GetSceneState()
+	class ROTriangle : public Renderable
+	{
+		struct Vertex
 		{
-			return *m_refSceneState;
+			Vec3 pos;
+			Vec3 rgb;
+		};
+		Vertex			m_vertex[3];
+		VertexRange		m_vertexRange;
+		VertexBuffer *		m_vertexBuffer;
+	public:
+		ROTriangle(Vec3 pos0, Vec3 rgb0, Vec3 pos1, Vec3 rgb1, Vec3 pos2, Vec3 rgb2)
+			: m_vertex { {pos0, rgb0}, {pos1, rgb1}, {pos2, rgb2} }
+			, m_vertexRange()
+			, m_vertexBuffer(nullptr)
+		{
 		}
+		~ROTriangle()
+		{
+			if (m_vertexBuffer)
+			{
+				m_vertexBuffer->Free(m_vertexRange);
+			}
+		}
+		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer)
+		{
+			if (m_vertexBuffer)
+			{
+				m_vertexBuffer->Free(m_vertexRange);
+			}
+			m_vertexBuffer	= &vertexBuffer;
+			m_vertexRange	= m_vertexBuffer->Alloc(3);
 
-	private:
-		Ptr<SceneState>		m_refSceneState;
+			memcpy(m_vertexRange.At(0), &m_vertex, sizeof(Vertex) * 3);
+		}
+		virtual void		Update(double ms)
+		{
+		}
 	};
 
 	class IRenderer
@@ -73,23 +102,23 @@ namespace Graphics
 		virtual void		Draw() = 0;
 	};
 
-	class Renderer : public IRenderer
+	class Renderer1 : public IRenderer
 	{
 	public:
 
-		Renderer()
-			: m_refRenderContext(nullptr), m_refRenderTarget(nullptr)
+		Renderer1()
+			: m_refRenderContext1(nullptr), m_refRenderTarget1(nullptr)
 		{
 		}
 
 		// Operations
 
-		void			AddRenderable(Ref<Renderable> renderable)
+		void			AddRenderable(Ref<Renderable1> renderable)
 		{
 			m_renderables.emplace_back(renderable);
 		}
 
-		void			Initialize(Ptr<RenderContext> renderContext, Ptr<RenderTarget> renderTarget);
+		void			Initialize(Ptr<RenderContext1> renderContext, Ptr<RenderTarget1> renderTarget);
 
 		virtual void		Present() override;
 		virtual void		Clear() override;
@@ -98,19 +127,19 @@ namespace Graphics
 
 		// Properties
 
-		RenderContext &		GetRenderContext()
+		RenderContext1 &	GetRenderContext1()
 		{
-			return *m_refRenderContext;
+			return *m_refRenderContext1;
 		}
-		Ref<Renderable>	&	GetRenderable(Integer i)
+		Ref<Renderable1>	&	GetRenderable(Integer i)
 		{
 			return m_renderables.at(i);
 		}
 
 	private:
 		Ptr<RenderInput>		m_refRenderInput;
-		Ptr<RenderContext>		m_refRenderContext;
-		Ptr<RenderTarget>		m_refRenderTarget;
-		std::vector<Ref<Renderable>>	m_renderables;
+		Ptr<RenderContext1>		m_refRenderContext1;
+		Ptr<RenderTarget1>		m_refRenderTarget1;
+		std::vector<Ref<Renderable1>>	m_renderables;
 	};
 }

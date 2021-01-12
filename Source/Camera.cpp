@@ -13,7 +13,7 @@
 namespace Graphics
 {
 
-	void Camera::Move(const Vec3 & delta)
+	void Camera1::Move(const Vec3 & delta)
 	{
 		m_pos.x += delta.x;
 		m_pos.y += delta.y;
@@ -22,7 +22,7 @@ namespace Graphics
 		_DISPATCH_EVENT1(OnCameraPosChange, *this, GetPos());
 	}
 
-	void Camera::SetHorizontalAngle(float fAngle)
+	void Camera1::SetHorizontalAngle(float fAngle)
 	{
 		float hradian = DegreeToRadian(fAngle);
 
@@ -34,7 +34,7 @@ namespace Graphics
 		}
 	}
 
-	void Camera::SetVerticalAngle(float fAngle)
+	void Camera1::SetVerticalAngle(float fAngle)
 	{
 		float vradian = DegreeToRadian(Bound(-90.0f, fAngle, 90.0f));
 
@@ -46,13 +46,13 @@ namespace Graphics
 		}
 	}
 
-	void Camera::SetAspectRatio(float fAspectRatio)
+	void Camera1::SetAspectRatio(float fAspectRatio)
 	{
 		m_aspectRatio = fAspectRatio;
 		m_dirtyBits |= BIT_PROJ_MATRIX;
 	}
 
-	const Vec3 Camera::GetDirection()
+	const Vec3 Camera1::GetDirection()
 	{
 		if (m_dirtyBits & BIT_DIRECTION)
 		{
@@ -64,7 +64,7 @@ namespace Graphics
 		return m_dir;
 	}
 
-	const Matrix4x4 & Camera::GetViewMatrix()
+	const Matrix4x4 & Camera1::GetViewMatrix()
 	{
 		if (m_dirtyBits & BIT_VIEW_MATRIX)
 		{
@@ -78,7 +78,7 @@ namespace Graphics
 		return m_viewMatrix;
 	}
 
-	const Matrix4x4 & Camera::GetProjMatrix()
+	const Matrix4x4 & Camera1::GetProjMatrix()
 	{
 		if (m_dirtyBits & BIT_PROJ_MATRIX)
 		{
@@ -92,7 +92,7 @@ namespace Graphics
 		return m_projMatrix;
 	}
 
-	_RECV_EVENT_IMPL(Camera, OnAspectRatioChange) ( void * sender, const float & aspectRatio )
+	_RECV_EVENT_IMPL(Camera1, OnAspectRatioChange) ( void * sender, const float & aspectRatio )
 	{
 		UNREFERENCED_PARAMETER(sender);
 

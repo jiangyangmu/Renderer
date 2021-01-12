@@ -95,10 +95,16 @@ namespace Event
 // --------------------------------------------------------------------------
 
 #define _DEFINE_EVENT(name) \
-    struct name##EventHandler : ::Event::Internal::EventHandler<void> { using ::Event::Internal::EventHandler<void>::EventHandler; }; \
+    struct name##EventHandler : ::Event::Internal::EventHandler<void> { \
+        using ::Event::Internal::EventHandler<void>::EventHandler; \
+        virtual void operator() (void * sender) = 0; \
+    }; \
     struct name##Event : ::Event::Internal::Event<void> {}
 #define _DEFINE_EVENT1(name, args) \
-    struct name##EventHandler : ::Event::Internal::EventHandler<args> { using ::Event::Internal::EventHandler<args>::EventHandler; }; \
+    struct name##EventHandler : ::Event::Internal::EventHandler<args> { \
+        using ::Event::Internal::EventHandler<args>::EventHandler; \
+        virtual void operator() (void * sender, const args & args_) = 0; \
+    }; \
     struct name##Event : ::Event::Internal::Event<args> {}
 
 // --------------------------------------------------------------------------
@@ -150,6 +156,50 @@ namespace Event
     _RECV_EVENT1(receiver, name) (void * sender, const name##EventHandler::ArgType & args)
 #define _RECV_EVENT_IMPL(receiver, name) \
     void receiver::__##name##_EventHandleFunc
+// receiver with handler inheritance and overrides
+#define _RECV_EVENT_ABSTRACT(receiver, name) \
+        name##EventHandler & Get##name##EventHandler() \
+        { \
+            __##name##_event_receiver.m_receiver = this; \
+            __##name##_event_receiver.m_handleFunc = &receiver::__##name##_EventHandleFunc; \
+            return __##name##_event_receiver; \
+        } \
+    private: \
+        struct __##name##_EventHandler : public name##EventHandler \
+        { \
+            using           FuncType = void (receiver::*)(void * sender); \
+            receiver *      m_receiver = nullptr; \
+            FuncType        m_handleFunc = nullptr; \
+            virtual void    operator() (void * sender) override { (m_receiver->*m_handleFunc)(sender); } \
+        } __##name##_event_receiver; \
+    protected: \
+        virtual void __##name##_EventHandleFunc (void * sender) = 0;
+#define _RECV_EVENT_ABSTRACT1(receiver, name) \
+        name##EventHandler & Get##name##EventHandler() \
+        { \
+            __##name##_event_receiver.m_receiver = this; \
+            __##name##_event_receiver.m_handleFunc = &receiver::__##name##_EventHandleFunc; \
+            return __##name##_event_receiver; \
+        } \
+    private: \
+        struct __##name##_EventHandler : public name##EventHandler \
+        { \
+            using           FuncType = void (receiver::*)(void * sender, const name##EventHandler::ArgType & args); \
+            receiver *      m_receiver = nullptr; \
+            FuncType        m_handleFunc = nullptr; \
+            virtual void    operator() (void * sender, const name##EventHandler::ArgType & args) override { (m_receiver->*m_handleFunc)(sender, args); } \
+        } __##name##_event_receiver; \
+        virtual void __##name##_EventHandleFunc (void * sender, const name##EventHandler::ArgType & args) = 0
+#define _RECV_EVENT_OVERRIDE(name) \
+    virtual void __##name##_EventHandleFunc
+#define _RECV_EVENT_OVERRIDE_DECL(name) \
+    virtual void __##name##_EventHandleFunc (void * sender)
+#define _RECV_EVENT_OVERRIDE_DECL1(name) \
+    virtual void __##name##_EventHandleFunc (void * sender, const name##EventHandler::ArgType & args)
+#define _RECV_EVENT_OVERRIDE_IMPL(receiver, name) \
+    void receiver::__##name##_EventHandleFunc
+#define _RECV_EVENT_CALL_BASE(base_receiver, name) \
+    base_receiver::__##name##_EventHandleFunc
 
 #define _BIND_EVENT(name, sender, receiver) \
     do { \
@@ -225,3 +275,16 @@ _DEFINE_EVENT1(OnAspectRatioChange, float);
 // camera
 _DEFINE_EVENT1(OnCameraDirChange, Vec3);
 _DEFINE_EVENT1(OnCameraPosChange, Vec3);
+
+class IMouseEventHandler
+{
+public: _RECV_EVENT_ABSTRACT1(IMouseEventHandler, OnMouseMove);
+public: _RECV_EVENT_ABSTRACT1(IMouseEventHandler, OnMouseLButtonDown);
+public: _RECV_EVENT_ABSTRACT1(IMouseEventHandler, OnMouseLButtonUp);
+};
+
+class IKeyboardEventHandler
+{
+public: _RECV_EVENT_ABSTRACT1(IKeyboardEventHandler, OnKeyDown);
+public: _RECV_EVENT_ABSTRACT1(IKeyboardEventHandler, OnKeyUp);
+};
