@@ -146,6 +146,8 @@ namespace Graphics
 			}
 		}
 
+		// TODO: handle window resize
+
 	private:
 		RenderWindow &		m_window;
 		
@@ -171,8 +173,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	int ret;
 	{
-		// Setup main window
-
 		Integer W = 800;
 		Integer H = 600;
 
@@ -180,44 +180,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		W = renderWindow.GetWidth();
 		H = renderWindow.GetHeight();
 
-#define USE_V2
-#ifdef USE_V2
 		Graphics::SceneRenderer renderer(renderWindow);
 		renderWindow.SetRenderer(renderer);
 
 		Graphics::MyScene scene;
 		renderer.SwitchScene(scene);
-#else
-		// Setup renderer
-
-		Graphics::RenderTarget1 * renderTarget		= Graphics::RenderTarget1::FromRenderWindow(renderWindow).release();
-		Graphics::RenderContext1 * renderContext	= new Graphics::RenderContext1(W, H);
-		Graphics::SceneRenderable * renderable		= new Graphics::SceneRenderable();
-
-		Graphics::Renderer1 renderer;
-		
-		renderer.AddRenderable(Ref<Graphics::Renderable1>(renderable));
-		renderer.Initialize(Ptr<Graphics::RenderContext1>(renderContext),
-				    Ptr<Graphics::RenderTarget1>(renderTarget));
-		
-		// Setup event handling
-
-		Graphics::SceneState & scene = renderable->GetSceneState();
-		Graphics::Camera1 & camera = *scene.camera;
-		// keyboard, mouse -> camera
-		_BIND_EVENT(OnMouseMove, renderWindow, camera.GetController());
-		_BIND_EVENT(OnKeyDown, renderWindow, camera.GetController());
-		_BIND_EVENT(OnKeyUp, renderWindow, camera.GetController());
-		// resize -> render target, render context, renderables
-		_BIND_EVENT(OnWndResize, renderWindow, *renderTarget);
-		_BIND_EVENT(OnWndResize, renderWindow, *renderContext);
-		_BIND_EVENT(OnWndResize, renderWindow, *renderable);
-		_BIND_EVENT(OnAspectRatioChange, renderWindow, camera);
-
-		// Start render loop
-
-		renderWindow.SetRenderer(renderer);
-#endif
 
 		ret = app.Run(renderWindow);
 	}

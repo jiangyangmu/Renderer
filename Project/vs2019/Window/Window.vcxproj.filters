@@ -47,9 +47,6 @@
     <ClInclude Include="..\..\..\Source\Scene.h">
       <Filter>Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Camera.h">
-      <Filter>Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\RenderWindow.h">
       <Filter>Graphics</Filter>
     </ClInclude>
@@ -66,9 +63,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Graphics.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\Camera.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\RenderWindow.cpp">

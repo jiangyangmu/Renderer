@@ -6,47 +6,6 @@
 
 namespace Graphics
 {
-	struct SceneState
-	{
-		Ptr<Camera1>		camera;
-		Lights::Light		light;
-
-		// entity
-		Materials::BlinnPhong	material;
-		LPCWSTR textureURL;
-		std::vector<std::vector<Pipeline::Vertex>> vertices;
-
-		// controllers, connectors
-	};
-
-	class SceneLoader
-	{
-	public:
-		static SceneState	Default(Integer width, Integer height);
-	};
-
-	class SceneRenderable : public Renderable1
-	{
-	public:
-		// Operations
-
-		virtual void		Initialize(RenderContext1 & renderContext, RenderInput & renderInput) override;
-		virtual void		Update(double milliSeconds) override;
-
-		// Properties
-
-		SceneState &		GetSceneState()
-		{
-			return *m_refSceneState;
-		}
-
-	private:
-		Ptr<SceneState>		m_refSceneState;
-	};
-
-
-
-
 	struct TreeNode
 	{
 		TreeNode *		firstChild;

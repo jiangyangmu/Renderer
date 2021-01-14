@@ -350,7 +350,7 @@ inline float EdgeFunction(const Vec2 & a, const Vec2 & b, const Vec2 & c)
 
 #include <cassert>
 
-#define _ALERT_IF_FALSE(e) if (!(e)) { MessageBox(NULL, TEXT(#e), TEXT("Exception"), MB_OK); }
+#define _ALERT_IF_FALSE(e) if (!(e)) { MessageBox(NULL, TEXT(#e), TEXT("Exception"), MB_OK); ExitProcess(0); }
 
 #define ENSURE_NOT_NULL(e) _ALERT_IF_FALSE((e) != NULL)
 #define ENSURE_TRUE(e) _ALERT_IF_FALSE((e))

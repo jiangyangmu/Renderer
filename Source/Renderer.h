@@ -5,45 +5,6 @@
 
 namespace Graphics
 {
-	class Renderable1
-	{
-	public:
-		Renderable1()
-			: m_refRenderContext1(nullptr)
-			, m_refRenderInput(nullptr)
-		{
-		}
-		virtual			~Renderable1() = default;
-
-		// Operations
-
-		virtual void		Initialize(RenderContext1 & renderContext, RenderInput & renderInput)
-		{
-			m_refRenderContext1 = &renderContext;
-			m_refRenderInput = &renderInput;
-		}
-		virtual void		Update(double milliSeconds) = 0;
-
-		// Properties
-
-		RenderContext1 &	GetRenderContext1()
-		{
-			return *m_refRenderContext1;
-		}
-		RenderInput &		GetRenderInput()
-		{
-			return *m_refRenderInput;
-		}
-
-		// Events
-
-	public: _RECV_EVENT_DECL1(Renderable1, OnWndResize);
-
-	private:
-		RenderContext1 *	m_refRenderContext1;
-		RenderInput *		m_refRenderInput;
-	};
-
 	class Renderable
 	{
 	public:
@@ -82,46 +43,5 @@ namespace Graphics
 		virtual void		Clear() = 0;
 		virtual void		Update(double milliSeconds) = 0;
 		virtual void		Draw() = 0;
-	};
-
-	class Renderer1 : public IRenderer
-	{
-	public:
-
-		Renderer1()
-			: m_refRenderContext1(nullptr), m_refRenderTarget1(nullptr)
-		{
-		}
-
-		// Operations
-
-		void			AddRenderable(Ref<Renderable1> renderable)
-		{
-			m_renderables.emplace_back(renderable);
-		}
-
-		void			Initialize(Ptr<RenderContext1> renderContext, Ptr<RenderTarget1> renderTarget);
-
-		virtual void		Present() override;
-		virtual void		Clear() override;
-		virtual void		Update(double milliSeconds) override;
-		virtual void		Draw() override;
-
-		// Properties
-
-		RenderContext1 &	GetRenderContext1()
-		{
-			return *m_refRenderContext1;
-		}
-		Ref<Renderable1>	&	GetRenderable(Integer i)
-		{
-			return m_renderables.at(i);
-		}
-
-	private:
-		Ptr<RenderInput>		m_refRenderInput;
-		Ptr<RenderContext1>		m_refRenderContext1;
-		Ptr<RenderTarget1>		m_refRenderTarget1;
-		std::vector<Ref<Renderable1>>	m_renderables;
 	};
 }
