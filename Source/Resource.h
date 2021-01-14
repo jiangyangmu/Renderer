@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Graphics.h"
 #include "Buffer.h"
 
 #include <Windows.h>
@@ -45,29 +44,46 @@ namespace Graphics
 	// Buffers
 	// ---------------------------------------------------------------
 
-	enum class VertexFormat
+	enum class VertexFieldType
 	{
-		POS_RGB,
+		UNKNOWN,
+		POSITION,
+		COLOR_RGB,
+		TEX_COORD,
+		NORMAL,
+		MATERIAL,
+	};
+
+	struct VertexField
+	{
+		Integer		offset;
+		VertexFieldType	type;
+	};
+
+	struct VertexFormat : Handle
+	{
+		Integer		Alignment();
+		Integer		Size();
 	};
 	
 	struct VertexRange
 	{
 		Integer		nVertexOffset;
 		Integer		nVertexCount;
-		VertexFormat	eVertexFormat;
+		VertexFormat	hVertexFormat;
 		void *		pVertexBegin;
 
 		VertexRange()
 			: nVertexOffset(0)
 			, nVertexCount(0)
-			, eVertexFormat(VertexFormat::POS_RGB)
+			, hVertexFormat()
 			, pVertexBegin(nullptr)
-		{
-		}
+		{}
 		void *		At(Integer i);
 		Integer		Offset();
 		Integer		Count();
 	};
+
 	class VertexBuffer : public Handle
 	{
 	public:
@@ -183,10 +199,15 @@ namespace Graphics
 		DepthStencilBuffer	CreateDepthStencilBuffer(Integer width, Integer height, bool enableAutoResize = true);
 		RenderTarget		CreateRenderTarget(IUnknown * pUnknown, const Rect & rect);
 		RenderTarget		CreateRenderTarget(RenderTarget renderTarget, const Rect & rectSub);
+
+		VertexFormat		CreateVertexFormat(VertexFieldType type0);
+		VertexFormat		CreateVertexFormat(VertexFieldType type0, VertexFieldType type1);
+		VertexFormat		CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2);
+		VertexFormat		CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2, VertexFieldType type3);
+		VertexFormat		CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2, VertexFieldType type3, VertexFieldType type4);
+		VertexBuffer		CreateVertexBuffer(const VertexFormat & format);
 		VertexShader		CreateVertexShader();
 		PixelShader		CreatePixelShader();
-		
-		VertexBuffer		CreateVertexBuffer(VertexFormat format);
 
 	private:
 		void *			pImpl;

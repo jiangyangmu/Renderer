@@ -343,6 +343,19 @@ inline float EdgeFunction(const Vec2 & a, const Vec2 & b, const Vec2 & c)
 {
 	return ( c.x - a.x ) * ( b.y - a.y ) - ( c.y - a.y ) * ( b.x - a.x );
 }
+template <typename T>
+inline T AlignFloor(T value, T alignment)
+{
+	// value > 0, alignment > 0
+	return value - (value % alignment);
+}
+template <typename T>
+inline T AlignCeiling(T value, T alignment)
+{
+	// value > 0, alignment > 0
+	T m = value % alignment;
+	return m > 0 ? (value - m + alignment) : value;
+}
 
 // --------------------------------------------------------------------------
 // Macros for debugging

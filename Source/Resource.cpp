@@ -3,6 +3,8 @@
 #include "RenderWindow.h"
 #include "win32/Win32App.h"
 
+#define NUM_MAX_VERTEX_FIELD (5)
+
 namespace Graphics
 {
 	struct ResourceIndex { Integer value; };
@@ -33,10 +35,18 @@ namespace Graphics
 		BufferIndex		iStencilBuffer;
 	};
 
+	struct VertexFormat_Desc
+	{
+		VertexField		vFields[NUM_MAX_VERTEX_FIELD];
+		Integer			nFields;
+		Integer			nSize;
+		Integer			nAlign;
+	};
+
 	struct VertexBuffer_Desc
 	{
 		BufferIndex		iVertexBuffer;
-		VertexFormat		eFormat;
+		DescIndex		iVertexFormat;
 		Integer			nAllocated;
 	};
 
@@ -79,6 +89,7 @@ namespace Graphics
 
 		std::vector<SwapChain_Desc>		swapChainDescs;
 		std::vector<DepthStencil_Desc>		depthStencilDescs;
+		std::vector<VertexFormat_Desc>		vertexFormatDescs;
 		std::vector<VertexBuffer_Desc>		vertexBufferDescs;
 		//std::vector<IndexBuffer_Desc>		indexBuffers;
 
@@ -120,33 +131,49 @@ namespace Graphics
 		i->value = reinterpret_cast< Integer >( h.pImpl );
 	}
 
-	static inline Integer			_GetVertexSize(VertexFormat format)
+	static inline Integer			_GetVertexFieldAlignment(VertexFieldType type)
+	{
+		Integer alignment;
+
+		switch ( type )
+		{
+			case VertexFieldType::POSITION:
+			case VertexFieldType::COLOR_RGB:
+			case VertexFieldType::TEX_COORD:
+			case VertexFieldType::NORMAL:
+			case VertexFieldType::MATERIAL:
+				alignment = 4;
+				break;
+			case VertexFieldType::UNKNOWN:
+			default:
+				alignment = 0;
+				break;
+		}
+
+		return alignment;
+	}
+	static inline Integer			_GetVertexFieldSize(VertexFieldType type)
 	{
 		Integer size;
-		switch (format)
+
+		switch ( type )
 		{
-			case VertexFormat::POS_RGB:
-				size = 24;
+			case VertexFieldType::TEX_COORD:
+				size = 8;
 				break;
+			case VertexFieldType::POSITION:
+			case VertexFieldType::COLOR_RGB:
+			case VertexFieldType::NORMAL:
+			case VertexFieldType::MATERIAL:
+				size = 12;
+				break;
+			case VertexFieldType::UNKNOWN:
 			default:
 				size = 0;
 				break;
 		}
+
 		return size;
-	}
-	static inline Integer			_GetVertexAlignment(VertexFormat format)
-	{
-		Integer alignment;
-		switch ( format )
-		{
-			case VertexFormat::POS_RGB:
-				alignment = 4;
-				break;
-			default:
-				alignment = 1;
-				break;
-		}
-		return alignment;
 	}
 
 	static inline Buffer &			_GetFrontBuffer(Device_Impl & device, SwapChain_Desc & swapChainDesc)
@@ -240,6 +267,19 @@ namespace Graphics
 
 		return pDevice->buffers[ pVertexBufferDesc->iVertexBuffer.value ];
 	}
+	static inline VertexFormat_Desc *	_GetVertexFormatDesc(VertexFormat hVertexFormat)
+	{
+		Device_Impl *		pDevice;
+		DescIndex		iVertexFormatDesc;
+		VertexFormat_Desc *	pVertexFormatDesc;
+
+		_LoadIndex(hVertexFormat, &iVertexFormatDesc);
+
+		pDevice			= static_cast< Device_Impl * >( hVertexFormat.pParam );
+		pVertexFormatDesc	= &pDevice->vertexFormatDescs[ iVertexFormatDesc.value ];
+
+		return pVertexFormatDesc;
+	}
 	static inline void			_GetVertexBufferDesc(VertexBuffer vb, VertexBuffer_Desc ** ppVertexBufferDesc, Buffer ** ppBuffer)
 	{
 		Device_Impl *		pDevice;
@@ -326,12 +366,15 @@ namespace Graphics
 
 		return dsb;
 	}
-	static inline VertexBuffer_Desc		_CreateVertexBuffer(Device_Impl & device, VertexFormat format)
+	static inline VertexBuffer_Desc		_CreateVertexBuffer(Device_Impl & device, DescIndex iVertexFormatDesc)
 	{
+		VertexFormat_Desc * pVertexFormatDesc;
 		VertexBuffer_Desc vb;
 
-		vb.iVertexBuffer	= _CreateBuffer(device, 64, 1, _GetVertexSize(format), _GetVertexAlignment(format));
-		vb.eFormat		= format;
+		pVertexFormatDesc	= &device.vertexFormatDescs[ iVertexFormatDesc.value ];
+
+		vb.iVertexBuffer	= _CreateBuffer(device, 64, 1, pVertexFormatDesc->nSize, pVertexFormatDesc->nAlign);
+		vb.iVertexFormat	= iVertexFormatDesc;
 		vb.nAllocated		= 0;
 
 		return vb;
@@ -387,9 +430,40 @@ namespace Graphics
 		ps.pFunc = reinterpret_cast< void * >( PS_DEFAULT_POS_RGB );
 		return ps;
 	}
+	static inline VertexFormat_Desc		_VertexFormat_Create()
+	{
+		VertexFormat_Desc desc;
+
+		for (VertexField & field : desc.vFields)
+		{
+			field.offset	= 0;
+			field.type	= VertexFieldType::UNKNOWN;
+		}
+		desc.nFields	= 0;
+		desc.nSize	= 0;
+		desc.nAlign	= 0;
+
+		return desc;
+	}
+	static inline void			_VertexFormat_AddField(VertexFormat_Desc * pDesc, VertexFieldType type)
+	{
+		ASSERT(pDesc && pDesc->nFields < NUM_MAX_VERTEX_FIELD);
+
+		Integer nFieldAlign	= _GetVertexFieldAlignment(type);
+		Integer nFieldSize	= _GetVertexFieldSize(type);
+		Integer nFieldOffset	= AlignCeiling(pDesc->nSize, nFieldAlign);
+
+		VertexField & field	= pDesc->vFields[pDesc->nFields];
+		
+		field.offset	= nFieldOffset;
+		field.type	= type;
+		pDesc->nAlign	= Max(pDesc->nAlign, nFieldAlign);
+		pDesc->nSize	= AlignCeiling(pDesc->nSize + nFieldSize, pDesc->nAlign);
+		pDesc->nFields	+= 1;
+	}
 
 	using Vertex = VS_DEFAULT_POS_RGB_IN;
-	static inline void			_Rasterize(RenderContext_Impl & context, VertexFormat vertexFormat, Vertex * pVertexBegin, Integer nCount)
+	static inline void			_Rasterize(RenderContext_Impl & context, const VertexFormat_Desc & vertexFormat, Vertex * pVertexBegin, Integer nCount)
 	{
 		Buffer & frameBuffer = _GetBackBuffer(context);
 		Buffer & depthBuffer = _GetDepthBuffer(context);
@@ -523,18 +597,14 @@ namespace Graphics
 					ASSERT(( w0 + w1 + w2 ) <= 1.0001f);
 
 					PS_IN pin;
-					switch ( vertexFormat )
+					ASSERT(vertexFormat.nFields == 2);
+					ASSERT(vertexFormat.vFields[0].type == VertexFieldType::POSITION);
+					ASSERT(vertexFormat.vFields[1].type == VertexFieldType::COLOR_RGB);
+					pin = PS_IN
 					{
-						case VertexFormat::POS_RGB:
-							pin = PS_IN
-							{
-								{xPixF, yPixF, zNDC},
-								WeightedAdd(v0.color, v1.color, v2.color, w0, w1, w2),
-							};
-							break;
-						default:
-							break;
-					}
+						{xPixF, yPixF, zNDC},
+						WeightedAdd(v0.color, v1.color, v2.color, w0, w1, w2),
+					};
 
 					RGB color = Vec3ToRGB(pixelShader(pin, shaderContext).color);
 					ASSERT(color.r >= 0.0f && color.g >= 0.0f && color.b >= 0.0f);
@@ -607,10 +677,20 @@ namespace Graphics
 		return _GetFrontBuffer(*pDevice, *pSwapChainDesc).Data();
 	}
 
+	Integer			VertexFormat::Alignment()
+	{
+		return _GetVertexFormatDesc(*this)->nAlign;
+	}
+	Integer			VertexFormat::Size()
+	{
+		return _GetVertexFormatDesc(*this)->nSize;
+	}
+
 	void *			VertexRange::At(Integer i)
 	{
 		ASSERT(0 <= i && i <= nVertexCount);
-		return ((Byte *)pVertexBegin) + _GetVertexSize(eVertexFormat) * i;
+
+		return ((Byte *)pVertexBegin) + hVertexFormat.Size() * i;
 	}
 	Integer			VertexRange::Offset()
 	{
@@ -630,10 +710,14 @@ namespace Graphics
 		
 		ASSERT((pVertexBufferDesc->nAllocated + nCount) <= pBuffer->ElementCount());
 
+		VertexFormat hVertexFormat;
+		_StoreIndex(&hVertexFormat, pVertexBufferDesc->iVertexFormat);
+		hVertexFormat.pParam = this->pParam;
+
 		VertexRange vr;
 		vr.nVertexOffset		= pVertexBufferDesc->nAllocated;
 		vr.nVertexCount			= nCount;
-		vr.eVertexFormat		= pVertexBufferDesc->eFormat;
+		vr.hVertexFormat		= hVertexFormat;
 		vr.pVertexBegin			= pBuffer->At(0, pVertexBufferDesc->nAllocated);
 
 		pVertexBufferDesc->nAllocated	+= nCount;
@@ -774,6 +858,7 @@ namespace Graphics
 
 		DescIndex		iVertexBufferDesc;
 		VertexBuffer_Desc *	pVertexBufferDesc;
+		VertexFormat_Desc *	pVertexFormatDesc;
 		Buffer *		pVertexBuffer;
 		Byte *			pBytes;
 		Integer			nVSize;
@@ -782,11 +867,12 @@ namespace Graphics
 
 		pVertexBufferDesc	= &self->pDevice->vertexBufferDescs[iVertexBufferDesc.value];
 		pVertexBuffer		= &self->pDevice->buffers[pVertexBufferDesc->iVertexBuffer.value];
+		pVertexFormatDesc	= &self->pDevice->vertexFormatDescs[pVertexBufferDesc->iVertexFormat.value];
 
 		pBytes			= (Byte *)pVertexBuffer->Data();
-		nVSize			= _GetVertexSize(pVertexBufferDesc->eFormat);
+		nVSize			= pVertexFormatDesc->nSize;
 
-		_Rasterize(*self, pVertexBufferDesc->eFormat, (Vertex *)(pBytes + nOffset * nVSize), nCount);
+		_Rasterize(*self, *pVertexFormatDesc, (Vertex *)(pBytes + nOffset * nVSize), nCount);
 	}
 
 	Device			Device::Default()
@@ -880,6 +966,119 @@ namespace Graphics
 		return handle;
 	}
 
+
+	VertexFormat		Device::CreateVertexFormat(VertexFieldType type0)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+
+		VertexFormat_Desc vertexFormatDesc = _VertexFormat_Create();
+		_VertexFormat_AddField(&vertexFormatDesc, type0);
+
+		DescIndex iVertexFormatDesc;
+		iVertexFormatDesc.value = self->vertexFormatDescs.size();
+
+		self->vertexFormatDescs.emplace_back(vertexFormatDesc);
+
+		VertexFormat handle;
+		_StoreIndex(&handle, iVertexFormatDesc);
+		handle.pParam = self;
+		return handle;
+	}
+	VertexFormat		Device::CreateVertexFormat(VertexFieldType type0, VertexFieldType type1)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+
+		VertexFormat_Desc vertexFormatDesc = _VertexFormat_Create();
+		_VertexFormat_AddField(&vertexFormatDesc, type0);
+		_VertexFormat_AddField(&vertexFormatDesc, type1);
+
+		DescIndex iVertexFormatDesc;
+		iVertexFormatDesc.value = self->vertexFormatDescs.size();
+
+		self->vertexFormatDescs.emplace_back(vertexFormatDesc);
+
+		VertexFormat handle;
+		_StoreIndex(&handle, iVertexFormatDesc);
+		handle.pParam = self;
+		return handle;
+	}
+	VertexFormat		Device::CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+
+		VertexFormat_Desc vertexFormatDesc = _VertexFormat_Create();
+		_VertexFormat_AddField(&vertexFormatDesc, type0);
+		_VertexFormat_AddField(&vertexFormatDesc, type1);
+		_VertexFormat_AddField(&vertexFormatDesc, type2);
+
+		DescIndex iVertexFormatDesc;
+		iVertexFormatDesc.value = self->vertexFormatDescs.size();
+
+		self->vertexFormatDescs.emplace_back(vertexFormatDesc);
+
+		VertexFormat handle;
+		_StoreIndex(&handle, iVertexFormatDesc);
+		handle.pParam = self;
+		return handle;
+	}
+	VertexFormat		Device::CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2, VertexFieldType type3)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+
+		VertexFormat_Desc vertexFormatDesc = _VertexFormat_Create();
+		_VertexFormat_AddField(&vertexFormatDesc, type0);
+		_VertexFormat_AddField(&vertexFormatDesc, type1);
+		_VertexFormat_AddField(&vertexFormatDesc, type2);
+		_VertexFormat_AddField(&vertexFormatDesc, type3);
+
+		DescIndex iVertexFormatDesc;
+		iVertexFormatDesc.value = self->vertexFormatDescs.size();
+
+		self->vertexFormatDescs.emplace_back(vertexFormatDesc);
+
+		VertexFormat handle;
+		_StoreIndex(&handle, iVertexFormatDesc);
+		handle.pParam = self;
+		return handle;
+	}
+	VertexFormat		Device::CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2, VertexFieldType type3, VertexFieldType type4)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+
+		VertexFormat_Desc vertexFormatDesc = _VertexFormat_Create();
+		_VertexFormat_AddField(&vertexFormatDesc, type0);
+		_VertexFormat_AddField(&vertexFormatDesc, type1);
+		_VertexFormat_AddField(&vertexFormatDesc, type2);
+		_VertexFormat_AddField(&vertexFormatDesc, type3);
+		_VertexFormat_AddField(&vertexFormatDesc, type4);
+
+		DescIndex iVertexFormatDesc;
+		iVertexFormatDesc.value = self->vertexFormatDescs.size();
+
+		self->vertexFormatDescs.emplace_back(vertexFormatDesc);
+
+		VertexFormat handle;
+		_StoreIndex(&handle, iVertexFormatDesc);
+		handle.pParam = self;
+		return handle;
+	}
+	VertexBuffer		Device::CreateVertexBuffer(const VertexFormat & hVertexFormat)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+
+		DescIndex iVertexFormatDesc;
+		_LoadIndex(hVertexFormat, &iVertexFormatDesc);
+
+		DescIndex iVertexBufferDesc;
+		iVertexBufferDesc.value = self->vertexBufferDescs.size();
+
+		self->vertexBufferDescs.emplace_back(_CreateVertexBuffer(*self, iVertexFormatDesc));
+
+		VertexBuffer handle;
+		_StoreIndex(&handle, iVertexBufferDesc);
+		handle.pParam = self;
+		return handle;
+	}
 	VertexShader		Device::CreateVertexShader()
 	{
 		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
@@ -905,20 +1104,6 @@ namespace Graphics
 
 		PixelShader handle;
 		_StoreIndex(&handle, iPixelShader);
-		handle.pParam = self;
-		return handle;
-	}
-	VertexBuffer		Device::CreateVertexBuffer(VertexFormat format)
-	{
-		Device_Impl * self = static_cast<Device_Impl *>(pImpl);
-
-		DescIndex iVertexBufferDesc;
-		iVertexBufferDesc.value = self->vertexBufferDescs.size();
-
-		self->vertexBufferDescs.emplace_back(_CreateVertexBuffer(*self, format));
-
-		VertexBuffer handle;
-		_StoreIndex(&handle, iVertexBufferDesc);
 		handle.pParam = self;
 		return handle;
 	}

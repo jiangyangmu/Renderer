@@ -13,7 +13,9 @@ namespace Graphics
 		{
 			m_device		= &device;
 			m_context		= &context;
-			m_vertexBuffer		= m_device->CreateVertexBuffer(VertexFormat::POS_RGB);
+
+			m_vertexFormat		= m_device->CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::COLOR_RGB);
+			m_vertexBuffer		= m_device->CreateVertexBuffer(m_vertexFormat);
 			
 			Rect rect		= context.GetOutputTarget().GetRect();
 			m_rdtgFullRect		= context.GetOutputTarget();
@@ -71,6 +73,7 @@ namespace Graphics
 
 		RenderTarget		m_rdtgFullRect;
 		RenderTarget		m_rdtgMapRect;
+		VertexFormat		m_vertexFormat;
 		VertexBuffer		m_vertexBuffer;
 
 		Scene *			m_scene;
