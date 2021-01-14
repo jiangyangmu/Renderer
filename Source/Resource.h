@@ -50,17 +50,21 @@ namespace Graphics
 	
 	struct VertexRange
 	{
-		void *		pVertexBegin;
+		Integer		nVertexOffset;
 		Integer		nVertexCount;
 		VertexFormat	eVertexFormat;
+		void *		pVertexBegin;
 
 		VertexRange()
-			: pVertexBegin(nullptr)
+			: nVertexOffset(0)
 			, nVertexCount(0)
 			, eVertexFormat(VertexFormat::POS_RGB)
+			, pVertexBegin(nullptr)
 		{
 		}
 		void *		At(Integer i);
+		Integer		Offset();
+		Integer		Count();
 	};
 	class VertexBuffer : public Handle
 	{
@@ -84,6 +88,7 @@ namespace Graphics
 	{
 	public:
 		void		Swap();
+		void		ResetBackBuffer();
 		void *		FrameBuffer();
 	};
 
@@ -116,18 +121,28 @@ namespace Graphics
 		HWND			GetHWND();
 	};
 
+	struct Rect
+	{
+		Integer left;
+		Integer right;
+		Integer top;
+		Integer bottom;
+	};
+
 	struct RenderTarget : public Handle, public IUnknown
 	{
 	public:
-		RenderTarget() : pCache(nullptr) {}
+		RenderTarget() : pDescCache(nullptr), pObjectCache(nullptr) {}
 
+		Rect			GetRect();
 		Integer			GetWidth();
 		Integer			GetHeight();
 		virtual bool		QueryInterface(Integer iid, void ** ppvObject) override;
 	private:
 		void			InitCache();
 
-		void *			pCache;
+		void *			pDescCache;
+		void *			pObjectCache;
 	};
 
 
@@ -143,9 +158,9 @@ namespace Graphics
 		void			SetPixelShader(PixelShader ps);
 		// textures
 		// states
-
 		void			SetDepthStencilBuffer(DepthStencilBuffer dsb);
 		void			SetOutputTarget(RenderTarget target);
+
 		RenderTarget		GetOutputTarget();
 
 		void			Draw(VertexBuffer vb, Integer nOffset, Integer nCount);
@@ -164,7 +179,8 @@ namespace Graphics
 		RenderContext		CreateRenderContext();
 		SwapChain		CreateSwapChain(Integer width, Integer height, bool enableAutoResize = true);
 		DepthStencilBuffer	CreateDepthStencilBuffer(Integer width, Integer height, bool enableAutoResize = true);
-		RenderTarget		CreateRenderTarget(IUnknown * pUnknown);
+		RenderTarget		CreateRenderTarget(IUnknown * pUnknown, const Rect & rect);
+		RenderTarget		CreateRenderTarget(RenderTarget renderTarget, const Rect & rectSub);
 		VertexShader		CreateVertexShader();
 		PixelShader		CreatePixelShader();
 		

@@ -14,19 +14,37 @@ namespace Graphics
 			m_device		= &device;
 			m_context		= &context;
 			m_vertexBuffer		= m_device->CreateVertexBuffer(VertexFormat::POS_RGB);
+			
+			Rect rect		= context.GetOutputTarget().GetRect();
+			m_rdtgFullRect		= context.GetOutputTarget();
+			m_rdtgMapRect		= device.CreateRenderTarget(m_rdtgFullRect, Rect { rect.right - 300,rect.right, 0, 300 });
 
 			Scene * scene		= SceneManager::Default().CreateScene();
+
+			EntityGroup * group	= SceneManager::Default().CreateEntityGroup();
 			Light * light		= SceneManager::Default().CreateLight();
 			Player * player		= SceneManager::Default().CreatePlayer();
 			Terrain * terrain	= SceneManager::Default().CreateTerrain();
-			Camera * camera		= SceneManager::Default().CreateCamera();
+			m_cameraPlayer		= SceneManager::Default().CreateCamera();
+			m_cameraMiniMap		= SceneManager::Default().CreateCamera();
 			Controller * controller	= SceneManager::Default().CreateController();
 
-			scene->AddChild(light);
-			scene->AddChild(player);
-			scene->AddChild(terrain);
-			player->AddChild(camera, Connector::THIRD_PERSON_VIEW);
-			player->AddChild(controller);
+			scene->AddChild(m_cameraPlayer);
+			scene->AddChild(m_cameraMiniMap);
+			scene->AddChild(group);
+			scene->AddChild(controller);
+
+			group->AddChild(light);
+			group->AddChild(terrain);
+			group->AddChild(player);
+
+			m_cameraPlayer->Observe(group);
+			m_cameraMiniMap->Observe(group);
+			m_cameraMiniMap->transform.f42 = 3.0f; // Y
+
+			controller->ConnectTo(player, ConnectType::PLAYER);
+			player->ConnectTo(m_cameraPlayer, ConnectType::THIRD_PERSON_VIEW);
+			player->ConnectTo(m_cameraMiniMap, ConnectType::MINI_MAP_VIEW);
 
 			m_scene			= scene;
 
@@ -41,14 +59,23 @@ namespace Graphics
 		}
 		void			OnDraw()
 		{
-			m_context->Draw(m_vertexBuffer, 0, m_vertexBuffer.Count());
+			m_context->SetOutputTarget(m_rdtgFullRect);
+			m_cameraPlayer->Draw();
+			m_context->SetOutputTarget(m_rdtgMapRect);
+			m_cameraMiniMap->Draw();
 		}
 
 	private:
 		Device *		m_device;
 		RenderContext *		m_context;
+
+		RenderTarget		m_rdtgFullRect;
+		RenderTarget		m_rdtgMapRect;
 		VertexBuffer		m_vertexBuffer;
+
 		Scene *			m_scene;
+		Camera *		m_cameraPlayer;
+		Camera *		m_cameraMiniMap;
 	};
 
 	class SceneRenderer : public IRenderer
@@ -61,10 +88,12 @@ namespace Graphics
 			RenderTarget target;
 			VertexShader vs;
 			PixelShader ps;
+			Rect rect;
 
 			m_device		= Device::Default();
 
-			target			= m_device.CreateRenderTarget(&m_window);
+			rect			= Rect { 0, m_window.GetWidth(), 0, m_window.GetHeight() };
+			target			= m_device.CreateRenderTarget(&m_window, rect);
 
 			m_context		= m_device.CreateRenderContext();
 			m_swapChain		= m_device.CreateSwapChain(target.GetWidth(), target.GetHeight());
@@ -99,6 +128,7 @@ namespace Graphics
 		}
 		virtual void		Clear() override
 		{
+			m_swapChain.ResetBackBuffer();
 			m_depthStencilBuffer.Reset();
 		}
 		virtual void		Update(double ms) override
@@ -118,10 +148,12 @@ namespace Graphics
 
 	private:
 		RenderWindow &		m_window;
+		
 		Device			m_device;
-		RenderContext		m_context;
 		SwapChain		m_swapChain;
+		RenderContext		m_context;
 		DepthStencilBuffer	m_depthStencilBuffer;
+		
 		MyScene *		m_scene;
 	};
 }

@@ -2,6 +2,7 @@
 
 #include "Graphics.h"
 #include "Renderer.h"
+#include "RenderWindow.h"
 
 namespace Graphics
 {
@@ -87,57 +88,68 @@ namespace Graphics
 			return pNode->rightSibling;
 		}
 	};
+
+	struct SceneObject;
+
 	// struct Transform {};
 	using Transform = Matrix4x4;
 
-	enum class Connector
+	enum class ConnectType
 	{
-		DEFAULT,
-		THIRD_PERSON_VIEW,
+		DEFAULT,		// set posXYZ, oriXYZ / pass source
+		PLAYER,			// set posXYZ, oriXZ / pass source
+		FIRST_PERSON_VIEW,	// set posXYZ, oriXYZ / pass null
+		THIRD_PERSON_VIEW,	// set (posXYZ - f * oriXYZ), oriXYZ / pass null
+		MINI_MAP_VIEW,		// set posXZ, oriXZ / pass null
+	};
+	struct Connection
+	{
+		ConnectType		type;
+		SceneObject *		pTargetObject;
 	};
 
-	struct SceneObject : TreeNode
+	struct SceneObject : protected TreeNode
 	{
 		Transform		transform;
 
-		SceneObject() : transform(Matrix4x4::Identity())
+		SceneObject *		pConnectMaster;
+		std::vector<Connection> vConnectSlaves;
+
+		SceneObject()
+			: transform(Matrix4x4::Identity())
+			, pConnectMaster(nullptr)
 		{
 		}
 
-		void			AddChild(SceneObject * pChild, Connector c = Connector::DEFAULT)
+		void			AddChild(SceneObject * pChild)
 		{
 			TreeNode::AddChild(pChild);
+		}
+		void			ConnectTo(SceneObject * pSlave, ConnectType type)
+		{
+			ASSERT(pSlave->pConnectMaster == nullptr);
+			pSlave->pConnectMaster = this;
+			vConnectSlaves.emplace_back(Connection{ type, pSlave });
 		}
 
 		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) {}
 		virtual void		Update(double ms) {}
 
-		static void		InitializeAll(SceneObject * pRootObject, RenderContext & context, VertexBuffer & vertexBuffer)
-		{
-			ASSERT(pRootObject);
-			pRootObject->Initialize(context, vertexBuffer);
-			for (TreeNode * pNode = FirstChild(pRootObject); pNode; pNode = NextChild(pNode))
-			{
-				InitializeAll(static_cast<SceneObject *>(pNode), context, vertexBuffer);
-			}
-		}
-		static void		UpdateAll(SceneObject * pRootObject, double ms)
-		{
-			ASSERT(pRootObject);
-			pRootObject->Update(ms);
-			for ( TreeNode * pNode = FirstChild(pRootObject); pNode; pNode = NextChild(pNode) )
-			{
-				UpdateAll(static_cast< SceneObject * >( pNode ), ms);
-			}
-		}
+		static void		InitializeAll(SceneObject * pRootObject, RenderContext & context, VertexBuffer & vertexBuffer);
+		static void		UpdateAll(SceneObject * pRootObject, double ms);
+		static void		ApplyChangeToConnectionTree(SceneObject * pRootObject, Transform * pSourceTransform);
 	};
 
+	struct Entity : SceneObject
+	{
+		virtual void		Draw() {}
 
-	struct Light : SceneObject
+		static void		DrawAll(Entity * pEntity);
+	};
+
+	struct Light : Entity
 	{
 	};
-
-	struct Entity : SceneObject {};
 
 	struct Player : Entity
 	{
@@ -153,6 +165,10 @@ namespace Graphics
 		virtual void		Update(double ms) override
 		{
 			renderable->Update(ms);
+		}
+		virtual void		Draw() override
+		{
+			renderable->Draw();
 		}
 	};
 
@@ -171,39 +187,67 @@ namespace Graphics
 		{
 			renderable->Update(ms);
 		}
+		virtual void		Draw() override
+		{
+			renderable->Draw();
+		}
 	};
 
 	struct Controller : SceneObject
 	{
-		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
-		{
-		}
+		// look at
+		bool			init = true;
+		int			pixelX = 0;
+		int			pixelY = 0;
+		float			hRotDeg = 0.0f;
+		float			vRotDeg = 0.0f;
+
+		// move
+		const float		speed = 10.0f;
+		float			forwardFactor = 0.0f;
+		float			rightFactor = 0.0f;
+		float			upFactor = 0.0f;
+		float			vFactor = 0.0f;
+		Vec3			pos = {0.0f, 0.0f, 0.0f};
+
+		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override;
+		virtual void		Update(double ms) override;
+
+		_RECV_EVENT_DECL1(Controller, OnMouseMove);
+		_RECV_EVENT_DECL1(Controller, OnKeyDown);
+		_RECV_EVENT_DECL1(Controller, OnKeyUp);
 	};
 
 	struct Camera : SceneObject
 	{
 	public:
+		Camera() : m_observeTarget(nullptr)
+		{
+		}
+
 		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
 		{
-			double W = context.GetOutputTarget().GetWidth();
-			double H = context.GetOutputTarget().GetHeight();
-
 			m_context		= &context;
-			m_viewTransform		= Matrix4x4::Identity();
-			m_projTransform		= Matrix4x4::PerspectiveFovLH(DegreeToRadian(90),
-									      W / H,
-									      0.1f,
-									      1000.0f);
-			m_context->SetViewTransform(m_viewTransform);
-			m_context->SetProjectionTransform(m_projTransform);
 		}
-		virtual void		Update(double ms) override
+
+		void			Observe(Entity * pEntity)
 		{
+			m_observeTarget = pEntity;
 		}
+		void			Draw();
+
 	private:
 		RenderContext *		m_context;
-		Matrix4x4		m_viewTransform;
-		Matrix4x4		m_projTransform;
+
+		Entity *		m_observeTarget;
+	};
+
+	struct EntityGroup : Entity
+	{
+		void			AddChild(Entity * pEntity)
+		{
+			Entity::AddChild(pEntity);
+		}
 	};
 
 	struct Scene : SceneObject
@@ -217,6 +261,7 @@ namespace Graphics
 		static SceneManager &	Default();
 
 		Scene *			CreateScene();
+		EntityGroup *		CreateEntityGroup();
 		Light *			CreateLight();
 		Player *		CreatePlayer();
 		Terrain *		CreateTerrain();

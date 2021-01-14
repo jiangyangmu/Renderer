@@ -43,6 +43,7 @@ namespace Graphics
 	struct RenderTarget_Desc
 	{
 		IUnknown *		pUnknown;
+		Rect			rect;
 	};
 
 	struct VertexShader_Desc
@@ -167,17 +168,24 @@ namespace Graphics
 		
 		return _GetFrontBuffer(*pDevice, *pSwapChainDesc);
 	}
+	static inline Buffer &			_GetBackBuffer(Device_Impl & device, SwapChain_Desc & swapChainDesc)
+	{
+		return
+			device.buffers[
+				swapChainDesc.iBuffers[
+					swapChainDesc.bSwapped ? 0 : 1
+				].value
+			];
+	}
 	static inline Buffer &			_GetBackBuffer(RenderContext_Impl & context)
 	{
 		Device_Impl *		pDevice;
 		SwapChain_Desc *	pSwapChainDesc;
-		BufferIndex		iBackBuffer;
 
 		pDevice			= context.pDevice;
 		pSwapChainDesc		= &pDevice->swapChainDescs[ context.iSwapChainDesc.value ];
-		iBackBuffer		= pSwapChainDesc->iBuffers[ pSwapChainDesc->bSwapped ? 0 : 1 ];
 
-		return pDevice->buffers[ iBackBuffer.value ];
+		return _GetBackBuffer(*pDevice, *pSwapChainDesc);
 	}
 	static inline Buffer &			_GetDepthBuffer(RenderContext_Impl & context)
 	{
@@ -252,7 +260,21 @@ namespace Graphics
 			*ppBuffer		= &pDevice->buffers[ pVertexBufferDesc->iVertexBuffer.value ];
 		}
 	}
+	static inline Rect			_GetOutputTargetRect(RenderContext_Impl & context)
+	{
+		Device_Impl * pDevice;
+		RenderTarget_Desc * pRenderTargetDesc;
 
+		pDevice				= context.pDevice;
+		pRenderTargetDesc		= &pDevice->renderTargetDescs[ context.iRenderTargetDesc.value ];
+
+		return pRenderTargetDesc->rect;
+	}
+
+	static inline void			_ResetBackBuffer(Buffer & b)
+	{
+		b.SetAll(0);
+	}
 	static inline void			_ResetDepthBuffer(Buffer & b)
 	{
 		b.SetAllAs<float>(1.0f);
@@ -314,12 +336,12 @@ namespace Graphics
 
 		return vb;
 	}
-	static inline RenderTarget_Desc		_CreateRenderTarget(Device_Impl & device, IUnknown * pUnknown)
+	static inline RenderTarget_Desc		_CreateRenderTarget(Device_Impl & device, IUnknown * pUnknown, const Rect & rect)
 	{
 		RenderTarget_Desc target;
-		RECT rect;
 
 		target.pUnknown			= pUnknown;
+		target.rect			= rect;
 
 		return target;
 	}
@@ -373,8 +395,10 @@ namespace Graphics
 		Buffer & depthBuffer = _GetDepthBuffer(context);
 		Buffer & stencilBuffer = _GetStencilBuffer(context);
 
-		Integer width = frameBuffer.Width();
-		Integer height = frameBuffer.Height();
+		Rect rect = _GetOutputTargetRect(context);
+		
+		Integer width = rect.right - rect.left;
+		Integer height = rect.bottom - rect.top;
 
 		using VS = decltype(&VS_DEFAULT_POS_RGB);
 		using PS = decltype(&PS_DEFAULT_POS_RGB);
@@ -517,7 +541,7 @@ namespace Graphics
 					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
 
 					// Draw pixel
-					Byte * pixelData = ( Byte * ) frameBuffer.At(yPix, xPix);
+					Byte * pixelData = ( Byte * ) frameBuffer.At(rect.top + yPix, rect.left + xPix);
 					pixelData[ 0 ] = static_cast< Byte >( color.r * 255.0f );
 					pixelData[ 1 ] = static_cast< Byte >( color.g * 255.0f );
 					pixelData[ 2 ] = static_cast< Byte >( color.b * 255.0f );
@@ -556,6 +580,19 @@ namespace Graphics
 
 		pSwapChainDesc->bSwapped = !pSwapChainDesc->bSwapped;
 	}
+	void			SwapChain::ResetBackBuffer()
+	{
+		Device_Impl *		pDevice;
+		BufferIndex		iSwapChainDesc;
+		SwapChain_Desc *	pSwapChainDesc;
+
+		_LoadIndex(*this, &iSwapChainDesc);
+
+		pDevice			= static_cast< Device_Impl * >( pParam );
+		pSwapChainDesc		= &pDevice->swapChainDescs[ iSwapChainDesc.value ];
+
+		_ResetBackBuffer(_GetBackBuffer(*pDevice, *pSwapChainDesc));
+	}
 	void *			SwapChain::FrameBuffer()
 	{
 		Device_Impl *		pDevice;
@@ -575,6 +612,15 @@ namespace Graphics
 		ASSERT(0 <= i && i <= nVertexCount);
 		return ((Byte *)pVertexBegin) + _GetVertexSize(eVertexFormat) * i;
 	}
+	Integer			VertexRange::Offset()
+	{
+		return nVertexOffset;
+	}
+	Integer			VertexRange::Count()
+	{
+		return nVertexCount;
+	}
+
 	VertexRange		VertexBuffer::Alloc(Integer nCount)
 	{
 		VertexBuffer_Desc * pVertexBufferDesc;
@@ -585,9 +631,10 @@ namespace Graphics
 		ASSERT((pVertexBufferDesc->nAllocated + nCount) <= pBuffer->ElementCount());
 
 		VertexRange vr;
+		vr.nVertexOffset		= pVertexBufferDesc->nAllocated;
 		vr.nVertexCount			= nCount;
-		vr.pVertexBegin			= pBuffer->At(0, pVertexBufferDesc->nAllocated);
 		vr.eVertexFormat		= pVertexBufferDesc->eFormat;
+		vr.pVertexBegin			= pBuffer->At(0, pVertexBufferDesc->nAllocated);
 
 		pVertexBufferDesc->nAllocated	+= nCount;
 
@@ -635,27 +682,37 @@ namespace Graphics
 		
 		ENSURE_TRUE(pRenderTargetDesc->pUnknown->QueryInterface(&pWindow));
 
+		pDescCache		= pRenderTargetDesc;
+		pObjectCache		= pWindow;
+	}
+	Rect			RenderTarget::GetRect()
+	{
+		if ( !pDescCache )
+		{
+			InitCache();
+		}
 
-		pCache = pWindow;
+		return static_cast< RenderTarget_Desc * >( pDescCache )->rect;
 	}
 	Integer			RenderTarget::GetWidth()
 	{
-		if ( !pCache )
+		if ( !pObjectCache )
 		{
 			InitCache();
 		}
 
-		return static_cast< RenderWindow * >( pCache )->GetWidth();
+		return static_cast< RenderWindow * >( pObjectCache )->GetWidth();
 	}
 	Integer			RenderTarget::GetHeight()
 	{
-		if ( !pCache )
+		if ( !pObjectCache )
 		{
 			InitCache();
 		}
 
-		return static_cast< RenderWindow * >( pCache )->GetHeight();
+		return static_cast< RenderWindow * >( pObjectCache )->GetHeight();
 	}
+
 	bool			RenderTarget::QueryInterface(Integer iid, void ** ppvObject)
 	{
 		Device_Impl *		pDevice;
@@ -781,20 +838,48 @@ namespace Graphics
 		handle.pParam = self;
 		return handle;
 	}
-	RenderTarget		Device::CreateRenderTarget(IUnknown * pUnknown)
+	RenderTarget		Device::CreateRenderTarget(IUnknown * pUnknown, const Rect & rect)
 	{
 		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
 
 		DescIndex iRenderTargetDesc;
 		iRenderTargetDesc.value = self->renderTargetDescs.size();
 
-		self->renderTargetDescs.emplace_back(_CreateRenderTarget(*self, pUnknown));
+		self->renderTargetDescs.emplace_back(_CreateRenderTarget(*self, pUnknown, rect));
 
 		RenderTarget handle;
 		_StoreIndex(&handle, iRenderTargetDesc);
 		handle.pParam = self;
 		return handle;
 	}
+	RenderTarget		Device::CreateRenderTarget(RenderTarget renderTarget, const Rect & rectSub)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+		
+		DescIndex iOldRenderTargetDesc;
+		DescIndex iRenderTargetDesc;
+		IUnknown * pUnknown;
+		Rect rect;
+		
+		rect				= renderTarget.GetRect();
+
+		ASSERT(rect.left <= rectSub.left && rectSub.left < rectSub.right && rectSub.right <= rect.right);
+		ASSERT(rect.top <= rectSub.top && rectSub.top < rectSub.bottom && rectSub.bottom <= rect.bottom);
+
+		iRenderTargetDesc.value		= self->renderTargetDescs.size();
+
+		_LoadIndex(renderTarget, &iOldRenderTargetDesc);
+		
+		pUnknown			= self->renderTargetDescs[ iOldRenderTargetDesc.value ].pUnknown;
+		
+		self->renderTargetDescs.emplace_back(_CreateRenderTarget(*self, pUnknown, rectSub));
+
+		RenderTarget handle;
+		_StoreIndex(&handle, iRenderTargetDesc);
+		handle.pParam = self;
+		return handle;
+	}
+
 	VertexShader		Device::CreateVertexShader()
 	{
 		Device_Impl * self = static_cast< Device_Impl * >( pImpl );

@@ -48,48 +48,30 @@ namespace Graphics
 	{
 	public:
 		virtual			~Renderable() = default;
-		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) = 0;
-		virtual void		Update(double ms) = 0;
+		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) {}
+		virtual void		Update(double ms) {}
+		virtual void		Draw() {}
 	};
 
 	class ROTriangle : public Renderable
 	{
+	public:
+		ROTriangle(Vec3 pos0, Vec3 rgb0, Vec3 pos1, Vec3 rgb1, Vec3 pos2, Vec3 rgb2);
+		virtual			~ROTriangle();
+
+		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
+		virtual void		Draw() override;
+
+	private:
 		struct Vertex
 		{
 			Vec3 pos;
 			Vec3 rgb;
 		};
-		Vertex			m_vertex[3];
+		Vertex			m_vertex[ 3 ];
 		VertexRange		m_vertexRange;
-		VertexBuffer *		m_vertexBuffer;
-	public:
-		ROTriangle(Vec3 pos0, Vec3 rgb0, Vec3 pos1, Vec3 rgb1, Vec3 pos2, Vec3 rgb2)
-			: m_vertex { {pos0, rgb0}, {pos1, rgb1}, {pos2, rgb2} }
-			, m_vertexRange()
-			, m_vertexBuffer(nullptr)
-		{
-		}
-		~ROTriangle()
-		{
-			if (m_vertexBuffer)
-			{
-				m_vertexBuffer->Free(m_vertexRange);
-			}
-		}
-		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer)
-		{
-			if (m_vertexBuffer)
-			{
-				m_vertexBuffer->Free(m_vertexRange);
-			}
-			m_vertexBuffer	= &vertexBuffer;
-			m_vertexRange	= m_vertexBuffer->Alloc(3);
-
-			memcpy(m_vertexRange.At(0), &m_vertex, sizeof(Vertex) * 3);
-		}
-		virtual void		Update(double ms)
-		{
-		}
+		VertexBuffer *		m_refVertexBuffer;
+		RenderContext *		m_refContext;
 	};
 
 	class IRenderer
