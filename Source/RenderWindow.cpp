@@ -1,6 +1,6 @@
 #include "RenderWindow.h"
 #include "Renderer.h"
-#include "Graphics.h"
+#include "Buffer.h"
 
 #include <strsafe.h>
 
@@ -62,6 +62,8 @@ namespace Graphics
 					DIB_RGB_COLORS) )
 		{
 			MessageBox(hWnd, L"SetDIBitsToDevice has failed", L"Failed", MB_OK);
+			ReleaseDC(hWnd, hdc);
+			ExitProcess(0);
 		}
 
 		ReleaseDC(hWnd, hdc);

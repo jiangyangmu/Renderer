@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics.h"
+#include "Buffer.h"
 #include "Renderer.h"
 #include "RenderWindow.h"
 

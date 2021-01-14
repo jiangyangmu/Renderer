@@ -1,10 +1,13 @@
 #pragma once
 
-#include "Graphics.h"
 #include "Resource.h"
 
 namespace Graphics
 {
+	// --------------------------------------------------------------------------
+	// Rendering Interface
+	// --------------------------------------------------------------------------
+
 	class Renderable
 	{
 	public:
@@ -13,6 +16,20 @@ namespace Graphics
 		virtual void		Update(double ms) {}
 		virtual void		Draw() {}
 	};
+
+	class IRenderer
+	{
+	public:
+		virtual			~IRenderer() = default;
+		virtual void		Present() = 0;
+		virtual void		Clear() = 0;
+		virtual void		Update(double milliSeconds) = 0;
+		virtual void		Draw() = 0;
+	};
+
+	// --------------------------------------------------------------------------
+	// Rendering Implementation
+	// --------------------------------------------------------------------------
 
 	class ROTriangle : public Renderable
 	{
@@ -35,13 +52,4 @@ namespace Graphics
 		RenderContext *		m_refContext;
 	};
 
-	class IRenderer
-	{
-	public:
-		virtual			~IRenderer() = default;
-		virtual void		Present() = 0;
-		virtual void		Clear() = 0;
-		virtual void		Update(double milliSeconds) = 0;
-		virtual void		Draw() = 0;
-	};
 }

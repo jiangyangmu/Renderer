@@ -163,7 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Common.h" />
-    <ClInclude Include="..\..\..\Source\Graphics.h" />
+    <ClInclude Include="..\..\..\Source\Buffer.h" />
     <ClInclude Include="..\..\..\Source\Event.h" />
     <ClInclude Include="..\..\..\Source\Renderer.h" />
     <ClInclude Include="..\..\..\Source\RenderWindow.h" />
@@ -174,7 +174,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Source\Graphics.cpp" />
+    <ClCompile Include="..\..\..\Source\Buffer.cpp" />
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Renderer.cpp" />
     <ClCompile Include="..\..\..\Source\RenderWindow.cpp" />

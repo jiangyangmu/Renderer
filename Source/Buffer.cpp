@@ -1,12 +1,8 @@
-#include "Graphics.h"
-#include "Common.h"
-#include "RenderWindow.h"
-#include "win32/Win32App.h"
+#include "Buffer.h"
 
 #include <Windows.h>
-
-#include <vector>
-#include <memory>
+#include <malloc.h>
+#include <memory.h>
 
 namespace Graphics
 {
@@ -35,7 +31,7 @@ namespace Graphics
 		{
 			m_rowSizeInBytes = width * elementSize + rowPadding;
 			m_sizeInBytes = height * m_rowSizeInBytes;
-			ZeroMemory(m_data, m_sizeInBytes);
+			memset(m_data, 0, m_sizeInBytes);
 		}
 	}
 
@@ -118,15 +114,5 @@ namespace Graphics
 	const void * Buffer::Data() const
 	{
 		return m_data;
-	}
-
-	Texture2D1::Texture2D1()
-		: m_bitmap(nullptr)
-	{
-	}
-
-	Texture2D1::Texture2D1(const Buffer & bitmap)
-		: m_bitmap(&bitmap)
-	{
 	}
 }

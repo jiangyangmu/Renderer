@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Graphics.h"
+#include "Buffer.h"
+
 #include <Windows.h>
 
 namespace Graphics

@@ -41,9 +41,6 @@
     <ClInclude Include="..\..\..\Source\Event.h">
       <Filter>Event</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Graphics.h">
-      <Filter>Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\Scene.h">
       <Filter>Graphics</Filter>
     </ClInclude>
@@ -51,6 +48,9 @@
       <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Resource.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Buffer.h">
       <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,9 +62,6 @@
       <Filter>Win32</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Main.cpp" />
-    <ClCompile Include="..\..\..\Source\Graphics.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Source\RenderWindow.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
@@ -72,6 +69,9 @@
       <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Resource.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Buffer.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
   </ItemGroup>
