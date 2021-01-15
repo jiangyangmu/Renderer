@@ -47,11 +47,11 @@ namespace Graphics
 	enum class VertexFieldType
 	{
 		UNKNOWN,
-		POSITION,
-		COLOR_RGB,
-		TEX_COORD,
-		NORMAL,
-		MATERIAL,
+		POSITION,	// Vec3, occur 1 time
+		COLOR,		// Vec3, occur 0+ times
+		TEXCOORD,	// Vec2, occur 0+ times
+		NORMAL,		// Vec3, occur 0+ times
+		MATERIAL,	// Vec3, occur 0+ times
 	};
 
 	struct VertexField
@@ -120,6 +120,9 @@ namespace Graphics
 	// Functions
 	// ---------------------------------------------------------------
 
+	typedef void (*VertexShaderFunc)(void * pVSOut, const void * pVSIn, const void * pContext);
+	typedef void (*PixelShaderFunc)(void * pPSOut, const void * pPSIn, const void * pContext);
+
 	class VertexShader : public Handle
 	{
 	};
@@ -169,11 +172,10 @@ namespace Graphics
 	public:
 		void			SetSwapChain(SwapChain sc);
 
-		// Data used in VS, PS
-		void			SetViewTransform(Matrix4x4 m);
-		void			SetProjectionTransform(Matrix4x4 m);
 		void			SetVertexShader(VertexShader vs);
 		void			SetPixelShader(PixelShader ps);
+		void			VSSetConstantBuffer(const void * pBuffer);
+		void			PSSetConstantBuffer(const void * pBuffer);
 		// textures
 		// states
 		void			SetDepthStencilBuffer(DepthStencilBuffer dsb);
@@ -205,9 +207,9 @@ namespace Graphics
 		VertexFormat		CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2);
 		VertexFormat		CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2, VertexFieldType type3);
 		VertexFormat		CreateVertexFormat(VertexFieldType type0, VertexFieldType type1, VertexFieldType type2, VertexFieldType type3, VertexFieldType type4);
-		VertexBuffer		CreateVertexBuffer(const VertexFormat & format);
-		VertexShader		CreateVertexShader();
-		PixelShader		CreatePixelShader();
+		VertexBuffer		CreateVertexBuffer(VertexFormat format);
+		VertexShader		CreateVertexShader(VertexShaderFunc vs, VertexFormat fmtVSIn, VertexFormat fmtVSOut);
+		PixelShader		CreatePixelShader(PixelShaderFunc ps, VertexFormat fmtPSIn, VertexFormat fmtPSOut);
 
 	private:
 		void *			pImpl;

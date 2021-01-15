@@ -182,23 +182,32 @@ namespace Graphics
 	public:
 		Camera() : m_observeTarget(nullptr)
 		{
+			m_vertexShaderBuffer.view = Matrix4x4::Identity();
+			m_vertexShaderBuffer.proj = Matrix4x4::Identity();
 		}
 
 		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
 		{
-			m_context		= &context;
+			m_context	= &context;
 		}
 
 		void			Observe(Entity * pEntity)
 		{
-			m_observeTarget = pEntity;
+			m_observeTarget	= pEntity;
 		}
 		void			Draw();
 
 	private:
+		struct ConstantBuffer
+		{
+			Matrix4x4 view;
+			Matrix4x4 proj;
+		};
+
 		RenderContext *		m_context;
 
 		Entity *		m_observeTarget;
+		ConstantBuffer		m_vertexShaderBuffer;
 	};
 
 	struct EntityGroup : Entity

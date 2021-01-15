@@ -88,12 +88,13 @@ namespace Graphics
 		double W = m_context->GetOutputTarget().GetWidth();
 		double H = m_context->GetOutputTarget().GetHeight();
 
-		m_context->SetViewTransform(transform);
-		m_context->SetProjectionTransform(
-			Matrix4x4::PerspectiveFovLH(DegreeToRadian(90),
-						    W / H,
-						    0.1f,
-						    1000.0f));
+		m_vertexShaderBuffer.view = transform;
+		m_vertexShaderBuffer.proj = Matrix4x4::PerspectiveFovLH(DegreeToRadian(90),
+									W / H,
+									0.1f,
+									1000.0f);
+		// Set in every Draw() in case it's override by other Camera.
+		m_context->VSSetConstantBuffer(&m_vertexShaderBuffer);
 
 		Entity::DrawAll(m_observeTarget);
 	}

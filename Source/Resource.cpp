@@ -58,11 +58,15 @@ namespace Graphics
 
 	struct VertexShader_Desc
 	{
-		void *			pFunc;
+		VertexShaderFunc	pFunc;
+		DescIndex		iVSInFormat;
+		DescIndex		iVSOutFormat;
 	};
 	struct PixelShader_Desc
 	{
-		void *			pFunc;
+		PixelShaderFunc		pFunc;
+		DescIndex		iPSInFormat;
+		DescIndex		iPSOutFormat;
 	};
 
 	struct Device_Impl;
@@ -77,10 +81,8 @@ namespace Graphics
 
 		ShaderIndex		iVertexShader;
 		ShaderIndex		iPixelShader;
-
-		// shader context
-		Matrix4x4		viewTransform;
-		Matrix4x4		projTransform;
+		const void *		pVertexShaderData;
+		const void *		pPixelShaderData;
 	};
 
 	struct Device_Impl
@@ -103,8 +105,8 @@ namespace Graphics
 
 	struct ShaderContext
 	{
-		Matrix4x4 * view;
-		Matrix4x4 * proj;
+		Matrix4x4 view;
+		Matrix4x4 proj;
 	};
 
 	struct VS_DEFAULT_POS_RGB_IN
@@ -138,8 +140,8 @@ namespace Graphics
 		switch ( type )
 		{
 			case VertexFieldType::POSITION:
-			case VertexFieldType::COLOR_RGB:
-			case VertexFieldType::TEX_COORD:
+			case VertexFieldType::COLOR:
+			case VertexFieldType::TEXCOORD:
 			case VertexFieldType::NORMAL:
 			case VertexFieldType::MATERIAL:
 				alignment = 4;
@@ -158,11 +160,11 @@ namespace Graphics
 
 		switch ( type )
 		{
-			case VertexFieldType::TEX_COORD:
+			case VertexFieldType::TEXCOORD:
 				size = 8;
 				break;
 			case VertexFieldType::POSITION:
-			case VertexFieldType::COLOR_RGB:
+			case VertexFieldType::COLOR:
 			case VertexFieldType::NORMAL:
 			case VertexFieldType::MATERIAL:
 				size = 12;
@@ -234,7 +236,7 @@ namespace Graphics
 
 		return pDevice->buffers[ pDepthStencilDesc->iStencilBuffer.value ];
 	}
-	static inline void *			_GetVertexShader(RenderContext_Impl & context)
+	static inline VertexShader_Desc *	_GetVertexShaderDesc(RenderContext_Impl & context)
 	{
 		Device_Impl *		pDevice;
 		VertexShader_Desc *	pVertexShaderDesc;
@@ -242,9 +244,9 @@ namespace Graphics
 		pDevice			= context.pDevice;
 		pVertexShaderDesc	= &pDevice->vertexShaderDescs[ context.iVertexShader.value ];
 
-		return pVertexShaderDesc->pFunc;
+		return pVertexShaderDesc;
 	}
-	static inline void *			_GetPixelShader(RenderContext_Impl & context)
+	static inline PixelShader_Desc *	_GetPixelShaderDesc(RenderContext_Impl & context)
 	{
 		Device_Impl *		pDevice;
 		PixelShader_Desc *	pPixelShaderDesc;
@@ -252,7 +254,7 @@ namespace Graphics
 		pDevice			= context.pDevice;
 		pPixelShaderDesc	= &pDevice->pixelShaderDescs[ context.iPixelShader.value ];
 
-		return pPixelShaderDesc->pFunc;
+		return pPixelShaderDesc;
 	}
 	static inline Buffer &			_GetVertexBuffer(VertexBuffer vb)
 	{
@@ -398,38 +400,29 @@ namespace Graphics
 		context->iRenderTargetDesc	= NULL_DESC;
 		context->iVertexShader		= NULL_SHADER;
 		context->iPixelShader		= NULL_SHADER;
-		context->viewTransform		= Matrix4x4::Identity();
-		context->projTransform		= Matrix4x4::Identity();
+		context->pVertexShaderData	= nullptr;
+		context->pPixelShaderData	= nullptr;
 
 		return Ptr<RenderContext_Impl>(context);
 	}
 
-	static VS_DEFAULT_POS_RGB_OUT		VS_DEFAULT_POS_RGB(VS_DEFAULT_POS_RGB_IN in, ShaderContext & context)
+	static inline VertexShader_Desc		_CreateVertexShader(Device_Impl & device, VertexShaderFunc vs, VertexFormat fmtVSIn, VertexFormat fmtVSOut)
 	{
-		VS_DEFAULT_POS_RGB_OUT out;
-		out.posNDC = Vec3::Transform(Vec3::Transform(in.posWld, *context.view), *context.proj);
-		out.color = in.color;
-		return out;
+		VertexShader_Desc vertexShaderDesc;
+		vertexShaderDesc.pFunc = vs;
+		_LoadIndex(fmtVSIn, &vertexShaderDesc.iVSInFormat);
+		_LoadIndex(fmtVSOut, &vertexShaderDesc.iVSOutFormat);
+		return vertexShaderDesc;
 	}
-	static PS_DEFAULT_POS_RGB_OUT		PS_DEFAULT_POS_RGB(VS_DEFAULT_POS_RGB_OUT in, ShaderContext & context)
+	static inline PixelShader_Desc		_CreatePixelShader(Device_Impl & device, PixelShaderFunc ps, VertexFormat fmtPSIn, VertexFormat fmtPSOut)
 	{
-		PS_DEFAULT_POS_RGB_OUT out;
-		out.color = in.color;
-		return out;
+		PixelShader_Desc pixelShaderDesc;
+		pixelShaderDesc.pFunc = ps;
+		_LoadIndex(fmtPSIn, &pixelShaderDesc.iPSInFormat);
+		_LoadIndex(fmtPSOut, &pixelShaderDesc.iPSOutFormat);
+		return pixelShaderDesc;
 	}
 
-	static inline VertexShader_Desc		_CreateVertexShader(Device_Impl & device)
-	{
-		VertexShader_Desc vs;
-		vs.pFunc = reinterpret_cast< void * >( VS_DEFAULT_POS_RGB );
-		return vs;
-	}
-	static inline PixelShader_Desc		_CreatePixelShader(Device_Impl & device)
-	{
-		PixelShader_Desc ps;
-		ps.pFunc = reinterpret_cast< void * >( PS_DEFAULT_POS_RGB );
-		return ps;
-	}
 	static inline VertexFormat_Desc		_VertexFormat_Create()
 	{
 		VertexFormat_Desc desc;
@@ -461,9 +454,27 @@ namespace Graphics
 		pDesc->nSize	= AlignCeiling(pDesc->nSize + nFieldSize, pDesc->nAlign);
 		pDesc->nFields	+= 1;
 	}
+	static inline void			_VertexFormat_Check(VertexFormat_Desc * pDesc)
+	{
+		/*
+		ASSERT(pDesc && pDesc->nFields < NUM_MAX_VERTEX_FIELD);
 
-	using Vertex = VS_DEFAULT_POS_RGB_IN;
-	static inline void			_Rasterize(RenderContext_Impl & context, const VertexFormat_Desc & vertexFormat, Vertex * pVertexBegin, Integer nCount)
+		Integer nPositionField = 0;
+		for (Integer i = 0; i < pDesc->nFields; ++i)
+		{
+			if (pDesc->vFields[i].type == VertexFieldType::POSITION)
+				++nPositionField;
+		}
+
+		ASSERT(nPositionField == 1);
+		*/
+	}
+	static inline bool			_VertexFormat_IsEqual(const VertexFormat_Desc * pLeft, const VertexFormat_Desc * pRight)
+	{
+		return memcmp(pLeft, pRight, sizeof(VertexFormat_Desc)) == 0;
+	}
+
+	static inline void			_Rasterize(RenderContext_Impl & context, const VertexFormat_Desc & vertexFormat, void * pVertexBegin, Integer nCount)
 	{
 		Buffer & frameBuffer = _GetBackBuffer(context);
 		Buffer & depthBuffer = _GetDepthBuffer(context);
@@ -474,39 +485,53 @@ namespace Graphics
 		Integer width = rect.right - rect.left;
 		Integer height = rect.bottom - rect.top;
 
-		using VS = decltype(&VS_DEFAULT_POS_RGB);
-		using PS = decltype(&PS_DEFAULT_POS_RGB);
-		using VS_OUT = VS_DEFAULT_POS_RGB_OUT;
-		using PS_IN = VS_OUT;
+		VertexShader_Desc * pVSDesc = _GetVertexShaderDesc(context);
+		PixelShader_Desc * pPSDesc = _GetPixelShaderDesc(context);
 
-		auto vertexShader = reinterpret_cast<VS>(_GetVertexShader(context));
-		auto pixelShader = reinterpret_cast<PS>(_GetPixelShader(context));
+		auto vertexShader = pVSDesc->pFunc;
+		auto pixelShader = pPSDesc->pFunc;
 		ASSERT(vertexShader);
 		ASSERT(pixelShader);
 
-		ShaderContext shaderContext =
-		{
-			&context.viewTransform,
-			&context.projTransform
-		};
+		Device_Impl * pDevice		= context.pDevice;
 
-		for (const Vertex * pVertex = pVertexBegin;
+		VertexFormat_Desc * pVSFmtIn	= &pDevice->vertexFormatDescs[ pVSDesc->iVSInFormat.value ];
+		VertexFormat_Desc * pVSFmtOut	= &pDevice->vertexFormatDescs[ pVSDesc->iVSOutFormat.value ];
+		VertexFormat_Desc * pPSFmtIn	= &pDevice->vertexFormatDescs[ pPSDesc->iPSInFormat.value ];
+		VertexFormat_Desc * pPSFmtOut	= &pDevice->vertexFormatDescs[ pPSDesc->iPSOutFormat.value ];
+
+		ASSERT(vertexFormat.nFields >= 1 && vertexFormat.vFields[ 0 ].type == VertexFieldType::POSITION);
+		ASSERT(_VertexFormat_IsEqual(&vertexFormat, pVSFmtIn));
+		ASSERT(pPSFmtOut->nFields == 1 && pPSFmtOut->vFields[ 0 ].type == VertexFieldType::COLOR);
+
+		Byte * pVSIn			= ( Byte * ) pVertexBegin;
+		Byte * pVSOut			= ( Byte * ) _aligned_malloc(pVSFmtOut->nSize * 3, pVSFmtOut->nAlign);
+		Byte * pPSIn			= ( Byte * ) _aligned_malloc(pPSFmtIn->nSize, pPSFmtIn->nAlign);
+		Byte * pPSOut			= ( Byte * ) _aligned_malloc(pPSFmtOut->nSize, pPSFmtOut->nAlign);
+		const void * pVSData		= context.pVertexShaderData;
+		const void * pPSData		= context.pPixelShaderData;
+		
+		for (;
 		     nCount >= 3;
-		     nCount -= 3, pVertex += 3 )
+		     nCount -= 3, pVSIn += 3 * vertexFormat.nSize )
 		{
 			// World(Wld) -> Camera(Cam) -> NDC -> Screen(Scn)+Depth -> Raster(Ras)+Depth
 
-			const Vertex & v0 = pVertex[ 0 ];
-			const Vertex & v1 = pVertex[ 1 ];
-			const Vertex & v2 = pVertex[ 2 ];
+			const void * pVSIn0 = pVSIn;
+			const void * pVSIn1 = pVSIn + vertexFormat.nSize;
+			const void * pVSIn2 = pVSIn + vertexFormat.nSize * 2;
 
-			VS_OUT vs0 = vertexShader(v0, shaderContext);
-			VS_OUT vs1 = vertexShader(v1, shaderContext);
-			VS_OUT vs2 = vertexShader(v2, shaderContext);
+			Byte * pVSOut0 = pVSOut;
+			Byte * pVSOut1 = pVSOut + vertexFormat.nSize;
+			Byte * pVSOut2 = pVSOut + vertexFormat.nSize * 2;
 
-			const Vec3 & p0NDC = vs0.posNDC;
-			const Vec3 & p1NDC = vs1.posNDC;
-			const Vec3 & p2NDC = vs2.posNDC;
+			vertexShader(pVSOut0, pVSIn0, pVSData);
+			vertexShader(pVSOut1, pVSIn1, pVSData);
+			vertexShader(pVSOut2, pVSIn2, pVSData);
+
+			const Vec3 & p0NDC = *reinterpret_cast< Vec3 * >( pVSOut0 );
+			const Vec3 & p1NDC = *reinterpret_cast< Vec3 * >( pVSOut1 );
+			const Vec3 & p2NDC = *reinterpret_cast< Vec3 * >( pVSOut2 );
 
 			float z0NDCInv = 1.0f / p0NDC.z;
 			float z1NDCInv = 1.0f / p1NDC.z;
@@ -547,6 +572,7 @@ namespace Graphics
 				{
 					// Intersection test
 					Vec2 pixel = { xPixF, yPixF };
+
 					float e0 = EdgeFunction(p1Ras, p2Ras, pixel);
 					float e1 = EdgeFunction(p2Ras, p0Ras, pixel);
 					float e2 = EdgeFunction(p0Ras, p1Ras, pixel);
@@ -596,17 +622,47 @@ namespace Graphics
 					ASSERT(0.0f <= w2 && w2 <= 1.0001f);
 					ASSERT(( w0 + w1 + w2 ) <= 1.0001f);
 
-					PS_IN pin;
-					ASSERT(vertexFormat.nFields == 2);
-					ASSERT(vertexFormat.vFields[0].type == VertexFieldType::POSITION);
-					ASSERT(vertexFormat.vFields[1].type == VertexFieldType::COLOR_RGB);
-					pin = PS_IN
+					void * pVSField0;
+					void * pVSField1;
+					void * pVSField2;
+					void * pPSField;
+					for ( const VertexField & field : pPSFmtIn->vFields )
 					{
-						{xPixF, yPixF, zNDC},
-						WeightedAdd(v0.color, v1.color, v2.color, w0, w1, w2),
-					};
+						pVSField0 = pVSOut0 + field.offset;
+						pVSField1 = pVSOut1 + field.offset;
+						pVSField2 = pVSOut2 + field.offset;
+						pPSField = pPSIn + field.offset;
+						switch ( field.type )
+						{
+							case VertexFieldType::POSITION:
+								*static_cast< Vec3 * >( pPSField ) = { xPixF, yPixF, zNDC };
+								break;
+							case VertexFieldType::COLOR:
+							case VertexFieldType::NORMAL:
+							case VertexFieldType::MATERIAL:
+								*static_cast< Vec3 * >( pPSField ) = WeightedAdd(*static_cast< Vec3 * >( pVSField0 ),
+														 *static_cast< Vec3 * >( pVSField1 ),
+														 *static_cast< Vec3 * >( pVSField2 ),
+														 w0,
+														 w1,
+														 w2);
+								break;
+							case VertexFieldType::TEXCOORD:
+								*static_cast< Vec2 * >( pPSField ) = WeightedAdd(*static_cast< Vec2 * >( pVSField0 ),
+														 *static_cast< Vec2 * >( pVSField1 ),
+														 *static_cast< Vec2 * >( pVSField2 ),
+														 w0,
+														 w1,
+														 w2);
+								break;
+							case VertexFieldType::UNKNOWN:
+							default:
+								break;
+						}
+					}
+					pixelShader(pPSOut, pPSIn, pPSData);
 
-					RGB color = Vec3ToRGB(pixelShader(pin, shaderContext).color);
+					RGB color = Vec3ToRGB(*reinterpret_cast<Vec3 *>(pPSOut));
 					ASSERT(color.r >= 0.0f && color.g >= 0.0f && color.b >= 0.0f);
 					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
 
@@ -618,6 +674,10 @@ namespace Graphics
 				}
 			}
 		}
+
+		_aligned_free(pVSOut);
+		_aligned_free(pPSIn);
+		_aligned_free(pPSOut);
 	}
 
 	Window			Window::Default()
@@ -817,14 +877,6 @@ namespace Graphics
 	{
 		_LoadIndex(sc,	&static_cast< RenderContext_Impl * >( pImpl )->iSwapChainDesc);
 	}
-	void			RenderContext::SetViewTransform(Matrix4x4 m)
-	{
-		static_cast< RenderContext_Impl * >( pImpl )->viewTransform = m;
-	}
-	void			RenderContext::SetProjectionTransform(Matrix4x4 m)
-	{
-		static_cast< RenderContext_Impl * >( pImpl )->projTransform = m;
-	}
 	void			RenderContext::SetVertexShader(VertexShader vs)
 	{
 		_LoadIndex(vs,	&static_cast< RenderContext_Impl * >( pImpl )->iVertexShader);
@@ -833,6 +885,15 @@ namespace Graphics
 	{
 		_LoadIndex(ps,	&static_cast< RenderContext_Impl * >( pImpl )->iPixelShader);
 	}
+	void			RenderContext::VSSetConstantBuffer(const void * pBuffer)
+	{
+		static_cast< RenderContext_Impl * >( pImpl )->pVertexShaderData = pBuffer;
+	}
+	void			RenderContext::PSSetConstantBuffer(const void * pBuffer)
+	{
+		static_cast< RenderContext_Impl * >( pImpl )->pPixelShaderData = pBuffer;
+	}
+
 	void			RenderContext::SetDepthStencilBuffer(DepthStencilBuffer dsb)
 	{
 		_LoadIndex(dsb,	&static_cast< RenderContext_Impl * >( pImpl )->iDepthStencilDesc);
@@ -872,7 +933,7 @@ namespace Graphics
 		pBytes			= (Byte *)pVertexBuffer->Data();
 		nVSize			= pVertexFormatDesc->nSize;
 
-		_Rasterize(*self, *pVertexFormatDesc, (Vertex *)(pBytes + nOffset * nVSize), nCount);
+		_Rasterize(*self, *pVertexFormatDesc, (pBytes + nOffset * nVSize), nCount);
 	}
 
 	Device			Device::Default()
@@ -973,6 +1034,7 @@ namespace Graphics
 
 		VertexFormat_Desc vertexFormatDesc = _VertexFormat_Create();
 		_VertexFormat_AddField(&vertexFormatDesc, type0);
+		_VertexFormat_Check(&vertexFormatDesc);
 
 		DescIndex iVertexFormatDesc;
 		iVertexFormatDesc.value = self->vertexFormatDescs.size();
@@ -991,6 +1053,7 @@ namespace Graphics
 		VertexFormat_Desc vertexFormatDesc = _VertexFormat_Create();
 		_VertexFormat_AddField(&vertexFormatDesc, type0);
 		_VertexFormat_AddField(&vertexFormatDesc, type1);
+		_VertexFormat_Check(&vertexFormatDesc);
 
 		DescIndex iVertexFormatDesc;
 		iVertexFormatDesc.value = self->vertexFormatDescs.size();
@@ -1010,6 +1073,7 @@ namespace Graphics
 		_VertexFormat_AddField(&vertexFormatDesc, type0);
 		_VertexFormat_AddField(&vertexFormatDesc, type1);
 		_VertexFormat_AddField(&vertexFormatDesc, type2);
+		_VertexFormat_Check(&vertexFormatDesc);
 
 		DescIndex iVertexFormatDesc;
 		iVertexFormatDesc.value = self->vertexFormatDescs.size();
@@ -1030,6 +1094,7 @@ namespace Graphics
 		_VertexFormat_AddField(&vertexFormatDesc, type1);
 		_VertexFormat_AddField(&vertexFormatDesc, type2);
 		_VertexFormat_AddField(&vertexFormatDesc, type3);
+		_VertexFormat_Check(&vertexFormatDesc);
 
 		DescIndex iVertexFormatDesc;
 		iVertexFormatDesc.value = self->vertexFormatDescs.size();
@@ -1051,6 +1116,7 @@ namespace Graphics
 		_VertexFormat_AddField(&vertexFormatDesc, type2);
 		_VertexFormat_AddField(&vertexFormatDesc, type3);
 		_VertexFormat_AddField(&vertexFormatDesc, type4);
+		_VertexFormat_Check(&vertexFormatDesc);
 
 		DescIndex iVertexFormatDesc;
 		iVertexFormatDesc.value = self->vertexFormatDescs.size();
@@ -1062,7 +1128,7 @@ namespace Graphics
 		handle.pParam = self;
 		return handle;
 	}
-	VertexBuffer		Device::CreateVertexBuffer(const VertexFormat & hVertexFormat)
+	VertexBuffer		Device::CreateVertexBuffer(VertexFormat hVertexFormat)
 	{
 		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
 
@@ -1079,28 +1145,28 @@ namespace Graphics
 		handle.pParam = self;
 		return handle;
 	}
-	VertexShader		Device::CreateVertexShader()
+	VertexShader		Device::CreateVertexShader(VertexShaderFunc vs, VertexFormat fmtVSIn, VertexFormat fmtVSOut)
 	{
 		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
 
 		ShaderIndex iVertexShader;
 		iVertexShader.value = self->vertexShaderDescs.size();
 
-		self->vertexShaderDescs.emplace_back(_CreateVertexShader(*self));
+		self->vertexShaderDescs.emplace_back(_CreateVertexShader(*self, vs, fmtVSIn, fmtVSOut));
 
 		VertexShader handle;
 		_StoreIndex(&handle, iVertexShader);
 		handle.pParam = self;
 		return handle;
 	}
-	PixelShader		Device::CreatePixelShader()
+	PixelShader		Device::CreatePixelShader(PixelShaderFunc ps, VertexFormat fmtPSIn, VertexFormat fmtPSOut)
 	{
 		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
 
 		ShaderIndex iPixelShader;
 		iPixelShader.value = self->pixelShaderDescs.size();
 
-		self->pixelShaderDescs.emplace_back(_CreatePixelShader(*self));
+		self->pixelShaderDescs.emplace_back(_CreatePixelShader(*self, ps, fmtPSIn, fmtPSOut));
 
 		PixelShader handle;
 		_StoreIndex(&handle, iPixelShader);

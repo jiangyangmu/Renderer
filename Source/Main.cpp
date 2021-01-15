@@ -6,6 +6,50 @@
 
 namespace Graphics
 {
+	struct SimpleEffect
+	{
+		struct VS_IN
+		{
+			Vec3 posWld;
+			Vec3 color;
+		};
+		struct VS_OUT
+		{
+			Vec3 posNDC;
+			Vec3 color;
+		};
+		struct VS_DATA
+		{
+			Matrix4x4 view;
+			Matrix4x4 proj;
+		};
+
+		typedef VS_OUT PS_IN;
+		typedef VS_DATA PS_DATA;
+		struct PS_OUT
+		{
+			Vec3 color;
+		};
+
+		static void VS(void * pVSOut, const void * pVSIn, const void * pContext)
+		{
+			const VS_IN & in	= *static_cast< const VS_IN * >( pVSIn );
+			const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
+			VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
+
+			out.posNDC = Vec3::Transform(Vec3::Transform(in.posWld, context.view), context.proj);
+			out.color = in.color;
+		}
+		static void PS(void * pPSOut, const void * pPSIn, const void * pContext)
+		{
+			const PS_IN & in	= *static_cast< const PS_IN * >( pPSIn );
+			const PS_DATA & context	= *static_cast< const PS_DATA * >( pContext );
+			PS_OUT & out		= *static_cast< PS_OUT * >( pPSOut );
+
+			out.color = in.color;
+		}
+	};
+
 	class MyScene
 	{
 	public:
@@ -14,12 +58,30 @@ namespace Graphics
 			m_device		= &device;
 			m_context		= &context;
 
-			m_vertexFormat		= m_device->CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::COLOR_RGB);
-			m_vertexBuffer		= m_device->CreateVertexBuffer(m_vertexFormat);
-			
+			// Setup shader
+
+			VertexFormat fmtVSIn	= m_device->CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::COLOR);
+			VertexFormat fmtVSOut	= fmtVSIn;
+			VertexFormat fmtPSIn	= fmtVSOut;
+			VertexFormat fmtPSOut	= m_device->CreateVertexFormat(VertexFieldType::COLOR);
+
+			VertexShader vertexShader;
+			PixelShader pixelShader;
+
+			m_vertexBuffer		= m_device->CreateVertexBuffer(fmtVSIn);
+			vertexShader		= m_device->CreateVertexShader(SimpleEffect::VS, fmtVSIn, fmtVSOut);
+			pixelShader		= m_device->CreatePixelShader(SimpleEffect::PS, fmtPSIn, fmtPSOut);
+
+			m_context->SetVertexShader(vertexShader);
+			m_context->SetPixelShader(pixelShader);
+
+			// Setup display
+
 			Rect rect		= context.GetOutputTarget().GetRect();
 			m_rdtgFullRect		= context.GetOutputTarget();
 			m_rdtgMapRect		= device.CreateRenderTarget(m_rdtgFullRect, Rect { rect.right - 300,rect.right, 0, 300 });
+
+			// Setup scene
 
 			Scene * scene		= SceneManager::Default().CreateScene();
 
@@ -73,8 +135,7 @@ namespace Graphics
 
 		RenderTarget		m_rdtgFullRect;
 		RenderTarget		m_rdtgMapRect;
-		VertexFormat		m_vertexFormat;
-		VertexBuffer		m_vertexBuffer;
+		VertexBuffer		m_vertexBuffer; // referred by SceneObject
 
 		Scene *			m_scene;
 		Camera *		m_cameraPlayer;
@@ -89,8 +150,6 @@ namespace Graphics
 			, m_scene(nullptr)
 		{
 			RenderTarget target;
-			VertexShader vs;
-			PixelShader ps;
 			Rect rect;
 
 			m_device		= Device::Default();
@@ -102,14 +161,7 @@ namespace Graphics
 			m_swapChain		= m_device.CreateSwapChain(target.GetWidth(), target.GetHeight());
 			m_depthStencilBuffer	= m_device.CreateDepthStencilBuffer(target.GetWidth(), target.GetHeight());
 
-			vs			= m_device.CreateVertexShader();
-			ps			= m_device.CreatePixelShader();
-
 			m_context.SetSwapChain(m_swapChain);
-			m_context.SetViewTransform(Matrix4x4::Identity());
-			m_context.SetProjectionTransform(Matrix4x4::Identity());
-			m_context.SetVertexShader(vs);
-			m_context.SetPixelShader(ps);
 			m_context.SetDepthStencilBuffer(m_depthStencilBuffer);
 			m_context.SetOutputTarget(target);
 		}
