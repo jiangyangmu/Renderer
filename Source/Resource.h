@@ -64,6 +64,8 @@ namespace Graphics
 	{
 		Integer		Alignment();
 		Integer		Size();
+
+		VertexField &	operator [] (Integer i);
 	};
 	
 	struct VertexRange
@@ -90,6 +92,7 @@ namespace Graphics
 		VertexRange	Alloc(Integer nCount);
 		void		Free(VertexRange v);
 		
+		VertexFormat	GetVertexFormat();
 		Integer		Count();
 		void *		Data();
 	};
@@ -100,6 +103,8 @@ namespace Graphics
 
 	struct Texture2D : public Handle
 	{
+	public:
+		void		Sample(float u, float v, float * pColor) const;
 	};
 
 	struct SwapChain : public Handle
@@ -210,6 +215,8 @@ namespace Graphics
 		VertexBuffer		CreateVertexBuffer(VertexFormat format);
 		VertexShader		CreateVertexShader(VertexShaderFunc vs, VertexFormat fmtVSIn, VertexFormat fmtVSOut);
 		PixelShader		CreatePixelShader(PixelShaderFunc ps, VertexFormat fmtPSIn, VertexFormat fmtPSOut);
+
+		Texture2D		CreateTexture2D(Integer width, Integer height, Integer elementSize, Integer alignment, Integer rowPadding, const void * pData);
 
 	private:
 		void *			pImpl;

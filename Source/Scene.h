@@ -116,10 +116,11 @@ namespace Graphics
 
 		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
 		{
-			renderable.reset(new ROTriangle({ 0.0f,   0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f },
-							{ 1.0f,   0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f },
-							{ 0.5f, 0.866f, 1.0f }, { 0.0f, 0.0f, 1.0f }));
-			renderable->Initialize(context, vertexBuffer);
+			if (ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()))
+			{
+				renderable.reset(new ROCube({ 1.0f, 0.0f, 1.0f }, 1.0f));
+				renderable->Initialize(context, vertexBuffer);
+			}
 		}
 		virtual void		Update(double ms) override
 		{
@@ -137,10 +138,13 @@ namespace Graphics
 
 		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
 		{
-			renderable.reset(new ROTriangle({ -1.0f,   0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f },
-							{  0.0f,   0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f },
-							{ -0.5f, 0.866f, 1.0f }, { 0.0f, 0.0f, 1.0f }));
-			renderable->Initialize(context, vertexBuffer);
+			if (ROTriangle::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()))
+			{
+				renderable.reset(new ROTriangle({ -1.0f,   0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f },
+								{  0.0f,   0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f },
+								{ -0.5f, 0.866f, 1.0f }, { 0.0f, 0.0f, 1.0f }));
+				renderable->Initialize(context, vertexBuffer);
+			}
 		}
 		virtual void		Update(double ms) override
 		{
@@ -180,34 +184,41 @@ namespace Graphics
 	struct Camera : SceneObject
 	{
 	public:
-		Camera() : m_observeTarget(nullptr)
+		Camera()
+			: m_context(nullptr)
+			, m_observedEntity(nullptr)
 		{
-			m_vertexShaderBuffer.view = Matrix4x4::Identity();
-			m_vertexShaderBuffer.proj = Matrix4x4::Identity();
 		}
 
 		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
 		{
-			m_context	= &context;
+			m_context		= &context;
 		}
 
-		void			Observe(Entity * pEntity)
+		void			ObserveEntity(Entity * pEntity)
 		{
-			m_observeTarget	= pEntity;
+			m_observedEntity	= pEntity;
 		}
-		void			Draw();
+		void			DrawObservedEntity();
+
+		const Matrix4x4 &	GetViewTransform()
+		{
+			return transform;
+		}
+		const Matrix4x4 &	GetProjTransform()
+		{
+			double W	= m_context->GetOutputTarget().GetWidth();
+			double H	= m_context->GetOutputTarget().GetHeight();
+
+			return Matrix4x4::PerspectiveFovLH(DegreeToRadian(90),
+							   W / H,
+							   0.1f,
+							   1000.0f);
+		}
 
 	private:
-		struct ConstantBuffer
-		{
-			Matrix4x4 view;
-			Matrix4x4 proj;
-		};
-
 		RenderContext *		m_context;
-
-		Entity *		m_observeTarget;
-		ConstantBuffer		m_vertexShaderBuffer;
+		Entity *		m_observedEntity;
 	};
 
 	struct EntityGroup : Entity

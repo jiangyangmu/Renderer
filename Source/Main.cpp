@@ -6,8 +6,93 @@
 
 namespace Graphics
 {
-	struct SimpleEffect
+	class Effect
 	{
+	public:
+		using VS = VertexShaderFunc;
+		using PS = PixelShaderFunc;
+
+		virtual			~Effect() = default;
+
+		virtual void		Initialize(Device & device) = 0;
+		virtual void		Apply(RenderContext & context) = 0;
+
+		virtual void		SetViewTransform(const Matrix4x4 & viewTransform) = 0;
+		virtual void		SetProjTransform(const Matrix4x4 & projTransform) = 0;
+
+		VS			GetVS()
+		{
+			return m_vs;
+		}
+		PS			GetPS()
+		{
+			return m_ps;
+		}
+		VertexFormat		GetVSInputFormat()
+		{
+			return m_vsIn;
+		}
+		VertexFormat		GetVSOutputFormat()
+		{
+			return m_vsOut;
+		}
+		VertexFormat		GetPSInputFormat()
+		{
+			return m_psIn;
+		}
+		VertexFormat		GetPSOutputFormat()
+		{
+			return m_psOut;
+		}
+
+	protected:
+		VS		m_vs;
+		PS		m_ps;
+
+		VertexFormat	m_vsIn;
+		VertexFormat	m_vsOut;
+		VertexFormat	m_psIn;
+		VertexFormat	m_psOut;
+	};
+
+	class SimpleEffect : public Effect
+	{
+	public:
+		SimpleEffect()
+		{
+			m_vs = VSImpl;
+			m_ps = PSImpl;
+		}
+
+		virtual void		Initialize(Device & device) override
+		{
+			m_vsIn			= device.CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::COLOR);
+			m_vsOut			= m_vsIn;
+			m_psIn			= m_vsOut;
+			m_psOut			= device.CreateVertexFormat(VertexFieldType::COLOR);
+
+			m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
+			m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
+		}
+		virtual void		Apply(RenderContext & context) override
+		{
+			context.SetVertexShader(m_vertexShader);
+			context.SetPixelShader(m_pixelShader);
+
+			context.VSSetConstantBuffer(&m_vsData);
+			context.PSSetConstantBuffer(&m_psData);
+		}
+
+		virtual void		SetViewTransform(const Matrix4x4 & viewTransform) override
+		{
+			m_vsData.view = m_psData.view = viewTransform;
+		}
+		virtual void		SetProjTransform(const Matrix4x4 & projTransform) override
+		{
+			m_vsData.proj = m_psData.proj = projTransform;
+		}
+
+	private:
 		struct VS_IN
 		{
 			Vec3 posWld;
@@ -31,7 +116,7 @@ namespace Graphics
 			Vec3 color;
 		};
 
-		static void VS(void * pVSOut, const void * pVSIn, const void * pContext)
+		static void VSImpl(void * pVSOut, const void * pVSIn, const void * pContext)
 		{
 			const VS_IN & in	= *static_cast< const VS_IN * >( pVSIn );
 			const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
@@ -40,7 +125,7 @@ namespace Graphics
 			out.posNDC = Vec3::Transform(Vec3::Transform(in.posWld, context.view), context.proj);
 			out.color = in.color;
 		}
-		static void PS(void * pPSOut, const void * pPSIn, const void * pContext)
+		static void PSImpl(void * pPSOut, const void * pPSIn, const void * pContext)
 		{
 			const PS_IN & in	= *static_cast< const PS_IN * >( pPSIn );
 			const PS_DATA & context	= *static_cast< const PS_DATA * >( pContext );
@@ -48,6 +133,119 @@ namespace Graphics
 
 			out.color = in.color;
 		}
+
+	private:
+		VertexShader	m_vertexShader;
+		PixelShader	m_pixelShader;
+		VS_DATA		m_vsData;
+		PS_DATA		m_psData;
+	};
+
+	class TextureEffect : public Effect
+	{
+	public:
+		TextureEffect(LPCWSTR lpTexFilePath)
+			: m_texFilePath(lpTexFilePath)
+		{
+			m_vs = VSImpl;
+			m_ps = PSImpl;
+		}
+
+		virtual void		Initialize(Device & device) override
+		{
+			m_vsIn			= device.CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::TEXCOORD);
+			m_vsOut			= m_vsIn;
+			m_psIn			= m_vsOut;
+			m_psOut			= device.CreateVertexFormat(VertexFieldType::COLOR);
+
+			m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
+			m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
+
+
+			Texture2D texture;
+			{
+				LONG nWidth;
+				LONG nHeight;
+				LPVOID lpPixelData = nullptr;
+
+				win32::LoadBMP(m_texFilePath, &nWidth, &nHeight, &lpPixelData);
+				ASSERT(nWidth > 0 && nHeight > 0 && lpPixelData != nullptr);
+
+				texture		= device.CreateTexture2D(nWidth, nHeight, 4, 4, 0, lpPixelData);
+
+				delete[] lpPixelData;
+			}
+			m_vsData.tex		= texture;
+			m_psData.tex		= texture;
+		}
+		virtual void		Apply(RenderContext & context) override
+		{
+			context.SetVertexShader(m_vertexShader);
+			context.SetPixelShader(m_pixelShader);
+
+			context.VSSetConstantBuffer(&m_vsData);
+			context.PSSetConstantBuffer(&m_psData);
+		}
+
+		virtual void		SetViewTransform(const Matrix4x4 & viewTransform) override
+		{
+			m_vsData.view = m_psData.view = viewTransform;
+		}
+		virtual void		SetProjTransform(const Matrix4x4 & projTransform) override
+		{
+			m_vsData.proj = m_psData.proj = projTransform;
+		}
+
+	private:
+		struct VS_IN
+		{
+			Vec3 posWld;
+			Vec2 uv;
+		};
+		struct VS_OUT
+		{
+			Vec3 posNDC;
+			Vec2 uv;
+		};
+		struct VS_DATA
+		{
+			Matrix4x4 view;
+			Matrix4x4 proj;
+			Texture2D tex;
+		};
+
+		typedef VS_OUT PS_IN;
+		typedef VS_DATA PS_DATA;
+		struct PS_OUT
+		{
+			Vec3 color;
+		};
+
+		static void VSImpl(void * pVSOut, const void * pVSIn, const void * pContext)
+		{
+			const VS_IN & in	= *static_cast< const VS_IN * >( pVSIn );
+			const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
+			VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
+
+			out.posNDC		= Vec3::Transform(Vec3::Transform(in.posWld, context.view), context.proj);
+			out.uv			= in.uv;
+		}
+		static void PSImpl(void * pPSOut, const void * pPSIn, const void * pContext)
+		{
+			const PS_IN & in	= *static_cast< const PS_IN * >( pPSIn );
+			const PS_DATA & context	= *static_cast< const PS_DATA * >( pContext );
+			PS_OUT & out		= *static_cast< PS_OUT * >( pPSOut );
+
+			context.tex.Sample(in.uv.x, in.uv.y, reinterpret_cast<float *>(&out.color));
+		}
+
+	private:
+		VertexShader	m_vertexShader;
+		PixelShader	m_pixelShader;
+		VS_DATA		m_vsData;
+		PS_DATA		m_psData;
+
+		LPCWSTR		m_texFilePath;
 	};
 
 	class MyScene
@@ -60,20 +258,14 @@ namespace Graphics
 
 			// Setup shader
 
-			VertexFormat fmtVSIn	= m_device->CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::COLOR);
-			VertexFormat fmtVSOut	= fmtVSIn;
-			VertexFormat fmtPSIn	= fmtVSOut;
-			VertexFormat fmtPSOut	= m_device->CreateVertexFormat(VertexFieldType::COLOR);
+			m_rgbEffect.reset(new SimpleEffect());
+			m_texEffect.reset(new TextureEffect(L"Resources/grass.bmp"));
 
-			VertexShader vertexShader;
-			PixelShader pixelShader;
+			m_rgbEffect->Initialize(device);
+			m_texEffect->Initialize(device);
 
-			m_vertexBuffer		= m_device->CreateVertexBuffer(fmtVSIn);
-			vertexShader		= m_device->CreateVertexShader(SimpleEffect::VS, fmtVSIn, fmtVSOut);
-			pixelShader		= m_device->CreatePixelShader(SimpleEffect::PS, fmtPSIn, fmtPSOut);
-
-			m_context->SetVertexShader(vertexShader);
-			m_context->SetPixelShader(pixelShader);
+			m_rgbVertices		= m_device->CreateVertexBuffer(m_rgbEffect->GetVSInputFormat());
+			m_texVertices		= m_device->CreateVertexBuffer(m_texEffect->GetVSInputFormat());
 
 			// Setup display
 
@@ -85,8 +277,8 @@ namespace Graphics
 
 			Scene * scene		= SceneManager::Default().CreateScene();
 
-			EntityGroup * group	= SceneManager::Default().CreateEntityGroup();
-			Light * light		= SceneManager::Default().CreateLight();
+			m_rgbGroup		= SceneManager::Default().CreateEntityGroup();
+			m_texGroup		= SceneManager::Default().CreateEntityGroup();
 			Player * player		= SceneManager::Default().CreatePlayer();
 			Terrain * terrain	= SceneManager::Default().CreateTerrain();
 			m_cameraPlayer		= SceneManager::Default().CreateCamera();
@@ -95,15 +287,13 @@ namespace Graphics
 
 			scene->AddChild(m_cameraPlayer);
 			scene->AddChild(m_cameraMiniMap);
-			scene->AddChild(group);
+			scene->AddChild(m_rgbGroup);
+			scene->AddChild(m_texGroup);
 			scene->AddChild(controller);
 
-			group->AddChild(light);
-			group->AddChild(terrain);
-			group->AddChild(player);
+			m_rgbGroup->AddChild(terrain);
+			m_texGroup->AddChild(player);
 
-			m_cameraPlayer->Observe(group);
-			m_cameraMiniMap->Observe(group);
 			m_cameraMiniMap->transform.f42 = 3.0f; // Y
 
 			controller->ConnectTo(player, ConnectType::PLAYER);
@@ -112,7 +302,8 @@ namespace Graphics
 
 			m_scene			= scene;
 
-			SceneObject::InitializeAll(m_scene, *m_context, m_vertexBuffer);
+			SceneObject::InitializeAll(m_scene, *m_context, m_rgbVertices);
+			SceneObject::InitializeAll(m_scene, *m_context, m_texVertices);
 		}
 		void			OnUnload()
 		{
@@ -124,9 +315,32 @@ namespace Graphics
 		void			OnDraw()
 		{
 			m_context->SetOutputTarget(m_rdtgFullRect);
-			m_cameraPlayer->Draw();
+
+			m_rgbEffect->SetViewTransform(m_cameraPlayer->GetViewTransform());
+			m_rgbEffect->SetProjTransform(m_cameraPlayer->GetProjTransform());
+			m_rgbEffect->Apply(*m_context);
+			m_cameraPlayer->ObserveEntity(m_rgbGroup);
+			m_cameraPlayer->DrawObservedEntity();
+
+			m_texEffect->SetViewTransform(m_cameraPlayer->GetViewTransform());
+			m_texEffect->SetProjTransform(m_cameraPlayer->GetProjTransform());
+			m_texEffect->Apply(*m_context);
+			m_cameraPlayer->ObserveEntity(m_texGroup);
+			m_cameraPlayer->DrawObservedEntity();
+
 			m_context->SetOutputTarget(m_rdtgMapRect);
-			m_cameraMiniMap->Draw();
+
+			m_rgbEffect->SetViewTransform(m_cameraMiniMap->GetViewTransform());
+			m_rgbEffect->SetProjTransform(m_cameraMiniMap->GetProjTransform());
+			m_rgbEffect->Apply(*m_context);
+			m_cameraMiniMap->ObserveEntity(m_rgbGroup);
+			m_cameraMiniMap->DrawObservedEntity();
+
+			m_texEffect->SetViewTransform(m_cameraMiniMap->GetViewTransform());
+			m_texEffect->SetProjTransform(m_cameraMiniMap->GetProjTransform());
+			m_texEffect->Apply(*m_context);
+			m_cameraMiniMap->ObserveEntity(m_texGroup);
+			m_cameraMiniMap->DrawObservedEntity();
 		}
 
 	private:
@@ -135,7 +349,13 @@ namespace Graphics
 
 		RenderTarget		m_rdtgFullRect;
 		RenderTarget		m_rdtgMapRect;
-		VertexBuffer		m_vertexBuffer; // referred by SceneObject
+
+		EntityGroup *		m_rgbGroup;
+		EntityGroup *		m_texGroup;
+		VertexBuffer		m_rgbVertices; // referred by SceneObject
+		VertexBuffer		m_texVertices; // referred by SceneObject
+		Ptr<SimpleEffect>	m_rgbEffect;
+		Ptr<TextureEffect>	m_texEffect;
 
 		Scene *			m_scene;
 		Camera *		m_cameraPlayer;

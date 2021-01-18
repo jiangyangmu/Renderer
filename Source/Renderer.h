@@ -40,6 +40,8 @@ namespace Graphics
 		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
 		virtual void		Draw() override;
 
+		static bool		IsVertexFormatCompatible(VertexFormat vertexFormat);
+
 	private:
 		struct Vertex
 		{
@@ -52,4 +54,26 @@ namespace Graphics
 		RenderContext *		m_refContext;
 	};
 
+	class ROCube : public Renderable
+	{
+	public:
+		ROCube(Vec3 center, float size);
+		virtual			~ROCube();
+
+		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
+		virtual void		Draw() override;
+
+		static bool		IsVertexFormatCompatible(VertexFormat vertexFormat);
+
+	private:
+		struct Vertex
+		{
+			Vec3 pos;
+			Vec2 uv;
+		};
+		Vertex			m_vertex[ 3 * 2 * 6 ];
+		VertexRange		m_vertexRange;
+		VertexBuffer *		m_refVertexBuffer;
+		RenderContext *		m_refContext;
+	};
 }

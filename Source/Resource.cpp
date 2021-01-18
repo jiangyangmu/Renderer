@@ -50,6 +50,11 @@ namespace Graphics
 		Integer			nAllocated;
 	};
 
+	struct Texture2D_Desc
+	{
+		BufferIndex		iTexDataBuffer;
+	};
+
 	struct RenderTarget_Desc
 	{
 		IUnknown *		pUnknown;
@@ -94,6 +99,7 @@ namespace Graphics
 		std::vector<VertexFormat_Desc>		vertexFormatDescs;
 		std::vector<VertexBuffer_Desc>		vertexBufferDescs;
 		//std::vector<IndexBuffer_Desc>		indexBuffers;
+		std::vector<Texture2D_Desc>		textureDescs;
 
 		std::vector<VertexShader_Desc>		vertexShaderDescs;
 		std::vector<PixelShader_Desc>		pixelShaderDescs;
@@ -176,6 +182,121 @@ namespace Graphics
 		}
 
 		return size;
+	}
+
+	static inline Device_Impl *		_GetDevice(Handle & h)
+	{
+		return static_cast< Device_Impl * >( h.pParam );
+	}
+	static inline const Device_Impl *	_GetDevice(const Handle & h)
+	{
+		return static_cast< const Device_Impl * >( h.pParam );
+	}
+
+	static inline SwapChain_Desc *		_GetSwapChainDesc(Device_Impl & device, Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.swapChainDescs[ iDesc.value ];
+	}
+	static inline DepthStencil_Desc *	_GetDepthStencilDesc(Device_Impl & device, Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.depthStencilDescs[ iDesc.value ];
+	}
+	static inline VertexFormat_Desc *	_GetVertexFormatDesc(Device_Impl & device, Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.vertexFormatDescs[ iDesc.value ];
+	}
+	static inline VertexBuffer_Desc *	_GetVertexBufferDesc(Device_Impl & device, Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.vertexBufferDescs[ iDesc.value ];
+	}
+	static inline Texture2D_Desc *		_GetTextureDesc(Device_Impl & device, Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.textureDescs[ iDesc.value ];
+	}
+	static inline VertexShader_Desc *	_GetVertexShaderDesc(Device_Impl & device, Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.vertexShaderDescs[ iDesc.value ];
+	}
+	static inline PixelShader_Desc *	_GetPixelShaderDesc(Device_Impl & device, Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.pixelShaderDescs[ iDesc.value ];
+	}
+	static inline RenderTarget_Desc *	_GetRenderTargetDesc(Device_Impl & device, Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.renderTargetDescs[ iDesc.value ];
+	}
+	static inline const SwapChain_Desc *	_GetSwapChainDesc(const Device_Impl & device, const Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.swapChainDescs[ iDesc.value ];
+	}
+	static inline const DepthStencil_Desc *	_GetDepthStencilDesc(const Device_Impl & device, const Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.depthStencilDescs[ iDesc.value ];
+	}
+	static inline const VertexFormat_Desc *	_GetVertexFormatDesc(const Device_Impl & device, const Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.vertexFormatDescs[ iDesc.value ];
+	}
+	static inline const VertexBuffer_Desc *	_GetVertexBufferDesc(const Device_Impl & device, const Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.vertexBufferDescs[ iDesc.value ];
+	}
+	static inline const Texture2D_Desc *	_GetTextureDesc(const Device_Impl & device, const Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.textureDescs[ iDesc.value ];
+	}
+	static inline const VertexShader_Desc *	_GetVertexShaderDesc(const Device_Impl & device, const Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.vertexShaderDescs[ iDesc.value ];
+	}
+	static inline const PixelShader_Desc *	_GetPixelShaderDesc(const Device_Impl & device, const Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.pixelShaderDescs[ iDesc.value ];
+	}
+	static inline const RenderTarget_Desc *	_GetRenderTargetDesc(const Device_Impl & device, const Handle & h)
+	{
+		DescIndex iDesc;
+		_LoadIndex(h, &iDesc);
+		return &device.renderTargetDescs[ iDesc.value ];
+	}
+
+	static inline Buffer &			_GetBuffer(Device_Impl & device, BufferIndex iBuffer)
+	{
+		return device.buffers[ iBuffer.value ];
+	}
+	static inline const Buffer &		_GetBuffer(const Device_Impl & device, BufferIndex iBuffer)
+	{
+		return device.buffers[ iBuffer.value ];
 	}
 
 	static inline Buffer &			_GetFrontBuffer(Device_Impl & device, SwapChain_Desc & swapChainDesc)
@@ -346,6 +467,19 @@ namespace Graphics
 
 		return iBuffer;
 	}
+	static inline BufferIndex		_CreateBuffer(Device_Impl & device, Integer width, Integer height, Integer elementSize, Integer alignment, Integer rowPadding, const void * pData)
+	{
+		BufferIndex iBuffer;
+		iBuffer.value = device.buffers.size();
+
+		device.buffers.emplace_back(width, height, elementSize, alignment, rowPadding);
+		
+		memcpy(device.buffers.back().Data(),
+		       pData,
+		       device.buffers.back().SizeInBytes());
+
+		return iBuffer;
+	}
 	static inline SwapChain_Desc		_CreateSwapChain(Device_Impl & device, Integer nWidth, Integer nHeight)
 	{
 		SwapChain_Desc sc;
@@ -380,6 +514,14 @@ namespace Graphics
 		vb.nAllocated		= 0;
 
 		return vb;
+	}
+	static inline Texture2D_Desc		_CreateTexture2D(Device_Impl & device, BufferIndex iBuffer)
+	{
+		Texture2D_Desc textureDesc;
+
+		textureDesc.iTexDataBuffer = iBuffer;
+
+		return textureDesc;
 	}
 	static inline RenderTarget_Desc		_CreateRenderTarget(Device_Impl & device, IUnknown * pUnknown, const Rect & rect)
 	{
@@ -745,6 +887,10 @@ namespace Graphics
 	{
 		return _GetVertexFormatDesc(*this)->nSize;
 	}
+	VertexField &		VertexFormat::operator[](Integer i)
+	{
+		return _GetVertexFormatDesc(*this)->vFields[i];
+	}
 
 	void *			VertexRange::At(Integer i)
 	{
@@ -788,6 +934,22 @@ namespace Graphics
 	{
 		ASSERT(false);
 	}
+
+	VertexFormat		VertexBuffer::GetVertexFormat()
+	{
+		Device_Impl * pDevice;
+		VertexBuffer_Desc * pVertexBufferDesc;
+
+		pDevice		= _GetDevice(*this);
+
+		_GetVertexBufferDesc(*this, &pVertexBufferDesc, nullptr);
+
+		VertexFormat handle;
+		_StoreIndex(&handle, pVertexBufferDesc->iVertexFormat);
+		handle.pParam = pDevice;
+		return handle;
+	}
+
 	Integer			VertexBuffer::Count()
 	{
 		VertexBuffer_Desc * pVertexBufferDesc;
@@ -810,6 +972,29 @@ namespace Graphics
 		pDepthStencilDesc	= &pDevice->depthStencilDescs[iDepthStencilDesc.value];
 
 		_ResetDepthBuffer(pDevice->buffers[ pDepthStencilDesc->iDepthBuffer.value ]);
+	}
+
+	void			Texture2D::Sample(float u, float v, float * pColor) const
+	{
+		ASSERT(0.0f <= u && u <= 1.0001f);
+		ASSERT(0.0f <= v && v <= 1.0001f);
+		ASSERT(u + v <= 2.0f);
+
+		const Device_Impl * pDevice		= _GetDevice(*this);
+		const Texture2D_Desc * pTextureDesc	= _GetTextureDesc(*pDevice, *this);
+
+		const Buffer & texData			= _GetBuffer(*pDevice, pTextureDesc->iTexDataBuffer);
+
+		LONG width = texData.Width();
+		LONG height = texData.Height();
+		LONG col = static_cast< LONG >( width * u );
+		LONG row = static_cast< LONG >( height * Max(0.0f, 1.000f - v) );
+
+		const Byte * rgba	= ( Byte * ) texData.At(row, col);
+
+		pColor[ 0 ] = static_cast< float >( rgba[ 0 ] ) / 255.f;
+		pColor[ 1 ] = static_cast< float >( rgba[ 1 ] ) / 255.f;
+		pColor[ 2 ] = static_cast< float >( rgba[ 2 ] ) / 255.f;
 	}
 
 	void			RenderTarget::InitCache()
@@ -1170,6 +1355,23 @@ namespace Graphics
 
 		PixelShader handle;
 		_StoreIndex(&handle, iPixelShader);
+		handle.pParam = self;
+		return handle;
+	}
+
+	Texture2D		Device::CreateTexture2D(Integer width, Integer height, Integer elementSize, Integer alignment, Integer rowPadding, const void * pData)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+
+		BufferIndex iBuffer	= _CreateBuffer(*self, width, height, elementSize, alignment, rowPadding, pData);
+
+		DescIndex iTextureDesc;
+		iTextureDesc.value = self->textureDescs.size();
+
+		self->textureDescs.emplace_back(_CreateTexture2D(*self, iBuffer));
+
+		Texture2D handle;
+		_StoreIndex(&handle, iTextureDesc);
 		handle.pParam = self;
 		return handle;
 	}
