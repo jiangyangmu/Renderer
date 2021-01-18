@@ -17,8 +17,8 @@ namespace Graphics
 		virtual void		Initialize(Device & device) = 0;
 		virtual void		Apply(RenderContext & context) = 0;
 
-		virtual void		SetViewTransform(const Matrix4x4 & viewTransform) = 0;
-		virtual void		SetProjTransform(const Matrix4x4 & projTransform) = 0;
+		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) = 0;
+		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) = 0;
 
 		VS			GetVS()
 		{
@@ -83,11 +83,11 @@ namespace Graphics
 			context.PSSetConstantBuffer(&m_psData);
 		}
 
-		virtual void		SetViewTransform(const Matrix4x4 & viewTransform) override
+		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) override
 		{
 			m_vsData.view = m_psData.view = viewTransform;
 		}
-		virtual void		SetProjTransform(const Matrix4x4 & projTransform) override
+		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) override
 		{
 			m_vsData.proj = m_psData.proj = projTransform;
 		}
@@ -187,11 +187,11 @@ namespace Graphics
 			context.PSSetConstantBuffer(&m_psData);
 		}
 
-		virtual void		SetViewTransform(const Matrix4x4 & viewTransform) override
+		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) override
 		{
 			m_vsData.view = m_psData.view = viewTransform;
 		}
-		virtual void		SetProjTransform(const Matrix4x4 & projTransform) override
+		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) override
 		{
 			m_vsData.proj = m_psData.proj = projTransform;
 		}
@@ -270,8 +270,11 @@ namespace Graphics
 			// Setup display
 
 			Rect rect		= context.GetOutputTarget().GetRect();
-			m_rdtgFullRect		= context.GetOutputTarget();
-			m_rdtgMapRect		= device.CreateRenderTarget(m_rdtgFullRect, Rect { rect.right - 300,rect.right, 0, 300 });
+			Rect leftRect		= Rect { 0, rect.right / 2, 0, rect.bottom };
+			Rect rightRect		= Rect { rect.right / 2, rect.right, 0, rect.bottom };
+
+			m_rdtgLeftRect		= device.CreateRenderTarget(context.GetOutputTarget(), leftRect);
+			m_rdtgRightRect		= device.CreateRenderTarget(context.GetOutputTarget(), rightRect);
 
 			// Setup scene
 
@@ -294,7 +297,8 @@ namespace Graphics
 			m_rgbGroup->AddChild(terrain);
 			m_texGroup->AddChild(player);
 
-			m_cameraMiniMap->transform.f42 = 3.0f; // Y
+			m_cameraPlayer->SetAspectRatio(static_cast<float>(leftRect.right - leftRect.left) / (leftRect.bottom - leftRect.top));
+			m_cameraMiniMap->SetAspectRatio(static_cast<float>(rightRect.right - rightRect.left) / (rightRect.bottom - rightRect.top));
 
 			controller->ConnectTo(player, ConnectType::PLAYER);
 			player->ConnectTo(m_cameraPlayer, ConnectType::THIRD_PERSON_VIEW);
@@ -314,30 +318,30 @@ namespace Graphics
 		}
 		void			OnDraw()
 		{
-			m_context->SetOutputTarget(m_rdtgFullRect);
+			m_context->SetOutputTarget(m_rdtgLeftRect);
 
-			m_rgbEffect->SetViewTransform(m_cameraPlayer->GetViewTransform());
-			m_rgbEffect->SetProjTransform(m_cameraPlayer->GetProjTransform());
+			m_rgbEffect->CBSetViewTransform(m_cameraPlayer->GetViewTransform());
+			m_rgbEffect->CBSetProjTransform(m_cameraPlayer->GetProjTransform());
 			m_rgbEffect->Apply(*m_context);
 			m_cameraPlayer->ObserveEntity(m_rgbGroup);
 			m_cameraPlayer->DrawObservedEntity();
 
-			m_texEffect->SetViewTransform(m_cameraPlayer->GetViewTransform());
-			m_texEffect->SetProjTransform(m_cameraPlayer->GetProjTransform());
+			m_texEffect->CBSetViewTransform(m_cameraPlayer->GetViewTransform());
+			m_texEffect->CBSetProjTransform(m_cameraPlayer->GetProjTransform());
 			m_texEffect->Apply(*m_context);
 			m_cameraPlayer->ObserveEntity(m_texGroup);
 			m_cameraPlayer->DrawObservedEntity();
 
-			m_context->SetOutputTarget(m_rdtgMapRect);
+			m_context->SetOutputTarget(m_rdtgRightRect);
 
-			m_rgbEffect->SetViewTransform(m_cameraMiniMap->GetViewTransform());
-			m_rgbEffect->SetProjTransform(m_cameraMiniMap->GetProjTransform());
+			m_rgbEffect->CBSetViewTransform(m_cameraMiniMap->GetViewTransform());
+			m_rgbEffect->CBSetProjTransform(m_cameraMiniMap->GetProjTransform());
 			m_rgbEffect->Apply(*m_context);
 			m_cameraMiniMap->ObserveEntity(m_rgbGroup);
 			m_cameraMiniMap->DrawObservedEntity();
 
-			m_texEffect->SetViewTransform(m_cameraMiniMap->GetViewTransform());
-			m_texEffect->SetProjTransform(m_cameraMiniMap->GetProjTransform());
+			m_texEffect->CBSetViewTransform(m_cameraMiniMap->GetViewTransform());
+			m_texEffect->CBSetProjTransform(m_cameraMiniMap->GetProjTransform());
 			m_texEffect->Apply(*m_context);
 			m_cameraMiniMap->ObserveEntity(m_texGroup);
 			m_cameraMiniMap->DrawObservedEntity();
@@ -347,8 +351,8 @@ namespace Graphics
 		Device *		m_device;
 		RenderContext *		m_context;
 
-		RenderTarget		m_rdtgFullRect;
-		RenderTarget		m_rdtgMapRect;
+		RenderTarget		m_rdtgLeftRect;
+		RenderTarget		m_rdtgRightRect;
 
 		EntityGroup *		m_rgbGroup;
 		EntityGroup *		m_texGroup;
@@ -404,6 +408,7 @@ namespace Graphics
 		virtual void		Clear() override
 		{
 			m_swapChain.ResetBackBuffer();
+			m_swapChain.ResetBackBuffer(Rect { m_window.GetWidth() / 2, m_window.GetWidth(), 0, m_window.GetHeight() }, 50);
 			m_depthStencilBuffer.Reset();
 		}
 		virtual void		Update(double ms) override

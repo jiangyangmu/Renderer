@@ -741,7 +741,7 @@ namespace Graphics
 					}
 
 					// Depth test
-					float * depth = static_cast< float * >( depthBuffer.At(yPix, xPix) );
+					float * depth = static_cast< float * >( depthBuffer.At(rect.top + yPix, rect.left + xPix) );
 					if ( *depth <= zNDC )
 					{
 						continue;
@@ -749,7 +749,7 @@ namespace Graphics
 					*depth = zNDC;
 
 					// Stencil test
-					bool visible = *static_cast< Byte * >( stencilBuffer.At(yPix, xPix) );
+					bool visible = *static_cast< Byte * >( stencilBuffer.At(rect.top + yPix, rect.left + xPix) );
 					if ( !visible )
 					{
 						continue;
@@ -808,6 +808,15 @@ namespace Graphics
 					ASSERT(color.r >= 0.0f && color.g >= 0.0f && color.b >= 0.0f);
 					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
 
+					/*
+					// Draw depth
+					float fDepth = Bound(0.0f, *depth, 1.0f);
+					fDepth *= fDepth;
+					fDepth *= fDepth;
+					fDepth *= fDepth;
+					color = {fDepth, fDepth, fDepth};
+					*/
+
 					// Draw pixel
 					Byte * pixelData = ( Byte * ) frameBuffer.At(rect.top + yPix, rect.left + xPix);
 					pixelData[ 0 ] = static_cast< Byte >( color.r * 255.0f );
@@ -864,6 +873,26 @@ namespace Graphics
 		pSwapChainDesc		= &pDevice->swapChainDescs[ iSwapChainDesc.value ];
 
 		_ResetBackBuffer(_GetBackBuffer(*pDevice, *pSwapChainDesc));
+	}
+	void			SwapChain::ResetBackBuffer(const Rect & rect, Byte value)
+	{
+		Device_Impl *		pDevice;
+		BufferIndex		iSwapChainDesc;
+		SwapChain_Desc *	pSwapChainDesc;
+
+		_LoadIndex(*this, &iSwapChainDesc);
+
+		pDevice			= static_cast< Device_Impl * >( pParam );
+		pSwapChainDesc		= &pDevice->swapChainDescs[ iSwapChainDesc.value ];
+
+		Buffer & backBuffer	= _GetBackBuffer(*pDevice, *pSwapChainDesc);
+		Integer nBytesPerRow	= (rect.right - rect.left) * backBuffer.ElementSize();
+		for (Integer row = rect.top; row < rect.bottom; ++row)
+		{
+			FillMemory(backBuffer.At(row, rect.left),
+				   nBytesPerRow,
+				   value);
+		}
 	}
 	void *			SwapChain::FrameBuffer()
 	{

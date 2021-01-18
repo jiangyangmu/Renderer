@@ -118,7 +118,7 @@ namespace Graphics
 		{
 			if (ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()))
 			{
-				renderable.reset(new ROCube({ 1.0f, 0.0f, 1.0f }, 1.0f));
+				renderable.reset(new ROCube({ 1.0f, 0.0f, 3.0f }, 1.0f));
 				renderable->Initialize(context, vertexBuffer);
 			}
 		}
@@ -140,9 +140,9 @@ namespace Graphics
 		{
 			if (ROTriangle::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()))
 			{
-				renderable.reset(new ROTriangle({ -1.0f,   0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f },
-								{  0.0f,   0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f },
-								{ -0.5f, 0.866f, 1.0f }, { 0.0f, 0.0f, 1.0f }));
+				renderable.reset(new ROTriangle({ -1.0f,   0.0f, 3.0f }, { 1.0f, 0.0f, 0.0f },
+								{  0.0f,   0.0f, 3.0f }, { 0.0f, 1.0f, 0.0f },
+								{ -0.5f, 0.866f, 3.0f }, { 0.0f, 0.0f, 1.0f }));
 				renderable->Initialize(context, vertexBuffer);
 			}
 		}
@@ -187,6 +187,7 @@ namespace Graphics
 		Camera()
 			: m_context(nullptr)
 			, m_observedEntity(nullptr)
+			, m_aspectRatio(1.6f)
 		{
 		}
 
@@ -201,17 +202,18 @@ namespace Graphics
 		}
 		void			DrawObservedEntity();
 
+		void			SetAspectRatio(float value)
+		{
+			m_aspectRatio		= value;
+		}
 		const Matrix4x4 &	GetViewTransform()
 		{
 			return transform;
 		}
-		const Matrix4x4 &	GetProjTransform()
+		Matrix4x4		GetProjTransform()
 		{
-			double W	= m_context->GetOutputTarget().GetWidth();
-			double H	= m_context->GetOutputTarget().GetHeight();
-
 			return Matrix4x4::PerspectiveFovLH(DegreeToRadian(90),
-							   W / H,
+							   m_aspectRatio,
 							   0.1f,
 							   1000.0f);
 		}
@@ -219,6 +221,7 @@ namespace Graphics
 	private:
 		RenderContext *		m_context;
 		Entity *		m_observedEntity;
+		float			m_aspectRatio;
 	};
 
 	struct EntityGroup : Entity

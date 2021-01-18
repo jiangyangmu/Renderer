@@ -107,11 +107,14 @@ namespace Graphics
 		void		Sample(float u, float v, float * pColor) const;
 	};
 
+	struct Rect;
+
 	struct SwapChain : public Handle
 	{
 	public:
 		void		Swap();
 		void		ResetBackBuffer();
+		void		ResetBackBuffer(const Rect & rect, Byte value);
 		void *		FrameBuffer();
 	};
 

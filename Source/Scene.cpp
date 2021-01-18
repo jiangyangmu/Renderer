@@ -51,7 +51,6 @@ namespace Graphics
 				case ConnectType::PLAYER:
 					pPassTransform = pSourceTransform;
 					pSlave->transform = *pSourceTransform;
-					//pSlave->transform.f12 = pSlave->transform.f21 = pSlave->transform.f22 = pSlave->transform.f23 = pSlave->transform.f32 = 0.0f;
 					break;
 				case ConnectType::FIRST_PERSON_VIEW:
 					pSlave->transform = *pSourceTransform;
@@ -60,10 +59,9 @@ namespace Graphics
 					pSlave->transform = *pSourceTransform;
 					break;
 				case ConnectType::MINI_MAP_VIEW:
-					posY = pSlave->transform.f42;
-					pSlave->transform = *pSourceTransform;
-					pSlave->transform.f42 = posY;
-					//pSlave->transform.f12 = pSlave->transform.f21 = pSlave->transform.f22 = pSlave->transform.f23 = pSlave->transform.f32 = 0.0f;
+					pSlave->transform =
+						Matrix4x4::Translation(pSourceTransform->f41, -5.0f, pSourceTransform->f43) *
+						Matrix4x4::RotationAxisLH({1.0f, 0.0f, 0.0f}, DegreeToRadian(-80.0f));
 					break;
 				default:
 					break;
@@ -111,7 +109,7 @@ namespace Graphics
 		Vec3 rightDir;
 
 		hRotRad		= DegreeToRadian(hRotDeg);
-		vRotRad		= DegreeToRadian(Bound(-90.0f, vRotDeg, 90.0f));
+		vRotRad		= DegreeToRadian(Bound(-80.0f, vRotDeg, 80.0f));
 
 		forwardDir	= Vec3::Transform(fwd, Matrix4x4::RotationAxisLH(rt, -vRotRad) * Matrix4x4::RotationAxisLH(up, hRotRad));
 		forwardDir.y	= 0.0f;
@@ -137,7 +135,7 @@ namespace Graphics
 		if ( vFactor != 0.0f )
 		{
 			vRotDeg	+= 0.2f * ms * vFactor;
-			vRotRad	= DegreeToRadian(Bound(-90.0f, vRotDeg, 90.0f));
+			vRotRad	= DegreeToRadian(Bound(-80.0f, vRotDeg, 80.0f));
 		}
 
 		transform	=
@@ -157,7 +155,7 @@ namespace Graphics
 		{
 			hRotDeg += 0.2f * ( args.pixelX - pixelX );
 			vRotDeg -= 0.2f * ( args.pixelY - pixelY );
-			vRotDeg = Bound(-90.0f, vRotDeg, 90.0f);
+			vRotDeg = Bound(-80.0f, vRotDeg, 80.0f);
 		}
 		pixelX = args.pixelX;
 		pixelY = args.pixelY;
