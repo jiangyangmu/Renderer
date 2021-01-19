@@ -700,9 +700,11 @@ namespace Graphics
 			Integer yRasMin = static_cast< Integer >( Min3(p0Ras.y, p1Ras.y, p2Ras.y) );
 			Integer yRasMax = static_cast< Integer >( Max3(p0Ras.y, p1Ras.y, p2Ras.y) );
 
-			// ASSERT(0 <= xRasMin && xRasMin < width);
-			// ASSERT(0 <= yRasMin && yRasMin < height);
-			if ( xRasMin < 0 || width <= xRasMax || yRasMin < 0 || height <= yRasMax )
+			xRasMin = Bound(( Integer ) 0, xRasMin, width);
+			xRasMax = Bound(( Integer ) 0, xRasMax, width);
+			yRasMin = Bound(( Integer ) 0, yRasMin, height);
+			yRasMax = Bound(( Integer ) 0, yRasMax, height);
+			if (xRasMax < xRasMin || yRasMax < yRasMin)
 			{
 				continue;
 			}
@@ -972,7 +974,6 @@ namespace Graphics
 	{
 		ASSERT(false);
 	}
-
 	VertexFormat		VertexBuffer::GetVertexFormat()
 	{
 		Device_Impl * pDevice;
@@ -998,6 +999,7 @@ namespace Graphics
 	{
 		return _GetVertexBuffer(*this).Data();
 	}
+
 	void			DepthStencilBuffer::Reset()
 	{
 		Device_Impl *		pDevice;
@@ -1079,7 +1081,6 @@ namespace Graphics
 
 		return static_cast< RenderWindow * >( pObjectCache )->GetHeight();
 	}
-
 	bool			RenderTarget::QueryInterface(Integer iid, void ** ppvObject)
 	{
 		Device_Impl *		pDevice;
@@ -1116,7 +1117,6 @@ namespace Graphics
 	{
 		static_cast< RenderContext_Impl * >( pImpl )->pPixelShaderData = pBuffer;
 	}
-
 	void			RenderContext::SetDepthStencilBuffer(DepthStencilBuffer dsb)
 	{
 		_LoadIndex(dsb,	&static_cast< RenderContext_Impl * >( pImpl )->iDepthStencilDesc);
@@ -1125,7 +1125,6 @@ namespace Graphics
 	{
 		_LoadIndex(target, &static_cast< RenderContext_Impl * >( pImpl )->iRenderTargetDesc);
 	}
-
 	RenderTarget		RenderContext::GetOutputTarget()
 	{
 		Device_Impl * pDevice = static_cast< Device_Impl * >( pParam );
@@ -1135,7 +1134,6 @@ namespace Graphics
 		target.pParam = pDevice;
 		return target;
 	}
-
 	void			RenderContext::Draw(VertexBuffer vb, Integer nOffset, Integer nCount)
 	{
 		RenderContext_Impl * self = static_cast< RenderContext_Impl * >( pImpl );
