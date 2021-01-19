@@ -660,20 +660,28 @@ namespace Graphics
 			// World(Wld) -> Camera(Cam) -> NDC -> Screen(Scn)+Depth -> Raster(Ras)+Depth
 
 			const void * pVSIn0 = pVSIn;
-			const void * pVSIn1 = pVSIn + vertexFormat.nSize;
-			const void * pVSIn2 = pVSIn + vertexFormat.nSize * 2;
+			const void * pVSIn1 = pVSIn + pVSFmtIn->nSize;
+			const void * pVSIn2 = pVSIn + pVSFmtIn->nSize * 2;
 
 			Byte * pVSOut0 = pVSOut;
-			Byte * pVSOut1 = pVSOut + vertexFormat.nSize;
-			Byte * pVSOut2 = pVSOut + vertexFormat.nSize * 2;
+			Byte * pVSOut1 = pVSOut + pVSFmtOut->nSize;
+			Byte * pVSOut2 = pVSOut + pVSFmtOut->nSize * 2;
 
 			vertexShader(pVSOut0, pVSIn0, pVSData);
 			vertexShader(pVSOut1, pVSIn1, pVSData);
 			vertexShader(pVSOut2, pVSIn2, pVSData);
 
-			const Vec3 & p0NDC = *reinterpret_cast< Vec3 * >( pVSOut0 );
-			const Vec3 & p1NDC = *reinterpret_cast< Vec3 * >( pVSOut1 );
-			const Vec3 & p2NDC = *reinterpret_cast< Vec3 * >( pVSOut2 );
+			const Vec3 & p0Cam = reinterpret_cast< Vec3 * >( pVSOut0 )[ 0 ];
+			const Vec3 & p1Cam = reinterpret_cast< Vec3 * >( pVSOut1 )[ 0 ];
+			const Vec3 & p2Cam = reinterpret_cast< Vec3 * >( pVSOut2 )[ 0 ];
+
+			const Vec3 & p0NDC = reinterpret_cast< Vec3 * >( pVSOut0 )[ 1 ];
+			const Vec3 & p1NDC = reinterpret_cast< Vec3 * >( pVSOut1 )[ 1 ];
+			const Vec3 & p2NDC = reinterpret_cast< Vec3 * >( pVSOut2 )[ 1 ];
+
+			float z0CamInv = 1.0f / p0Cam.z;
+			float z1CamInv = 1.0f / p1Cam.z;
+			float z2CamInv = 1.0f / p2Cam.z;
 
 			float z0NDCInv = 1.0f / p0NDC.z;
 			float z1NDCInv = 1.0f / p1NDC.z;
@@ -756,9 +764,10 @@ namespace Graphics
 					}
 
 					// Vertex properties
-					float w0 = zNDC * z0NDCInv * bary0;
-					float w1 = zNDC * z1NDCInv * bary1;
-					float w2 = zNDC * z2NDCInv * bary2;
+					float zCam = 1.0f / ( z0CamInv * bary0 + z1CamInv * bary1 + z2CamInv * bary2 );
+					float w0 = zCam * z0CamInv * bary0;
+					float w1 = zCam * z1CamInv * bary1;
+					float w2 = zCam * z2CamInv * bary2;
 					ASSERT(0.0f <= w0 && w0 <= 1.0001f);
 					ASSERT(0.0f <= w1 && w1 <= 1.0001f);
 					ASSERT(0.0f <= w2 && w2 <= 1.0001f);

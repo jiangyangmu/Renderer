@@ -67,9 +67,13 @@ namespace Graphics
 		virtual void		Initialize(Device & device) override
 		{
 			m_vsIn			= device.CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::COLOR);
-			m_vsOut			= m_vsIn;
+			m_vsOut			= device.CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::POSITION, VertexFieldType::COLOR);
 			m_psIn			= m_vsOut;
 			m_psOut			= device.CreateVertexFormat(VertexFieldType::COLOR);
+			ASSERT(m_vsIn.Size() == sizeof(VS_IN));
+			ASSERT(m_vsOut.Size() == sizeof(VS_OUT));
+			ASSERT(m_psIn.Size() == sizeof(PS_IN));
+			ASSERT(m_psOut.Size() == sizeof(PS_OUT));
 
 			m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
 			m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
@@ -100,6 +104,7 @@ namespace Graphics
 		};
 		struct VS_OUT
 		{
+			Vec3 posCam;
 			Vec3 posNDC;
 			Vec3 color;
 		};
@@ -122,8 +127,9 @@ namespace Graphics
 			const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
 			VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
 
-			out.posNDC = Vec3::Transform(Vec3::Transform(in.posWld, context.view), context.proj);
-			out.color = in.color;
+			out.posCam		= Vec3::Transform(in.posWld, context.view);
+			out.posNDC		= Vec3::Transform(out.posCam, context.proj);
+			out.color		= in.color;
 		}
 		static void PSImpl(void * pPSOut, const void * pPSIn, const void * pContext)
 		{
@@ -131,7 +137,7 @@ namespace Graphics
 			const PS_DATA & context	= *static_cast< const PS_DATA * >( pContext );
 			PS_OUT & out		= *static_cast< PS_OUT * >( pPSOut );
 
-			out.color = in.color;
+			out.color		= in.color;
 		}
 
 	private:
@@ -154,9 +160,13 @@ namespace Graphics
 		virtual void		Initialize(Device & device) override
 		{
 			m_vsIn			= device.CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::TEXCOORD);
-			m_vsOut			= m_vsIn;
+			m_vsOut			= device.CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::POSITION, VertexFieldType::TEXCOORD);
 			m_psIn			= m_vsOut;
 			m_psOut			= device.CreateVertexFormat(VertexFieldType::COLOR);
+			ASSERT(m_vsIn.Size() == sizeof(VS_IN));
+			ASSERT(m_vsOut.Size() == sizeof(VS_OUT));
+			ASSERT(m_psIn.Size() == sizeof(PS_IN));
+			ASSERT(m_psOut.Size() == sizeof(PS_OUT));
 
 			m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
 			m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
@@ -204,6 +214,7 @@ namespace Graphics
 		};
 		struct VS_OUT
 		{
+			Vec3 posCam;
 			Vec3 posNDC;
 			Vec2 uv;
 		};
@@ -227,7 +238,8 @@ namespace Graphics
 			const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
 			VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
 
-			out.posNDC		= Vec3::Transform(Vec3::Transform(in.posWld, context.view), context.proj);
+			out.posCam		= Vec3::Transform(in.posWld, context.view);
+			out.posNDC		= Vec3::Transform(out.posCam, context.proj);
 			out.uv			= in.uv;
 		}
 		static void PSImpl(void * pPSOut, const void * pPSIn, const void * pContext)
@@ -259,7 +271,7 @@ namespace Graphics
 			// Setup shader
 
 			m_rgbEffect.reset(new SimpleEffect());
-			m_texEffect.reset(new TextureEffect(L"Resources/grass.bmp"));
+			m_texEffect.reset(new TextureEffect(L"Resources/grid.bmp"));
 
 			m_rgbEffect->Initialize(device);
 			m_texEffect->Initialize(device);
