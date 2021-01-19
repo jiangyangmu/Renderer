@@ -679,6 +679,11 @@ namespace Graphics
 			const Vec3 & p1NDC = reinterpret_cast< Vec3 * >( pVSOut1 )[ 1 ];
 			const Vec3 & p2NDC = reinterpret_cast< Vec3 * >( pVSOut2 )[ 1 ];
 
+			if (p0Cam.z <= 0.0f || p1Cam.z <= 0.0f || p2Cam.z <= 0.0f)
+			{
+				continue;
+			}
+
 			float z0CamInv = 1.0f / p0Cam.z;
 			float z1CamInv = 1.0f / p1Cam.z;
 			float z2CamInv = 1.0f / p2Cam.z;
@@ -704,7 +709,7 @@ namespace Graphics
 			xRasMax = Bound(( Integer ) 0, xRasMax, width);
 			yRasMin = Bound(( Integer ) 0, yRasMin, height);
 			yRasMax = Bound(( Integer ) 0, yRasMax, height);
-			if (xRasMax < xRasMin || yRasMax < yRasMin)
+			if (xRasMax <= xRasMin || yRasMax <= yRasMin)
 			{
 				continue;
 			}
@@ -718,9 +723,9 @@ namespace Graphics
 			float xPixMinF = static_cast< float >( xRasMin );
 			float yPixMinF = static_cast< float >( yRasMin );
 			yPixF = static_cast< float >( yRasMin );
-			for ( yPix = yRasMin, yPixF = yPixMinF; yPix <= yRasMax; ++yPix, yPixF += 1.0f )
+			for ( yPix = yRasMin, yPixF = yPixMinF; yPix < yRasMax; ++yPix, yPixF += 1.0f )
 			{
-				for ( xPix = xRasMin, xPixF = xPixMinF; xPix <= xRasMax; ++xPix, xPixF += 1.0f )
+				for ( xPix = xRasMin, xPixF = xPixMinF; xPix < xRasMax; ++xPix, xPixF += 1.0f )
 				{
 					// Intersection test
 					Vec2 pixel = { xPixF, yPixF };
