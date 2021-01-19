@@ -1016,8 +1016,8 @@ namespace Graphics
 
 		LONG width = texData.Width();
 		LONG height = texData.Height();
-		LONG col = static_cast< LONG >( width * u );
-		LONG row = static_cast< LONG >( height * Max(0.0f, 1.000f - v) );
+		LONG col = static_cast< LONG >( width * Bound(0.0f, u, 1.0f) );
+		LONG row = static_cast< LONG >( height * Bound(0.0f, 1.000f - v, 1.0f) );
 
 		const Byte * rgba	= ( Byte * ) texData.At(row, col);
 

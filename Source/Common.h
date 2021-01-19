@@ -179,7 +179,7 @@ struct Matrix4x4
 			a0 + cosAngle, a3 + a8, a5 - a7, 0.0f,
 			a3 - a8, a1 + cosAngle, a4 + a6, 0.0f,
 			a5 + a7, a4 - a6, a2 + cosAngle, 0.0f,
-			sinAngle, sinAngle, sinAngle, 1.0f
+			0.0f, 0.0f, 0.0f, 1.0f /*sinAngle, sinAngle, sinAngle, 1.0f*/
 		};
 
 		return m;

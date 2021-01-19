@@ -111,7 +111,7 @@ namespace Graphics
 		hRotRad		= DegreeToRadian(hRotDeg);
 		vRotRad		= DegreeToRadian(Bound(-80.0f, vRotDeg, 80.0f));
 
-		forwardDir	= Vec3::Transform(fwd, Matrix4x4::RotationAxisLH(rt, -vRotRad) * Matrix4x4::RotationAxisLH(up, hRotRad));
+		forwardDir	= Vec3::Transform(fwd, Matrix4x4::RotationAxisLH(up, hRotRad));
 		forwardDir.y	= 0.0f;
 		forwardDir	= Vec3::Normalize(forwardDir);
 
@@ -123,19 +123,23 @@ namespace Graphics
 
 		Vec3 delta =
 		{
-			( forwardFactor * forwardDir.x + rightFactor * rightDir.x ) * duration * speed,
-			( upFactor * up.y ) * duration * speed,
-			( forwardFactor * forwardDir.z + rightFactor * rightDir.z ) * duration * speed,
+			( forwardFactor * forwardDir.x + rightFactor * rightDir.x ),
+			( upFactor * up.y ),
+			( forwardFactor * forwardDir.z + rightFactor * rightDir.z ),
 		};
-
+		delta		= Vec3::Scale(Vec3::Normalize(delta), duration * speed);
+		
 		if ( forwardFactor != 0.0f || rightFactor != 0.0f || upFactor != 0.0f )
 		{
 			pos	= pos + delta;
 		}
+		if ( hFactor != 0.0f )
+		{
+			hRotDeg	+= 0.2f * ms * hFactor;
+		}
 		if ( vFactor != 0.0f )
 		{
 			vRotDeg	+= 0.2f * ms * vFactor;
-			vRotRad	= DegreeToRadian(Bound(-80.0f, vRotDeg, 80.0f));
 		}
 
 		transform	=
@@ -170,8 +174,10 @@ namespace Graphics
 			case 'D': rightFactor = 1.0f; break;
 			case 'Q': upFactor = -1.0f; break;
 			case 'E': upFactor = 1.0f; break;
-			case 'Z': vFactor = 1.0f; break;
-			case 'C': vFactor = -1.0f; break;
+			case 'Z': hFactor = 1.0f; break;
+			case 'C': hFactor = -1.0f; break;
+			case 'R': vFactor = 1.0f; break;
+			case 'F': vFactor = -1.0f; break;
 			default: break;
 		}
 	}
@@ -186,7 +192,9 @@ namespace Graphics
 			case 'Q':
 			case 'E': upFactor = 0.0f; break;
 			case 'Z':
-			case 'C': vFactor = 0.0f; break;
+			case 'C': hFactor = 0.0f; break;
+			case 'R':
+			case 'F': vFactor = 0.0f; break;
 			default: break;
 		}
 	}

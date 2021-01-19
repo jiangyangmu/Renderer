@@ -171,6 +171,7 @@ namespace Graphics
 		float			rightFactor = 0.0f;
 		float			upFactor = 0.0f;
 		float			vFactor = 0.0f;
+		float			hFactor = 0.0f;
 		Vec3			pos = {0.0f, 0.0f, 0.0f};
 
 		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override;
