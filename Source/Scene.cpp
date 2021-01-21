@@ -220,6 +220,10 @@ namespace Graphics
 	{
 		return new Player();
 	}
+	Animal *		SceneManager::CreateAnimal()
+	{
+		return new Animal();
+	}
 	Terrain *		SceneManager::CreateTerrain()
 	{
 		return new Terrain();

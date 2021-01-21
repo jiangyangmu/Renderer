@@ -118,7 +118,29 @@ namespace Graphics
 		{
 			if (ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()))
 			{
-				renderable.reset(new ROCube({ 1.0f, 0.0f, 3.0f }, 1.0f));
+				renderable.reset(new ROCube({ -2.0f, 0.0f, 3.0f }, 1.0f));
+				renderable->Initialize(context, vertexBuffer);
+			}
+		}
+		virtual void		Update(double ms) override
+		{
+			renderable->Update(ms);
+		}
+		virtual void		Draw() override
+		{
+			renderable->Draw();
+		}
+	};
+
+	struct Animal : Entity
+	{
+		Ptr<Renderable>		renderable;
+
+		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
+		{
+			if ( ROBlinnPhongCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+			{
+				renderable.reset(new ROBlinnPhongCube({ 1.0f, 0.0f, 3.0f }, 1.0f));
 				renderable->Initialize(context, vertexBuffer);
 			}
 		}
@@ -247,6 +269,7 @@ namespace Graphics
 		EntityGroup *		CreateEntityGroup();
 		Light *			CreateLight();
 		Player *		CreatePlayer();
+		Animal *		CreateAnimal();
 		Terrain *		CreateTerrain();
 		Camera *		CreateCamera();
 		Controller *		CreateController();

@@ -52,6 +52,7 @@ namespace Graphics
 		TEXCOORD,	// Vec2, occur 0+ times
 		NORMAL,		// Vec3, occur 0+ times
 		MATERIAL,	// Vec3, occur 0+ times
+		SV_POSITION,
 	};
 
 	struct VertexField

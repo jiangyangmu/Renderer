@@ -57,6 +57,13 @@ struct Vec3
 		y *= s;
 		z *= s;
 	}
+	inline void Normalize()
+	{
+		float invLen = 1.0f / Length();
+		x *= invLen;
+		y *= invLen;
+		z *= invLen;
+	}
 	
 	inline Vec3 operator - () const
 	{
@@ -98,6 +105,19 @@ struct Vec3
 		};
 	}
 	static inline Vec3 Transform(const Vec3 & v, const Matrix4x4 & m);
+};
+
+struct Vec4
+{
+	union
+	{
+		struct
+		{
+			float x, y, z;
+		};
+		Vec3 xyz;
+	};
+	float w;
 };
 
 struct Matrix4x4
@@ -369,7 +389,7 @@ inline T AlignCeiling(T value, T alignment)
 #define ENSURE_TRUE(e) _ALERT_IF_FALSE((e))
 #define ENSURE_GDIPLUS_OK(e) _ALERT_IF_FALSE((e) == Gdiplus::Ok)
 
-#define _RELEASE_ASSERT
+//#define _RELEASE_ASSERT
 #ifdef _RELEASE_ASSERT
 
 #ifdef NDEBUG

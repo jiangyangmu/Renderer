@@ -146,6 +146,7 @@ namespace Graphics
 		switch ( type )
 		{
 			case VertexFieldType::POSITION:
+			case VertexFieldType::SV_POSITION:
 			case VertexFieldType::COLOR:
 			case VertexFieldType::TEXCOORD:
 			case VertexFieldType::NORMAL:
@@ -154,6 +155,7 @@ namespace Graphics
 				break;
 			case VertexFieldType::UNKNOWN:
 			default:
+				ASSERT(false);
 				alignment = 0;
 				break;
 		}
@@ -170,6 +172,7 @@ namespace Graphics
 				size = 8;
 				break;
 			case VertexFieldType::POSITION:
+			case VertexFieldType::SV_POSITION:
 			case VertexFieldType::COLOR:
 			case VertexFieldType::NORMAL:
 			case VertexFieldType::MATERIAL:
@@ -177,6 +180,7 @@ namespace Graphics
 				break;
 			case VertexFieldType::UNKNOWN:
 			default:
+				ASSERT(false);
 				size = 0;
 				break;
 		}
@@ -644,6 +648,7 @@ namespace Graphics
 
 		ASSERT(vertexFormat.nFields >= 1 && vertexFormat.vFields[ 0 ].type == VertexFieldType::POSITION);
 		ASSERT(_VertexFormat_IsEqual(&vertexFormat, pVSFmtIn));
+		ASSERT(pPSFmtIn->nFields >= 2 && pPSFmtIn->vFields[ 0 ].type == VertexFieldType::POSITION && pPSFmtIn->vFields[ 1 ].type == VertexFieldType::SV_POSITION);
 		ASSERT(pPSFmtOut->nFields == 1 && pPSFmtOut->vFields[ 0 ].type == VertexFieldType::COLOR);
 
 		Byte * pVSIn			= ( Byte * ) pVertexBegin;
@@ -792,9 +797,10 @@ namespace Graphics
 						pPSField = pPSIn + field.offset;
 						switch ( field.type )
 						{
-							case VertexFieldType::POSITION:
+							case VertexFieldType::SV_POSITION:
 								*static_cast< Vec3 * >( pPSField ) = { xPixF, yPixF, zNDC };
 								break;
+							case VertexFieldType::POSITION:
 							case VertexFieldType::COLOR:
 							case VertexFieldType::NORMAL:
 							case VertexFieldType::MATERIAL:
@@ -835,9 +841,9 @@ namespace Graphics
 
 					// Draw pixel
 					Byte * pixelData = ( Byte * ) frameBuffer.At(rect.top + yPix, rect.left + xPix);
-					pixelData[ 0 ] = static_cast< Byte >( color.r * 255.0f );
+					pixelData[ 0 ] = static_cast< Byte >( color.b * 255.0f );
 					pixelData[ 1 ] = static_cast< Byte >( color.g * 255.0f );
-					pixelData[ 2 ] = static_cast< Byte >( color.b * 255.0f );
+					pixelData[ 2 ] = static_cast< Byte >( color.r * 255.0f );
 				}
 			}
 		}
@@ -977,7 +983,7 @@ namespace Graphics
 	}
 	void			VertexBuffer::Free(VertexRange v)
 	{
-		ASSERT(false);
+		//ASSERT(false);
 	}
 	VertexFormat		VertexBuffer::GetVertexFormat()
 	{

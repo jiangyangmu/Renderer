@@ -3,6 +3,66 @@
 #include "Scene.h"
 #include "Common.h"
 
+static const float gUnitCubeVertices[] =
+{
+	// up
+	-0.5f,  0.5f, -0.5f  ,  0.5f, 1.0f,
+	 0.5f,  0.5f,  0.5f  ,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
+	-0.5f,  0.5f, -0.5f  ,  0.5f, 1.0f,
+	 0.5f,  0.5f, -0.5f  ,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f  ,  1.0f, 0.0f,
+
+	// down
+	-0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
+	-0.5f, -0.5f,  0.5f  ,  0.5f, 0.0f,
+	 0.5f, -0.5f,  0.5f  ,  1.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
+	 0.5f, -0.5f,  0.5f  ,  1.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f  ,  1.0f, 1.0f,
+
+	// right
+	 0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
+	 0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
+	 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
+
+	// left
+	-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
+	-0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
+
+	// back
+	-0.5f, -0.5f,  0.5f  ,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f  ,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
+	-0.5f, -0.5f,  0.5f  ,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
+	 0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
+
+	// front
+	-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f  ,  0.5f, 0.0f,
+	-0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
+	 0.5f,  0.5f, -0.5f  ,  0.5f, 0.0f,
+};
+static const float gUnitCubeNorms[] =
+{
+	 0.0f,  1.0f,  0.0f,
+	 0.0f, -1.0f,  0.0f,
+	 1.0f,  0.0f,  0.0f,
+	-1.0f,  0.0f,  0.0f,
+	 0.0f,  0.0f,  1.0f,
+	 0.0f,  0.0f, -1.0f,
+};
+
 namespace Graphics
 {
 	ROTriangle::ROTriangle(Vec3 pos0, Vec3 rgb0, Vec3 pos1, Vec3 rgb1, Vec3 pos2, Vec3 rgb2)
@@ -50,57 +110,6 @@ namespace Graphics
 		, m_refVertexBuffer(nullptr)
 		, m_refContext(nullptr)
 	{
-		static const float gUnitCubeVertices[] =
-		{
-			// up
-			-0.5f,  0.5f, -0.5f  ,  0.5f, 1.0f,
-			 0.5f,  0.5f,  0.5f  ,  1.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-			-0.5f,  0.5f, -0.5f  ,  0.5f, 1.0f,
-			 0.5f,  0.5f, -0.5f  ,  1.0f, 1.0f,
-			 0.5f,  0.5f,  0.5f  ,  1.0f, 0.0f,
-
-			// down
-			-0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
-			-0.5f, -0.5f,  0.5f  ,  0.5f, 0.0f,
-			 0.5f, -0.5f,  0.5f  ,  1.0f, 0.0f,
-			-0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
-			 0.5f, -0.5f,  0.5f  ,  1.0f, 0.0f,
-			 0.5f, -0.5f, -0.5f  ,  1.0f, 1.0f,
-
-			// right
-			 0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-			 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-			 0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
-			 0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-			 0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
-			 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-
-			// left
-			-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-			-0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-			-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-			-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-			-0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
-
-			// back
-			-0.5f, -0.5f,  0.5f  ,  0.0f, 1.0f,
-			-0.5f,  0.5f,  0.5f  ,  0.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-			-0.5f, -0.5f,  0.5f  ,  0.0f, 1.0f,
-			 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-			 0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
-
-			// front
-			-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-			 0.5f,  0.5f, -0.5f  ,  0.5f, 0.0f,
-			-0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
-			-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-			 0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
-			 0.5f,  0.5f, -0.5f  ,  0.5f, 0.0f,
-		};
-
 		constexpr Integer nCount = sizeof(m_vertex) / sizeof(Vertex);
 		constexpr Integer nFields = sizeof(Vertex) / sizeof(float);
 
@@ -149,4 +158,56 @@ namespace Graphics
 			vertexFormat[ 1 ].type == VertexFieldType::TEXCOORD;
 	}
 
+	ROBlinnPhongCube::ROBlinnPhongCube(Vec3 center, float size)
+		: m_vertexRange()
+		, m_refVertexBuffer(nullptr)
+		, m_refContext(nullptr)
+	{
+		constexpr Integer nCount = sizeof(m_vertex) / sizeof(Vertex);
+
+		for ( Integer i = 0; i < nCount; ++i )
+		{
+			m_vertex[ i ] = Vertex
+			{
+				gUnitCubeVertices[ i * 5 ] * size + center.x,
+				gUnitCubeVertices[ i * 5 + 1 ] * size + center.y,
+				gUnitCubeVertices[ i * 5 + 2 ] * size + center.z,
+				gUnitCubeNorms[ ( i / 6 ) * 3 ],
+				gUnitCubeNorms[ ( i / 6 ) * 3 + 1 ],
+				gUnitCubeNorms[ ( i / 6 ) * 3 + 2 ],
+			};
+		}
+	}
+	ROBlinnPhongCube::~ROBlinnPhongCube()
+	{
+		if ( m_refVertexBuffer )
+		{
+			m_refVertexBuffer->Free(m_vertexRange);
+		}
+	}
+	void		ROBlinnPhongCube::Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer)
+	{
+		ASSERT(IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()));
+
+		if ( m_refVertexBuffer )
+		{
+			m_refVertexBuffer->Free(m_vertexRange);
+		}
+
+		m_refContext		= &renderContext;
+		m_refVertexBuffer	= &vertexBuffer;
+		m_vertexRange		= m_refVertexBuffer->Alloc(sizeof(m_vertex) / sizeof(Vertex));
+
+		memcpy(m_vertexRange.At(0), &m_vertex, sizeof(m_vertex));
+	}
+	void		ROBlinnPhongCube::Draw()
+	{
+		m_refContext->Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
+	}
+	bool		ROBlinnPhongCube::IsVertexFormatCompatible(VertexFormat vertexFormat)
+	{
+		return vertexFormat.Size() == sizeof(Vertex) &&
+			vertexFormat[ 0 ].type == VertexFieldType::POSITION &&
+			vertexFormat[ 1 ].type == VertexFieldType::NORMAL;
+	}
 }

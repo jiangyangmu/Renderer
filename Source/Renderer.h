@@ -76,4 +76,27 @@ namespace Graphics
 		VertexBuffer *		m_refVertexBuffer;
 		RenderContext *		m_refContext;
 	};
+
+	class ROBlinnPhongCube : public Renderable
+	{
+	public:
+		ROBlinnPhongCube(Vec3 center, float size);
+		virtual			~ROBlinnPhongCube();
+
+		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
+		virtual void		Draw() override;
+
+		static bool		IsVertexFormatCompatible(VertexFormat vertexFormat);
+
+	private:
+		struct Vertex
+		{
+			Vec3 pos;
+			Vec3 norm;
+		};
+		Vertex			m_vertex[ 3 * 2 * 6 ];
+		VertexRange		m_vertexRange;
+		VertexBuffer *		m_refVertexBuffer;
+		RenderContext *		m_refContext;
+	};
 }
