@@ -56,7 +56,7 @@ namespace Graphics
 	enum class ConnectType
 	{
 		DEFAULT,		// set posXYZ, oriXYZ / pass source
-		PLAYER,			// set posXYZ, oriXZ / pass source
+		SAME,			// set posXYZ, oriXZ / pass source
 		FIRST_PERSON_VIEW,	// set posXYZ, oriXYZ / pass null
 		THIRD_PERSON_VIEW,	// set (posXYZ - f * oriXYZ), oriXYZ / pass null
 		MINI_MAP_VIEW,		// set posXZ, oriXZ / pass null
@@ -79,6 +79,7 @@ namespace Graphics
 			, pConnectMaster(nullptr)
 		{
 		}
+		virtual			~SceneObject() = default;
 
 		void			AddChild(SceneObject * pChild)
 		{
@@ -108,74 +109,6 @@ namespace Graphics
 
 	struct Light : Entity
 	{
-	};
-
-	struct Player : Entity
-	{
-		Ptr<Renderable>		renderable;
-
-		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
-		{
-			if (ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()))
-			{
-				renderable.reset(new ROCube({ -2.0f, 0.0f, 3.0f }, 1.0f));
-				renderable->Initialize(context, vertexBuffer);
-			}
-		}
-		virtual void		Update(double ms) override
-		{
-			renderable->Update(ms);
-		}
-		virtual void		Draw() override
-		{
-			renderable->Draw();
-		}
-	};
-
-	struct Animal : Entity
-	{
-		Ptr<Renderable>		renderable;
-
-		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
-		{
-			if ( ROBlinnPhongCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
-			{
-				renderable.reset(new ROBlinnPhongCube({ 1.0f, 0.0f, 3.0f }, 1.0f));
-				renderable->Initialize(context, vertexBuffer);
-			}
-		}
-		virtual void		Update(double ms) override
-		{
-			renderable->Update(ms);
-		}
-		virtual void		Draw() override
-		{
-			renderable->Draw();
-		}
-	};
-
-	struct Terrain : Entity
-	{
-		Ptr<Renderable>		renderable;
-
-		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
-		{
-			if (ROTriangle::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()))
-			{
-				renderable.reset(new ROTriangle({ -1.0f,   0.0f, 3.0f }, { 1.0f, 0.0f, 0.0f },
-								{  0.0f,   0.0f, 3.0f }, { 0.0f, 1.0f, 0.0f },
-								{ -0.5f, 0.866f, 3.0f }, { 0.0f, 0.0f, 1.0f }));
-				renderable->Initialize(context, vertexBuffer);
-			}
-		}
-		virtual void		Update(double ms) override
-		{
-			renderable->Update(ms);
-		}
-		virtual void		Draw() override
-		{
-			renderable->Draw();
-		}
 	};
 
 	struct Controller : SceneObject
@@ -257,25 +190,6 @@ namespace Graphics
 
 	struct Root : SceneObject
 	{
-	};
-
-
-	class SceneManager
-	{
-	public:
-		static SceneManager &	Default();
-
-		Root *			CreateRoot();
-		EntityGroup *		CreateEntityGroup();
-		Light *			CreateLight();
-		Player *		CreatePlayer();
-		Animal *		CreateAnimal();
-		Terrain *		CreateTerrain();
-		Camera *		CreateCamera();
-		Controller *		CreateController();
-
-	private:
-		Device *		m_device;
 	};
 
 

@@ -45,10 +45,7 @@ namespace Graphics
 			switch ( connection.type )
 			{
 				case ConnectType::DEFAULT:
-					pPassTransform = pSourceTransform;
-					pSlave->transform = *pSourceTransform;
-					break;
-				case ConnectType::PLAYER:
+				case ConnectType::SAME:
 					pPassTransform = pSourceTransform;
 					pSlave->transform = *pSourceTransform;
 					break;
@@ -197,44 +194,6 @@ namespace Graphics
 			case 'F': vFactor = 0.0f; break;
 			default: break;
 		}
-	}
-
-	SceneManager &		SceneManager::Default()
-	{
-		static SceneManager sceneManager;
-		return sceneManager;
-	}
-	Root *			SceneManager::CreateRoot()
-	{
-		return new Root();
-	}
-	EntityGroup *		SceneManager::CreateEntityGroup()
-	{
-		return new EntityGroup();
-	}
-	Light *			SceneManager::CreateLight()
-	{
-		return new Light();
-	}
-	Player *		SceneManager::CreatePlayer()
-	{
-		return new Player();
-	}
-	Animal *		SceneManager::CreateAnimal()
-	{
-		return new Animal();
-	}
-	Terrain *		SceneManager::CreateTerrain()
-	{
-		return new Terrain();
-	}
-	Camera *		SceneManager::CreateCamera()
-	{
-		return new Camera();
-	}
-	Controller *		SceneManager::CreateController()
-	{
-		return new Controller();
 	}
 
 	SceneRenderer::SceneRenderer(RenderWindow & window) : m_window(window)

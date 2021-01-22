@@ -4,6 +4,86 @@
 
 namespace Graphics
 {
+	// --------------------------------------------------------------------------
+	// Scene Objects
+	// --------------------------------------------------------------------------
+
+	struct Player : Entity
+	{
+	};
+
+	struct TextureCube : Entity
+	{
+		Ptr<Renderable>		renderable;
+
+		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
+		{
+			if ( ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+			{
+				renderable.reset(new ROCube({ -2.0f, 0.0f, 3.0f }, 1.0f));
+				renderable->Initialize(context, vertexBuffer);
+			}
+		}
+		virtual void		Update(double ms) override
+		{
+			renderable->Update(ms);
+		}
+		virtual void		Draw() override
+		{
+			renderable->Draw();
+		}
+	};
+
+	struct BPCube : Entity
+	{
+		Ptr<Renderable>		renderable;
+
+		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
+		{
+			if ( ROBlinnPhongCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+			{
+				renderable.reset(new ROBlinnPhongCube({ 1.0f, 0.0f, 3.0f }, 1.0f));
+				renderable->Initialize(context, vertexBuffer);
+			}
+		}
+		virtual void		Update(double ms) override
+		{
+			renderable->Update(ms);
+		}
+		virtual void		Draw() override
+		{
+			renderable->Draw();
+		}
+	};
+
+	struct RgbTriangle : Entity
+	{
+		Ptr<Renderable>		renderable;
+
+		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
+		{
+			if ( ROTriangle::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+			{
+				renderable.reset(new ROTriangle({ -1.0f,   0.0f, 3.0f }, { 1.0f, 0.0f, 0.0f },
+								{ 0.0f,   0.0f, 3.0f }, { 0.0f, 1.0f, 0.0f },
+								{ -0.5f, 0.866f, 3.0f }, { 0.0f, 0.0f, 1.0f }));
+				renderable->Initialize(context, vertexBuffer);
+			}
+		}
+		virtual void		Update(double ms) override
+		{
+			renderable->Update(ms);
+		}
+		virtual void		Draw() override
+		{
+			renderable->Draw();
+		}
+	};
+
+	// --------------------------------------------------------------------------
+	// Scene
+	// --------------------------------------------------------------------------
+
 	class EffectTestScene : public IScene
 	{
 	public:
@@ -37,37 +117,37 @@ namespace Graphics
 
 			// Setup scene
 
-			Root * root		= SceneManager::Default().CreateRoot();
+			m_root			= NewObject<Root>();
+			m_rgbGroup		= NewObject<EntityGroup>();
+			m_texGroup		= NewObject<EntityGroup>();
+			m_bpGroup		= NewObject<EntityGroup>();
+			m_cameraMain		= NewObject<Camera>();
+			m_cameraTopView		= NewObject<Camera>();
+			m_controller		= NewObject<Controller>();
 
-			m_rgbGroup		= SceneManager::Default().CreateEntityGroup();
-			m_texGroup		= SceneManager::Default().CreateEntityGroup();
-			m_bpGroup		= SceneManager::Default().CreateEntityGroup();
-			Player * player		= SceneManager::Default().CreatePlayer();
-			Animal * animal		= SceneManager::Default().CreateAnimal();
-			Terrain * terrain	= SceneManager::Default().CreateTerrain();
-			m_cameraPlayer		= SceneManager::Default().CreateCamera();
-			m_cameraMiniMap		= SceneManager::Default().CreateCamera();
-			m_controller		= SceneManager::Default().CreateController();
+			Player * player		= NewObject<Player>();
+			RgbTriangle * triangle	= NewObject<RgbTriangle>();
+			TextureCube * cube1	= NewObject<TextureCube>();
+			BPCube * cube2		= NewObject<BPCube>();
 
-			root->AddChild(m_cameraPlayer);
-			root->AddChild(m_cameraMiniMap);
-			root->AddChild(m_rgbGroup);
-			root->AddChild(m_texGroup);
-			root->AddChild(m_bpGroup);
-			root->AddChild(m_controller);
+			m_root->AddChild(m_cameraMain);
+			m_root->AddChild(m_cameraTopView);
+			m_root->AddChild(m_rgbGroup);
+			m_root->AddChild(m_texGroup);
+			m_root->AddChild(m_bpGroup);
+			m_root->AddChild(m_controller);
+			m_root->AddChild(player);
 
-			m_rgbGroup->AddChild(terrain);
-			m_texGroup->AddChild(player);
-			m_bpGroup->AddChild(animal);
+			m_rgbGroup->AddChild(triangle);
+			m_texGroup->AddChild(cube1);
+			m_bpGroup->AddChild(cube2);
 
-			m_cameraPlayer->SetAspectRatio(static_cast< float >( leftRect.right - leftRect.left ) / ( leftRect.bottom - leftRect.top ));
-			m_cameraMiniMap->SetAspectRatio(static_cast< float >( rightRect.right - rightRect.left ) / ( rightRect.bottom - rightRect.top ));
+			m_cameraMain->SetAspectRatio(static_cast< float >( leftRect.right - leftRect.left ) / ( leftRect.bottom - leftRect.top ));
+			m_cameraTopView->SetAspectRatio(static_cast< float >( rightRect.right - rightRect.left ) / ( rightRect.bottom - rightRect.top ));
 
-			m_controller->ConnectTo(player, ConnectType::PLAYER);
-			player->ConnectTo(m_cameraPlayer, ConnectType::THIRD_PERSON_VIEW);
-			player->ConnectTo(m_cameraMiniMap, ConnectType::MINI_MAP_VIEW);
-
-			m_root			= root;
+			m_controller->ConnectTo(player, ConnectType::SAME);
+			player->ConnectTo(m_cameraMain, ConnectType::THIRD_PERSON_VIEW);
+			player->ConnectTo(m_cameraTopView, ConnectType::MINI_MAP_VIEW);
 
 			SceneObject::InitializeAll(m_root, *m_context, m_rgbVertices);
 			SceneObject::InitializeAll(m_root, *m_context, m_texVertices);
@@ -83,7 +163,7 @@ namespace Graphics
 		void			OnDraw()
 		{
 			RenderTarget * targets[]	= { &m_rdtgLeftRect, &m_rdtgRightRect };
-			Camera * cameras[]		= { m_cameraPlayer, m_cameraMiniMap };
+			Camera * cameras[]		= { m_cameraMain, m_cameraTopView };
 			Effect * effects[]		= { m_rgbEffect.get(), m_texEffect.get(), m_bpEffect.get() };
 			EntityGroup * groups[]		= { m_rgbGroup, m_texGroup, m_bpGroup };
 
@@ -110,29 +190,38 @@ namespace Graphics
 		}
 
 	private:
-		Device *		m_device;
-		RenderContext *		m_context;
+		template <typename T>
+		T *			NewObject()
+		{
+			T * pObject = new T();
+			m_sceneObjects.emplace_back(Ptr<T>(pObject));
+			return pObject;
+		}
 
-		RenderTarget		m_rdtgLeftRect;
-		RenderTarget		m_rdtgRightRect;
+		Device *			m_device;
+		RenderContext *			m_context;
 
-		EntityGroup *		m_rgbGroup;
-		EntityGroup *		m_texGroup;
-		EntityGroup *		m_bpGroup;
-		
-		VertexBuffer		m_rgbVertices;
-		VertexBuffer		m_texVertices;
-		VertexBuffer		m_bpVertices;
-		
-		Ptr<RgbEffect>		m_rgbEffect;
-		Ptr<TextureEffect>	m_texEffect;
-		Ptr<BlinnPhongEffect>	m_bpEffect;
+		RenderTarget			m_rdtgLeftRect;
+		RenderTarget			m_rdtgRightRect;
 
-		Root *			m_root;
-		Camera *		m_cameraPlayer;
-		Camera *		m_cameraMiniMap;
-		Controller *		m_controller;
+		VertexBuffer			m_rgbVertices;
+		VertexBuffer			m_texVertices;
+		VertexBuffer			m_bpVertices;
+
+		Ptr<RgbEffect>			m_rgbEffect;
+		Ptr<TextureEffect>		m_texEffect;
+		Ptr<BlinnPhongEffect>		m_bpEffect;
+
+		std::vector<Ptr<SceneObject>>	m_sceneObjects;
+		Root *				m_root;
+		Camera *			m_cameraMain;
+		Camera *			m_cameraTopView;
+		Controller *			m_controller;
+		EntityGroup *			m_rgbGroup;
+		EntityGroup *			m_texGroup;
+		EntityGroup *			m_bpGroup;
 	};
+
 
 	Ptr<IScene>	CreateTestScene_Effects()
 	{
