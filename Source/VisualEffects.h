@@ -151,16 +151,6 @@ namespace Graphics
 	class BlinnPhongEffect : public Effect
 	{
 	public:
-		BlinnPhongEffect();
-
-		virtual void		Initialize(Device & device) override;
-		virtual void		Apply(RenderContext & context) override;
-
-		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) override;
-		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) override;
-		void			CBSetCameraPosition(const Vec3 & cameraPosWld);
-
-	private:
 		struct MaterialParams
 		{
 			Vec4 rgbiAmbient;
@@ -175,6 +165,18 @@ namespace Graphics
 			Vec4 rgbiDiffuse;
 			Vec4 rgbiSpecular;
 		};
+
+	public:
+		BlinnPhongEffect(const MaterialParams & materialParams, const LightParams & lightParams);
+
+		virtual void		Initialize(Device & device) override;
+		virtual void		Apply(RenderContext & context) override;
+
+		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) override;
+		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) override;
+		void			CBSetCameraPosition(const Vec3 & cameraPosWld);
+
+	private:
 		struct VS_IN
 		{
 			Vec3 posWld;

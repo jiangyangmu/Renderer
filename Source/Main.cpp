@@ -16,8 +16,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	int ret;
 	{
-		Integer W = 800;
-		Integer H = 600;
+		Integer W = 1080;
+		Integer H = 768;
 
 		Graphics::RenderWindow renderWindow(L"My Renderer", hInstance, W, H);
 		W = renderWindow.GetWidth();
@@ -26,7 +26,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		Graphics::SceneRenderer renderer(renderWindow);
 		renderWindow.SetRenderer(renderer);
 
-		Ptr<Graphics::IScene> scene = Graphics::CreateTestScene_Minecraft();
+		Ptr<Graphics::IScene> scene = Graphics::CreateTestScene_Effects();
 		renderer.SwitchScene(*scene);
 
 		ret = app.Run(renderWindow);

@@ -131,10 +131,13 @@ namespace Graphics
 		context.tex.Sample(in.uv.x, in.uv.y, reinterpret_cast< float * >( &out.color ));
 	}
 
-	BlinnPhongEffect::BlinnPhongEffect()
+	BlinnPhongEffect::BlinnPhongEffect(const MaterialParams & materialParams, const LightParams & lightParams)
 	{
 		m_vs = VSImpl;
 		m_ps = PSImpl;
+
+		m_vsData.material = m_psData.material = materialParams;
+		m_vsData.light = m_psData.light = lightParams;
 	}
 	void		BlinnPhongEffect::Initialize(Device & device)
 	{
@@ -149,22 +152,6 @@ namespace Graphics
 
 		m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
 		m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
-
-		m_vsData.material = m_psData.material = MaterialParams
-		{
-			{0.1f, 0.1f, 0.1f, 1.0f}, // ambient
-			{1.0f, 0.0f, 0.0f, 1.0f}, // diffuse
-			{0.0f, 0.0f, 1.0f, 1.0f}, // specular
-		};
-
-		m_vsData.light = m_psData.light = LightParams
-		{
-			{2.5f, 1.0f, 0.0f}, // position
-			{1.0f, 0.0f, 0.0f}, // attenuation
-			{1.0f, 1.0f, 1.0f, 1.0f}, // ambient
-			{1.0f, 1.0f, 1.0f, 1.0f}, // diffuse
-			{1.0f, 1.0f, 1.0f, 1.0f}, // specular
-		};
 	}
 	void		BlinnPhongEffect::Apply(RenderContext & context)
 	{

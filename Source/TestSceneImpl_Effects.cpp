@@ -99,7 +99,18 @@ namespace Graphics
 
 			m_rgbEffect.reset(new RgbEffect());
 			m_texEffect.reset(new TextureEffect(L"Resources/grid.bmp"));
-			m_bpEffect.reset(new BlinnPhongEffect());
+			m_bpEffect.reset(new BlinnPhongEffect(
+				BlinnPhongEffect::MaterialParams
+				{ {0.1f, 0.1f, 0.1f, 1.0f},	// ambient
+				{1.0f, 0.0f, 0.0f, 1.0f},	// diffuse
+				{0.0f, 0.0f, 1.0f, 1.0f} },	// specular
+				BlinnPhongEffect::LightParams
+				{ {2.5f, 1.0f, 0.0f},		// position
+				{1.0f, 0.0f, 0.0f},		// attenuation
+				{1.0f, 1.0f, 1.0f, 1.0f},	// ambient
+				{1.0f, 1.0f, 1.0f, 1.0f},	// diffuse
+				{1.0f, 1.0f, 1.0f, 1.0f} }	// specular
+			));
 
 			m_rgbEffect->Initialize(device);
 			m_texEffect->Initialize(device);
