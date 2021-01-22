@@ -204,9 +204,9 @@ namespace Graphics
 		static SceneManager sceneManager;
 		return sceneManager;
 	}
-	Scene *			SceneManager::CreateScene()
+	Root *			SceneManager::CreateRoot()
 	{
-		return new Scene();
+		return new Root();
 	}
 	EntityGroup *		SceneManager::CreateEntityGroup()
 	{
@@ -235,5 +235,59 @@ namespace Graphics
 	Controller *		SceneManager::CreateController()
 	{
 		return new Controller();
+	}
+
+	SceneRenderer::SceneRenderer(RenderWindow & window) : m_window(window)
+		, m_scene(nullptr)
+	{
+		RenderTarget target;
+		Rect rect;
+
+		m_device		= Device::Default();
+
+		rect			= Rect { 0, m_window.GetWidth(), 0, m_window.GetHeight() };
+		target			= m_device.CreateRenderTarget(&m_window, rect);
+
+		m_context		= m_device.CreateRenderContext();
+		m_swapChain		= m_device.CreateSwapChain(target.GetWidth(), target.GetHeight());
+		m_depthStencilBuffer	= m_device.CreateDepthStencilBuffer(target.GetWidth(), target.GetHeight());
+
+		m_context.SetSwapChain(m_swapChain);
+		m_context.SetDepthStencilBuffer(m_depthStencilBuffer);
+		m_context.SetOutputTarget(target);
+	}
+	void			SceneRenderer::SwitchScene(IScene & scene)
+	{
+		if ( m_scene )
+		{
+			m_scene->OnUnload();
+		}
+		m_scene = &scene;
+		m_scene->OnLoad(m_device, m_context);
+	}
+	void			SceneRenderer::Present()
+	{
+		m_swapChain.Swap();
+		m_window.Paint(m_window.GetWidth(), m_window.GetHeight(), m_swapChain.FrameBuffer());
+	}
+	void			SceneRenderer::Clear()
+	{
+		m_swapChain.ResetBackBuffer();
+		m_swapChain.ResetBackBuffer(Rect { m_window.GetWidth() / 2, m_window.GetWidth(), 0, m_window.GetHeight() }, 50);
+		m_depthStencilBuffer.Reset();
+	}
+	void			SceneRenderer::Update(double ms)
+	{
+		if ( m_scene )
+		{
+			m_scene->OnUpdate(ms);
+		}
+	}
+	void			SceneRenderer::Draw()
+	{
+		if ( m_scene )
+		{
+			m_scene->OnDraw();
+		}
 	}
 }

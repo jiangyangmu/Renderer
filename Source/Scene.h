@@ -255,7 +255,7 @@ namespace Graphics
 		}
 	};
 
-	struct Scene : SceneObject
+	struct Root : SceneObject
 	{
 	};
 
@@ -265,7 +265,7 @@ namespace Graphics
 	public:
 		static SceneManager &	Default();
 
-		Scene *			CreateScene();
+		Root *			CreateRoot();
 		EntityGroup *		CreateEntityGroup();
 		Light *			CreateLight();
 		Player *		CreatePlayer();
@@ -276,5 +276,41 @@ namespace Graphics
 
 	private:
 		Device *		m_device;
+	};
+
+
+	class IScene
+	{
+	public:
+		virtual			~IScene() = default;
+		virtual void		OnLoad(Device & device, RenderContext & context) = 0;
+		virtual void		OnUnload() = 0;
+		virtual void		OnUpdate(double ms) = 0;
+		virtual void		OnDraw() = 0;
+	};
+
+	class SceneRenderer : public IRenderer
+	{
+	public:
+		SceneRenderer(RenderWindow & window);
+
+		void			SwitchScene(IScene & scene);
+
+		virtual void		Present() override;
+		virtual void		Clear() override;
+		virtual void		Update(double ms) override;
+		virtual void		Draw() override;
+
+		// TODO: handle window resize
+
+	private:
+		RenderWindow &		m_window;
+
+		Device			m_device;
+		SwapChain		m_swapChain;
+		RenderContext		m_context;
+		DepthStencilBuffer	m_depthStencilBuffer;
+
+		IScene *		m_scene;
 	};
 }

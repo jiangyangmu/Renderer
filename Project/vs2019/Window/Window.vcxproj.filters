@@ -21,6 +21,9 @@
     <Filter Include="Graphics">
       <UniqueIdentifier>{8440a57f-92f8-4c27-9aa4-e34c736a28bc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="TestScene">
+      <UniqueIdentifier>{8428fc64-54d5-451f-80d3-7b5c367664e3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Renderer.h">
@@ -53,6 +56,12 @@
     <ClInclude Include="..\..\..\Source\Buffer.h">
       <Filter>Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\VisualEffects.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\TestScene.h">
+      <Filter>TestScene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Renderer.cpp">
@@ -73,6 +82,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Buffer.cpp">
       <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\VisualEffects.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\TestSceneImpl_Effects.cpp">
+      <Filter>TestScene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

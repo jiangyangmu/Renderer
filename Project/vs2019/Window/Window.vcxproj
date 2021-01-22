@@ -169,6 +169,8 @@
     <ClInclude Include="..\..\..\Source\RenderWindow.h" />
     <ClInclude Include="..\..\..\Source\Resource.h" />
     <ClInclude Include="..\..\..\Source\Scene.h" />
+    <ClInclude Include="..\..\..\Source\TestScene.h" />
+    <ClInclude Include="..\..\..\Source\VisualEffects.h" />
     <ClInclude Include="..\..\..\Source\win32\Win32App.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
@@ -180,6 +182,8 @@
     <ClCompile Include="..\..\..\Source\RenderWindow.cpp" />
     <ClCompile Include="..\..\..\Source\Resource.cpp" />
     <ClCompile Include="..\..\..\Source\Scene.cpp" />
+    <ClCompile Include="..\..\..\Source\TestSceneImpl_Effects.cpp" />
+    <ClCompile Include="..\..\..\Source\VisualEffects.cpp" />
     <ClCompile Include="..\..\..\Source\win32\Win32App.cpp" />
   </ItemGroup>
   <ItemGroup>
