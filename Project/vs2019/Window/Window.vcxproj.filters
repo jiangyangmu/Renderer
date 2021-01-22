@@ -89,6 +89,9 @@
     <ClCompile Include="..\..\..\Source\TestSceneImpl_Effects.cpp">
       <Filter>TestScene</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\TestSceneImpl_Minecraft.cpp">
+      <Filter>TestScene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Window.rc">

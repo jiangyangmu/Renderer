@@ -513,7 +513,7 @@ namespace Graphics
 
 		pVertexFormatDesc	= &device.vertexFormatDescs[ iVertexFormatDesc.value ];
 
-		vb.iVertexBuffer	= _CreateBuffer(device, 64, 1, pVertexFormatDesc->nSize, pVertexFormatDesc->nAlign);
+		vb.iVertexBuffer	= _CreateBuffer(device, 1024, 1, pVertexFormatDesc->nSize, pVertexFormatDesc->nAlign);
 		vb.iVertexFormat	= iVertexFormatDesc;
 		vb.nAllocated		= 0;
 
@@ -1038,14 +1038,17 @@ namespace Graphics
 
 		LONG width = texData.Width();
 		LONG height = texData.Height();
-		LONG col = static_cast< LONG >( width * Bound(0.0f, u, 1.0f) );
-		LONG row = static_cast< LONG >( height * Bound(0.0f, 1.000f - v, 1.0f) );
+		LONG col = static_cast< LONG >( width * u );
+		LONG row = static_cast< LONG >( height * (1.0f - v) );
+		
+		col = Bound(( LONG ) 0, col, width - 1);
+		row = Bound(( LONG ) 0, row, height - 1);
 
-		const Byte * rgba	= ( Byte * ) texData.At(row, col);
+		const Byte * bgra	= ( Byte * ) texData.At(row, col);
 
-		pColor[ 0 ] = static_cast< float >( rgba[ 0 ] ) / 255.f;
-		pColor[ 1 ] = static_cast< float >( rgba[ 1 ] ) / 255.f;
-		pColor[ 2 ] = static_cast< float >( rgba[ 2 ] ) / 255.f;
+		pColor[ 0 ] = static_cast< float >( bgra[ 2 ] ) / 255.f;
+		pColor[ 1 ] = static_cast< float >( bgra[ 1 ] ) / 255.f;
+		pColor[ 2 ] = static_cast< float >( bgra[ 0 ] ) / 255.f;
 	}
 
 	void			RenderTarget::InitCache()

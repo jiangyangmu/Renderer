@@ -232,7 +232,7 @@ namespace Graphics
 	void			SceneRenderer::Clear()
 	{
 		m_swapChain.ResetBackBuffer();
-		m_swapChain.ResetBackBuffer(Rect { m_window.GetWidth() / 2, m_window.GetWidth(), 0, m_window.GetHeight() }, 50);
+		//m_swapChain.ResetBackBuffer(Rect { m_window.GetWidth() / 2, m_window.GetWidth(), 0, m_window.GetHeight() }, 50);
 		m_depthStencilBuffer.Reset();
 	}
 	void			SceneRenderer::Update(double ms)

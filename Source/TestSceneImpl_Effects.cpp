@@ -8,77 +8,80 @@ namespace Graphics
 	// Scene Objects
 	// --------------------------------------------------------------------------
 
-	struct Player : Entity
+	namespace
 	{
-	};
-
-	struct TextureCube : Entity
-	{
-		Ptr<Renderable>		renderable;
-
-		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
+		struct Player : Entity
 		{
-			if ( ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+		};
+
+		struct TextureCube : Entity
+		{
+			Ptr<Renderable>		renderable;
+
+			virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
 			{
-				renderable.reset(new ROCube({ -2.0f, 0.0f, 3.0f }, 1.0f));
-				renderable->Initialize(context, vertexBuffer);
+				if ( ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+				{
+					renderable.reset(new ROCube({ -2.0f, 0.0f, 3.0f }, 1.0f));
+					renderable->Initialize(context, vertexBuffer);
+				}
 			}
-		}
-		virtual void		Update(double ms) override
-		{
-			renderable->Update(ms);
-		}
-		virtual void		Draw() override
-		{
-			renderable->Draw();
-		}
-	};
-
-	struct BPCube : Entity
-	{
-		Ptr<Renderable>		renderable;
-
-		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
-		{
-			if ( ROBlinnPhongCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+			virtual void		Update(double ms) override
 			{
-				renderable.reset(new ROBlinnPhongCube({ 1.0f, 0.0f, 3.0f }, 1.0f));
-				renderable->Initialize(context, vertexBuffer);
+				renderable->Update(ms);
 			}
-		}
-		virtual void		Update(double ms) override
-		{
-			renderable->Update(ms);
-		}
-		virtual void		Draw() override
-		{
-			renderable->Draw();
-		}
-	};
-
-	struct RgbTriangle : Entity
-	{
-		Ptr<Renderable>		renderable;
-
-		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
-		{
-			if ( ROTriangle::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+			virtual void		Draw() override
 			{
-				renderable.reset(new ROTriangle({ -1.0f,   0.0f, 3.0f }, { 1.0f, 0.0f, 0.0f },
-								{ 0.0f,   0.0f, 3.0f }, { 0.0f, 1.0f, 0.0f },
-								{ -0.5f, 0.866f, 3.0f }, { 0.0f, 0.0f, 1.0f }));
-				renderable->Initialize(context, vertexBuffer);
+				renderable->Draw();
 			}
-		}
-		virtual void		Update(double ms) override
+		};
+
+		struct BPCube : Entity
 		{
-			renderable->Update(ms);
-		}
-		virtual void		Draw() override
+			Ptr<Renderable>		renderable;
+
+			virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
+			{
+				if ( ROBlinnPhongCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+				{
+					renderable.reset(new ROBlinnPhongCube({ 1.0f, 0.0f, 3.0f }, 1.0f));
+					renderable->Initialize(context, vertexBuffer);
+				}
+			}
+			virtual void		Update(double ms) override
+			{
+				renderable->Update(ms);
+			}
+			virtual void		Draw() override
+			{
+				renderable->Draw();
+			}
+		};
+
+		struct RgbTriangle : Entity
 		{
-			renderable->Draw();
-		}
-	};
+			Ptr<Renderable>		renderable;
+
+			virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override
+			{
+				if ( ROTriangle::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
+				{
+					renderable.reset(new ROTriangle({ -1.0f,   0.0f, 3.0f }, { 1.0f, 0.0f, 0.0f },
+									{ 0.0f,   0.0f, 3.0f }, { 0.0f, 1.0f, 0.0f },
+									{ -0.5f, 0.866f, 3.0f }, { 0.0f, 0.0f, 1.0f }));
+					renderable->Initialize(context, vertexBuffer);
+				}
+			}
+			virtual void		Update(double ms) override
+			{
+				renderable->Update(ms);
+			}
+			virtual void		Draw() override
+			{
+				renderable->Draw();
+			}
+		};
+	}
 
 	// --------------------------------------------------------------------------
 	// Scene
