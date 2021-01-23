@@ -90,7 +90,7 @@ namespace Graphics
 	class EffectTestScene : public IScene
 	{
 	public:
-		void			OnLoad(Device & device, RenderContext & context)
+		virtual void			OnLoad(Device & device, RenderContext & context) override
 		{
 			m_device		= &device;
 			m_context		= &context;
@@ -167,14 +167,14 @@ namespace Graphics
 			SceneObject::InitializeAll(m_root, *m_context, m_texVertices);
 			SceneObject::InitializeAll(m_root, *m_context, m_bpVertices);
 		}
-		void			OnUnload()
+		virtual void			OnUnload() override
 		{
 		}
-		void			OnUpdate(double ms)
+		virtual void			OnUpdate(double ms) override
 		{
 			SceneObject::UpdateAll(m_root, ms);
 		}
-		void			OnDraw()
+		virtual void			OnDraw() override
 		{
 			RenderTarget * targets[]	= { &m_rdtgLeftRect, &m_rdtgRightRect };
 			Camera * cameras[]		= { m_cameraMain, m_cameraTopView };

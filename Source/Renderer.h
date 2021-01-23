@@ -35,6 +35,7 @@ namespace Graphics
 	{
 	public:
 		ROTriangle(Vec3 pos0, Vec3 rgb0, Vec3 pos1, Vec3 rgb1, Vec3 pos2, Vec3 rgb2);
+
 		virtual			~ROTriangle();
 
 		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
@@ -54,10 +55,35 @@ namespace Graphics
 		RenderContext *		m_refContext;
 	};
 
+	class ROTexRectangle : public Renderable
+	{
+	public:
+		ROTexRectangle(Vec3 center, float width, float height);
+
+		virtual			~ROTexRectangle();
+
+		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
+		virtual void		Draw() override;
+
+		static bool		IsVertexFormatCompatible(VertexFormat vertexFormat);
+
+	private:
+		struct Vertex
+		{
+			Vec3 pos;
+			Vec2 uv;
+		};
+		Vertex			m_vertex[ 3 * 2 ];
+		VertexRange		m_vertexRange;
+		VertexBuffer *		m_refVertexBuffer;
+		RenderContext *		m_refContext;
+	};
+
 	class ROCube : public Renderable
 	{
 	public:
 		ROCube(Vec3 center, float size);
+
 		virtual			~ROCube();
 
 		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;

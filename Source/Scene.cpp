@@ -56,9 +56,12 @@ namespace Graphics
 					pSlave->transform = *pSourceTransform;
 					break;
 				case ConnectType::MINI_MAP_VIEW:
-					pSlave->transform =
-						Matrix4x4::Translation(pSourceTransform->f41, -5.0f, pSourceTransform->f43) *
-						Matrix4x4::RotationAxisLH({1.0f, 0.0f, 0.0f}, DegreeToRadian(-80.0f));
+					pSlave->transform.tx = pSourceTransform->tx;
+					pSlave->transform.ty = -5.0f;
+					pSlave->transform.tz = pSourceTransform->tz;
+					pSlave->transform.rx = -90.0f;
+					pSlave->transform.ry = 0.0f;
+					pSlave->transform.rz = 0.0f;
 					break;
 				default:
 					break;
@@ -139,10 +142,10 @@ namespace Graphics
 			vRotDeg	+= 0.2f * ms * vFactor;
 		}
 
-		transform	=
-			Matrix4x4::Translation(-pos.x, -pos.y, -pos.z) *
-			Matrix4x4::RotationAxisLH(up, -hRotRad) *
-			Matrix4x4::RotationAxisLH(rt, vRotRad);
+		transform.translation = -pos;
+		transform.rx = vRotRad;
+		transform.ry = -hRotRad;
+		transform.rz = 0.0f;
 
 		ApplyChangeToConnectionTree(this, &transform);
 	}

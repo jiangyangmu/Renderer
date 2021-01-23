@@ -87,7 +87,7 @@ namespace Graphics
 	class TestScene1 : public IScene
 	{
 	public:
-		void			OnLoad(Device & device, RenderContext & context)
+		virtual void			OnLoad(Device & device, RenderContext & context) override
 		{
 			m_device		= &device;
 			m_context		= &context;
@@ -123,14 +123,14 @@ namespace Graphics
 
 			SceneObject::InitializeAll(m_root, *m_context, m_texVertices);
 		}
-		void			OnUnload()
+		virtual void			OnUnload() override
 		{
 		}
-		void			OnUpdate(double ms)
+		virtual void			OnUpdate(double ms) override
 		{
 			SceneObject::UpdateAll(m_root, ms);
 		}
-		void			OnDraw()
+		virtual void			OnDraw() override
 		{
 			m_texEffect->CBSetViewTransform(m_camera->GetViewTransform());
 			m_texEffect->CBSetProjTransform(m_camera->GetProjTransform());

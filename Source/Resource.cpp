@@ -1039,7 +1039,7 @@ namespace Graphics
 		LONG width = texData.Width();
 		LONG height = texData.Height();
 		LONG col = static_cast< LONG >( width * u );
-		LONG row = static_cast< LONG >( height * (1.0f - v) );
+		LONG row = static_cast< LONG >( height * v );
 		
 		col = Bound(( LONG ) 0, col, width - 1);
 		row = Bound(( LONG ) 0, row, height - 1);

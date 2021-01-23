@@ -50,8 +50,39 @@ namespace Graphics
 
 	struct SceneObject;
 
-	// struct Transform {};
-	using Transform = Matrix4x4;
+	struct Transform
+	{
+		union
+		{
+			Vec3 translation;
+			struct
+			{
+				float tx, ty, tz;
+			};
+		};
+		union
+		{
+			Vec3 rotation;
+			struct 
+			{
+				float rx, ry, rz;
+			};
+		};
+
+		static Transform	Identity()
+		{
+			Transform zeros = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+			return zeros;
+		}
+
+		Matrix4x4		GetMatrix()
+		{
+			return	Matrix4x4::Translation(tx, ty, tz) *
+				Matrix4x4::RotationAxisLH(Vec3::UnitY(), ry) *
+				Matrix4x4::RotationAxisLH(Vec3::UnitX(), rx) *
+				Matrix4x4::RotationAxisLH(Vec3::UnitZ(), rz);
+		}
+	};
 
 	enum class ConnectType
 	{
@@ -75,7 +106,7 @@ namespace Graphics
 		std::vector<Connection> vConnectSlaves;
 
 		SceneObject()
-			: transform(Matrix4x4::Identity())
+			: transform(Transform::Identity())
 			, pConnectMaster(nullptr)
 		{
 		}
@@ -162,9 +193,9 @@ namespace Graphics
 		{
 			m_aspectRatio		= value;
 		}
-		const Matrix4x4 &	GetViewTransform()
+		Matrix4x4		GetViewTransform()
 		{
-			return transform;
+			return transform.GetMatrix();
 		}
 		Matrix4x4		GetProjTransform()
 		{

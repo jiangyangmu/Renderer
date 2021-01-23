@@ -41,6 +41,18 @@ struct Vec3
 	{
 		return { 0.0f, 0.0f, 0.0f };
 	}
+	static inline Vec3 UnitX()
+	{
+		return { 1.0f, 0.0f, 0.0f };
+	}
+	static inline Vec3 UnitY()
+	{
+		return { 0.0f, 1.0f, 0.0f };
+	}
+	static inline Vec3 UnitZ()
+	{
+		return { 0.0f, 0.0f, 1.0f };
+	}
 
 	// Properties
 

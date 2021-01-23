@@ -6,52 +6,52 @@
 static const float gUnitCubeVertices[] =
 {
 	// up
-	-0.5f,  0.5f, -0.5f  ,  0.5f, 1.0f,
-	 0.5f,  0.5f,  0.5f  ,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-	-0.5f,  0.5f, -0.5f  ,  0.5f, 1.0f,
-	 0.5f,  0.5f, -0.5f  ,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f  ,  1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f  ,  0.5f, 0.0f,
+	 0.5f,  0.5f,  0.5f  ,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f  ,  0.5f, 1.0f,
+	-0.5f,  0.5f, -0.5f  ,  0.5f, 0.0f,
+	 0.5f,  0.5f, -0.5f  ,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f  ,  1.0f, 1.0f,
 
 	// down
-	-0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
-	-0.5f, -0.5f,  0.5f  ,  0.5f, 0.0f,
-	 0.5f, -0.5f,  0.5f  ,  1.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
-	 0.5f, -0.5f,  0.5f  ,  1.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f  ,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.5f, 0.0f,
+	-0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
+	 0.5f, -0.5f,  0.5f  ,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.5f, 0.0f,
+	 0.5f, -0.5f,  0.5f  ,  1.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f  ,  1.0f, 0.0f,
 
 	// right
-	 0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-	 0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
-	 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
+	 0.5f, -0.5f, -0.5f  ,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f  ,  0.5f, 1.0f,
+	 0.5f,  0.5f, -0.5f  ,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f  ,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f  ,  0.5f, 0.0f,
+	 0.5f,  0.5f,  0.5f  ,  0.5f, 1.0f,
 
 	// left
-	-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-	-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-	-0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f  ,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f  ,  0.5f, 1.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f  ,  0.5f, 1.0f,
+	-0.5f, -0.5f,  0.5f  ,  0.5f, 0.0f,
 
 	// back
-	-0.5f, -0.5f,  0.5f  ,  0.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f  ,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-	-0.5f, -0.5f,  0.5f  ,  0.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f  ,  0.5f, 0.0f,
-	 0.5f, -0.5f,  0.5f  ,  0.5f, 1.0f,
+	-0.5f, -0.5f,  0.5f  ,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f  ,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f  ,  0.5f, 1.0f,
+	-0.5f, -0.5f,  0.5f  ,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f  ,  0.5f, 1.0f,
+	 0.5f, -0.5f,  0.5f  ,  0.5f, 0.0f,
 
 	// front
-	-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f  ,  0.5f, 0.0f,
-	-0.5f,  0.5f, -0.5f  ,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f  ,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f  ,  0.5f, 1.0f,
-	 0.5f,  0.5f, -0.5f  ,  0.5f, 0.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f  ,  0.5f, 1.0f,
+	-0.5f,  0.5f, -0.5f  ,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f  ,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f  ,  0.5f, 0.0f,
+	 0.5f,  0.5f, -0.5f  ,  0.5f, 1.0f,
 };
 static const float gUnitCubeNorms[] =
 {
@@ -103,6 +103,58 @@ namespace Graphics
 		return vertexFormat.Size() == sizeof(Vertex) &&
 			vertexFormat[ 0 ].type == VertexFieldType::POSITION &&
 			vertexFormat[ 1 ].type == VertexFieldType::COLOR;
+	}
+
+	ROTexRectangle::ROTexRectangle(Vec3 center, float width, float height)
+		: m_vertexRange()
+		, m_refVertexBuffer(nullptr)
+		, m_refContext(nullptr)
+	{
+		float halfWidth = width * 0.5f;
+		float halfHeight = height * 0.5f;
+
+		Vertex vertices[] =
+		{
+			{{-halfWidth + center.x, -halfHeight + center.y, center.z}, {0.0f, 0.0f}},
+			{{ halfWidth + center.x, -halfHeight + center.y, center.z}, {1.0f, 0.0f}},
+			{{ halfWidth + center.x,  halfHeight + center.y, center.z}, {1.0f, 1.0f}},
+			{{-halfWidth + center.x, -halfHeight + center.y, center.z}, {0.0f, 0.0f}},
+			{{ halfWidth + center.x,  halfHeight + center.y, center.z}, {1.0f, 1.0f}},
+			{{-halfWidth + center.x,  halfHeight + center.y, center.z}, {0.0f, 1.0f}},
+		};
+		memcpy(m_vertex, vertices, sizeof(vertices));
+	}
+	ROTexRectangle::~ROTexRectangle()
+	{
+		if ( m_refVertexBuffer )
+		{
+			m_refVertexBuffer->Free(m_vertexRange);
+		}
+	}
+	void		ROTexRectangle::Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer)
+	{
+		ASSERT(IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()));
+
+		if ( m_refVertexBuffer )
+		{
+			m_refVertexBuffer->Free(m_vertexRange);
+		}
+
+		m_refContext		= &renderContext;
+		m_refVertexBuffer	= &vertexBuffer;
+		m_vertexRange		= m_refVertexBuffer->Alloc(sizeof(m_vertex) / sizeof(Vertex));
+
+		memcpy(m_vertexRange.At(0), &m_vertex, sizeof(m_vertex));
+	}
+	void		ROTexRectangle::Draw()
+	{
+		m_refContext->Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
+	}
+	bool		ROTexRectangle::IsVertexFormatCompatible(VertexFormat vertexFormat)
+	{
+		return vertexFormat.Size() == sizeof(Vertex) &&
+			vertexFormat[ 0 ].type == VertexFieldType::POSITION &&
+			vertexFormat[ 1 ].type == VertexFieldType::TEXCOORD;
 	}
 
 	ROCube::ROCube(Vec3 center, float size)
