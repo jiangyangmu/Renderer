@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Buffer.h"
+#include "Unknown.h"
 
 #include <Windows.h>
 
@@ -11,34 +12,6 @@ namespace Graphics
 	// ---------------------------------------------------------------
 
 	struct Handle { void * pImpl; void * pParam; };
-
-	// ---------------------------------------------------------------
-	// IUnknown
-	// ---------------------------------------------------------------
-
-	// IID: Interface IDentifier
-#define _INTERFACE_DEFINE_IID(iid) \
-        public: static Integer		__IINTERFACE_IID() { return (iid); }
-#define _INTERFACE_IID(interface_) \
-	(interface_::__IINTERFACE_IID())
-#define _INTERFACE_TEST_IID(interface_, iid) \
-	((interface_::__IINTERFACE_IID()) == (iid))
-
-	class IUnknown
-	{
-	public:
-		virtual			~IUnknown() = default;
-
-		virtual bool		QueryInterface(Integer iid, void ** ppvObject)
-		{
-			return false;
-		}
-		template <typename T>
-		bool			QueryInterface(T ** ppObject)
-		{
-			return QueryInterface(_INTERFACE_IID(T), (void **)ppObject);
-		}
-	};
 
 	// ---------------------------------------------------------------
 	// Buffers
@@ -114,8 +87,9 @@ namespace Graphics
 	{
 	public:
 		void		Swap();
-		void		ResetBackBuffer();
+		void		ResetBackBuffer(Byte value = 0);
 		void		ResetBackBuffer(const Rect & rect, Byte value);
+	private:
 		void *		FrameBuffer();
 	};
 
@@ -157,22 +131,23 @@ namespace Graphics
 		Integer right;
 		Integer top;
 		Integer bottom;
+
+		bool			Contains(const Rect & other)
+		{
+			return	left <= other.left &&
+				right >= other.right &&
+				top <= other.top &&
+				bottom >= other.bottom;
+		}
 	};
 
 	struct RenderTarget : public Handle, public IUnknown
 	{
 	public:
-		RenderTarget() : pDescCache(nullptr), pObjectCache(nullptr) {}
-
-		Rect			GetRect();
-		Integer			GetWidth();
-		Integer			GetHeight();
+		Rect			GetRect() const;
+		Integer			GetWidth() const;
+		Integer			GetHeight() const;
 		virtual bool		QueryInterface(Integer iid, void ** ppvObject) override;
-	private:
-		void			InitCache();
-
-		void *			pDescCache;
-		void *			pObjectCache;
 	};
 
 
@@ -206,9 +181,10 @@ namespace Graphics
 		static Device		Default();
 
 		RenderContext		CreateRenderContext();
-		SwapChain		CreateSwapChain(Integer width, Integer height, bool enableAutoResize = true);
+		SwapChain		CreateSwapChain(RenderTarget renderTarget, bool enableAutoResize = true);
 		DepthStencilBuffer	CreateDepthStencilBuffer(Integer width, Integer height, bool enableAutoResize = true);
 		RenderTarget		CreateRenderTarget(IUnknown * pUnknown, const Rect & rect);
+		RenderTarget		CreateRenderTarget(Texture2D texture, const Rect & rect);
 		RenderTarget		CreateRenderTarget(RenderTarget renderTarget, const Rect & rectSub);
 
 		VertexFormat		CreateVertexFormat(VertexFieldType type0);

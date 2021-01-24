@@ -170,6 +170,7 @@
     <ClInclude Include="..\..\..\Source\Resource.h" />
     <ClInclude Include="..\..\..\Source\Scene.h" />
     <ClInclude Include="..\..\..\Source\TestScene.h" />
+    <ClInclude Include="..\..\..\Source\Unknown.h" />
     <ClInclude Include="..\..\..\Source\VisualEffects.h" />
     <ClInclude Include="..\..\..\Source\win32\Win32App.h" />
     <ClInclude Include="Resource.h" />
@@ -184,6 +185,7 @@
     <ClCompile Include="..\..\..\Source\Scene.cpp" />
     <ClCompile Include="..\..\..\Source\TestSceneImpl_Minecraft.cpp" />
     <ClCompile Include="..\..\..\Source\TestSceneImpl_Effects.cpp" />
+    <ClCompile Include="..\..\..\Source\TestSceneImpl_Mirror.cpp" />
     <ClCompile Include="..\..\..\Source\VisualEffects.cpp" />
     <ClCompile Include="..\..\..\Source\win32\Win32App.cpp" />
   </ItemGroup>

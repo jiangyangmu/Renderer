@@ -26,15 +26,15 @@ namespace Graphics
 				ENSURE_TRUE(ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()));
 
 				m_renderable.reset(new ROCube(m_center, m_size));
-				m_renderable->Initialize(context, vertexBuffer);
+				m_renderable->Initialize(vertexBuffer);
 			}
 			virtual void		Update(double ms) override
 			{
 				m_renderable->Update(ms);
 			}
-			virtual void		Draw() override
+			virtual void		Draw(RenderContext & context) override
 			{
-				m_renderable->Draw();
+				m_renderable->Draw(context);
 			}
 		};
 
@@ -60,7 +60,7 @@ namespace Graphics
 				for ( TextureCube & cube : m_cubes )
 				{
 					cube.m_renderable.reset(new ROCube(cube.m_center, cube.m_size));
-					cube.m_renderable->Initialize(context, vertexBuffer);
+					cube.m_renderable->Initialize(vertexBuffer);
 				}
 			}
 			virtual void		Update(double ms) override
@@ -70,11 +70,11 @@ namespace Graphics
 					cube.m_renderable->Update(ms);
 				}
 			}
-			virtual void		Draw() override
+			virtual void		Draw(RenderContext & context) override
 			{
 				for ( TextureCube & cube : m_cubes )
 				{
-					cube.m_renderable->Draw();
+					cube.m_renderable->Draw(context);
 				}
 			}
 		};
@@ -136,7 +136,7 @@ namespace Graphics
 			m_texEffect->CBSetProjTransform(m_camera->GetProjTransform());
 			m_texEffect->Apply(*m_context);
 			m_camera->ObserveEntity(m_texGroup);
-			m_camera->DrawObservedEntity();
+			m_camera->DrawObservedEntity(*m_context);
 		}
 
 	private:

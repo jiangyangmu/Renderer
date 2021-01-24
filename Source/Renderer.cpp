@@ -69,7 +69,6 @@ namespace Graphics
 		: m_vertex { {pos0, rgb0}, {pos1, rgb1}, {pos2, rgb2} }
 		, m_vertexRange()
 		, m_refVertexBuffer(nullptr)
-		, m_refContext(nullptr)
 	{
 	}
 	ROTriangle::~ROTriangle()
@@ -79,7 +78,7 @@ namespace Graphics
 			m_refVertexBuffer->Free(m_vertexRange);
 		}
 	}
-	void		ROTriangle::Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer)
+	void		ROTriangle::Initialize(VertexBuffer & vertexBuffer)
 	{
 		ASSERT(IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()));
 
@@ -88,15 +87,14 @@ namespace Graphics
 			m_refVertexBuffer->Free(m_vertexRange);
 		}
 
-		m_refContext		= &renderContext;
 		m_refVertexBuffer	= &vertexBuffer;
 		m_vertexRange		= m_refVertexBuffer->Alloc(sizeof(m_vertex) / sizeof(Vertex));
 
 		memcpy(m_vertexRange.At(0), &m_vertex, sizeof(m_vertex));
 	}
-	void		ROTriangle::Draw()
+	void		ROTriangle::Draw(RenderContext & renderContext)
 	{
-		m_refContext->Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
+		renderContext.Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
 	}
 	bool		ROTriangle::IsVertexFormatCompatible(VertexFormat vertexFormat)
 	{
@@ -105,22 +103,21 @@ namespace Graphics
 			vertexFormat[ 1 ].type == VertexFieldType::COLOR;
 	}
 
-	ROTexRectangle::ROTexRectangle(Vec3 center, float width, float height)
+	ROTexRectangle::ROTexRectangle(Vec3 center, float width, float height, float uMin, float uMax, float vMin, float vMax)
 		: m_vertexRange()
 		, m_refVertexBuffer(nullptr)
-		, m_refContext(nullptr)
 	{
 		float halfWidth = width * 0.5f;
 		float halfHeight = height * 0.5f;
 
 		Vertex vertices[] =
 		{
-			{{-halfWidth + center.x, -halfHeight + center.y, center.z}, {0.0f, 0.0f}},
-			{{ halfWidth + center.x, -halfHeight + center.y, center.z}, {1.0f, 0.0f}},
-			{{ halfWidth + center.x,  halfHeight + center.y, center.z}, {1.0f, 1.0f}},
-			{{-halfWidth + center.x, -halfHeight + center.y, center.z}, {0.0f, 0.0f}},
-			{{ halfWidth + center.x,  halfHeight + center.y, center.z}, {1.0f, 1.0f}},
-			{{-halfWidth + center.x,  halfHeight + center.y, center.z}, {0.0f, 1.0f}},
+			{{-halfWidth + center.x, -halfHeight + center.y, center.z}, {uMin, vMin}},
+			{{ halfWidth + center.x, -halfHeight + center.y, center.z}, {uMax, vMin}},
+			{{ halfWidth + center.x,  halfHeight + center.y, center.z}, {uMax, vMax}},
+			{{-halfWidth + center.x, -halfHeight + center.y, center.z}, {uMin, vMin}},
+			{{ halfWidth + center.x,  halfHeight + center.y, center.z}, {uMax, vMax}},
+			{{-halfWidth + center.x,  halfHeight + center.y, center.z}, {uMin, vMax}},
 		};
 		memcpy(m_vertex, vertices, sizeof(vertices));
 	}
@@ -131,7 +128,7 @@ namespace Graphics
 			m_refVertexBuffer->Free(m_vertexRange);
 		}
 	}
-	void		ROTexRectangle::Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer)
+	void		ROTexRectangle::Initialize(VertexBuffer & vertexBuffer)
 	{
 		ASSERT(IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()));
 
@@ -140,15 +137,14 @@ namespace Graphics
 			m_refVertexBuffer->Free(m_vertexRange);
 		}
 
-		m_refContext		= &renderContext;
 		m_refVertexBuffer	= &vertexBuffer;
 		m_vertexRange		= m_refVertexBuffer->Alloc(sizeof(m_vertex) / sizeof(Vertex));
 
 		memcpy(m_vertexRange.At(0), &m_vertex, sizeof(m_vertex));
 	}
-	void		ROTexRectangle::Draw()
+	void		ROTexRectangle::Draw(RenderContext & renderContext)
 	{
-		m_refContext->Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
+		renderContext.Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
 	}
 	bool		ROTexRectangle::IsVertexFormatCompatible(VertexFormat vertexFormat)
 	{
@@ -160,7 +156,6 @@ namespace Graphics
 	ROCube::ROCube(Vec3 center, float size)
 		: m_vertexRange()
 		, m_refVertexBuffer(nullptr)
-		, m_refContext(nullptr)
 	{
 		constexpr Integer nCount = sizeof(m_vertex) / sizeof(Vertex);
 		constexpr Integer nFields = sizeof(Vertex) / sizeof(float);
@@ -184,7 +179,7 @@ namespace Graphics
 			m_refVertexBuffer->Free(m_vertexRange);
 		}
 	}
-	void		ROCube::Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer)
+	void		ROCube::Initialize(VertexBuffer & vertexBuffer)
 	{
 		ASSERT(IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()));
 
@@ -193,15 +188,14 @@ namespace Graphics
 			m_refVertexBuffer->Free(m_vertexRange);
 		}
 
-		m_refContext		= &renderContext;
 		m_refVertexBuffer	= &vertexBuffer;
 		m_vertexRange		= m_refVertexBuffer->Alloc(sizeof(m_vertex) / sizeof(Vertex));
 
 		memcpy(m_vertexRange.At(0), &m_vertex, sizeof(m_vertex));
 	}
-	void		ROCube::Draw()
+	void		ROCube::Draw(RenderContext & renderContext)
 	{
-		m_refContext->Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
+		renderContext.Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
 	}
 	bool		ROCube::IsVertexFormatCompatible(VertexFormat vertexFormat)
 	{
@@ -213,7 +207,6 @@ namespace Graphics
 	ROBlinnPhongCube::ROBlinnPhongCube(Vec3 center, float size)
 		: m_vertexRange()
 		, m_refVertexBuffer(nullptr)
-		, m_refContext(nullptr)
 	{
 		constexpr Integer nCount = sizeof(m_vertex) / sizeof(Vertex);
 
@@ -237,7 +230,7 @@ namespace Graphics
 			m_refVertexBuffer->Free(m_vertexRange);
 		}
 	}
-	void		ROBlinnPhongCube::Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer)
+	void		ROBlinnPhongCube::Initialize(VertexBuffer & vertexBuffer)
 	{
 		ASSERT(IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()));
 
@@ -246,15 +239,14 @@ namespace Graphics
 			m_refVertexBuffer->Free(m_vertexRange);
 		}
 
-		m_refContext		= &renderContext;
 		m_refVertexBuffer	= &vertexBuffer;
 		m_vertexRange		= m_refVertexBuffer->Alloc(sizeof(m_vertex) / sizeof(Vertex));
 
 		memcpy(m_vertexRange.At(0), &m_vertex, sizeof(m_vertex));
 	}
-	void		ROBlinnPhongCube::Draw()
+	void		ROBlinnPhongCube::Draw(RenderContext & renderContext)
 	{
-		m_refContext->Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
+		renderContext.Draw(*m_refVertexBuffer, m_vertexRange.Offset(), m_vertexRange.Count());
 	}
 	bool		ROBlinnPhongCube::IsVertexFormatCompatible(VertexFormat vertexFormat)
 	{

@@ -2,22 +2,27 @@
 
 #include "Common.h"
 #include "Event.h"
+#include "Unknown.h"
 
 namespace Graphics
 {
-	class Buffer
+	class Buffer : public IUnknown
 	{
+		_INTERFACE_DEFINE_IID(1611390238);
 	public:
 		Buffer();
 		Buffer(Integer width, Integer height, Integer elementSize, Integer alignment = 1, Integer rowPadding = 0);
-		~Buffer();
 
 		Buffer(const Buffer &) = delete;
 		Buffer(Buffer && other);
 		Buffer & operator = (const Buffer &) = delete;
 		Buffer & operator = (Buffer && other);
 
+		virtual		~Buffer();
+		
 		// Operations
+
+		virtual bool	QueryInterface(Integer guid, void **  ppInterface) override;
 
 		void		SetAll(Byte value);
 		template <typename T>

@@ -16,7 +16,6 @@ namespace Graphics
 		, m_data(nullptr)
 	{
 	}
-
 	Buffer::Buffer(Integer width, Integer height, Integer elementSize, Integer alignment, Integer rowPadding)
 		: m_width(width)
 		, m_height(height)
@@ -34,16 +33,6 @@ namespace Graphics
 			memset(m_data, 0, m_sizeInBytes);
 		}
 	}
-
-	Buffer::~Buffer()
-	{
-		if ( m_data )
-		{
-			_aligned_free(m_data);
-			m_data = nullptr;
-		}
-	}
-
 	Buffer::Buffer(Buffer && other)
 		: m_width(other.m_width)
 		, m_height(other.m_height)
@@ -55,63 +44,74 @@ namespace Graphics
 	{
 		new ( &other ) Buffer();
 	}
+	Buffer::~Buffer()
+	{
+		if ( m_data )
+		{
+			_aligned_free(m_data);
+			m_data = nullptr;
+		}
+	}
 
-	Buffer & Buffer::operator=(Buffer && other)
+	Buffer &	Buffer::operator=(Buffer && other)
 	{
 		this->~Buffer();
 		new ( this ) Buffer(std::move(other));
 		return *this;
 	}
 
-	void Buffer::SetAll(Byte value)
+	bool		Buffer::QueryInterface(Integer guid, void ** ppInterface)
+	{
+		if ( _INTERFACE_IID(Buffer) == guid )
+		{
+			*ppInterface = this;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	void		Buffer::SetAll(Byte value)
 	{
 		if ( m_data )
 		{
 			memset(m_data, value, m_sizeInBytes);
 		}
 	}
-
-	Integer Buffer::Width() const
+	Integer		Buffer::Width() const
 	{
 		return m_width;
 	}
-
-	Integer Buffer::Height() const
+	Integer		Buffer::Height() const
 	{
 		return m_height;
 	}
-
-	Integer Buffer::Alignment() const
+	Integer		Buffer::Alignment() const
 	{
 		return m_alignment;
 	}
-
-	Integer Buffer::SizeInBytes() const
+	Integer		Buffer::SizeInBytes() const
 	{
 		return m_sizeInBytes;
 	}
-
-	Integer Buffer::RowSizeInBytes() const
+	Integer		Buffer::RowSizeInBytes() const
 	{
 		return m_rowSizeInBytes;
 	}
-
-	Integer Buffer::ElementCount() const
+	Integer		Buffer::ElementCount() const
 	{
 		return m_width * m_height;
 	}
-
-	Integer Buffer::ElementSize() const
+	Integer		Buffer::ElementSize() const
 	{
 		return m_elementSize;
 	}
-
-	void * Buffer::Data()
+	void *		Buffer::Data()
 	{
 		return m_data;
 	}
-
-	const void * Buffer::Data() const
+	const void *	Buffer::Data() const
 	{
 		return m_data;
 	}

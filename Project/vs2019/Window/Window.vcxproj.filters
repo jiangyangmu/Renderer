@@ -4,9 +4,6 @@
     <Filter Include="Common">
       <UniqueIdentifier>{89ab8fc8-b744-4570-843a-fcb01d31da85}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Event">
-      <UniqueIdentifier>{7f757fac-f4ff-42c5-9079-5a9354459fb6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Win32">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
@@ -41,9 +38,6 @@
     <ClInclude Include="..\..\..\Source\Common.h">
       <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Event.h">
-      <Filter>Event</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\Scene.h">
       <Filter>Graphics</Filter>
     </ClInclude>
@@ -61,6 +55,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\TestScene.h">
       <Filter>TestScene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Event.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Unknown.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -90,6 +90,9 @@
       <Filter>TestScene</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\TestSceneImpl_Minecraft.cpp">
+      <Filter>TestScene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\TestSceneImpl_Mirror.cpp">
       <Filter>TestScene</Filter>
     </ClCompile>
   </ItemGroup>

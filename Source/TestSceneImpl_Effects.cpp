@@ -23,16 +23,16 @@ namespace Graphics
 				if ( ROCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
 				{
 					renderable.reset(new ROCube({ -2.0f, 0.0f, 3.0f }, 1.0f));
-					renderable->Initialize(context, vertexBuffer);
+					renderable->Initialize(vertexBuffer);
 				}
 			}
 			virtual void		Update(double ms) override
 			{
 				renderable->Update(ms);
 			}
-			virtual void		Draw() override
+			virtual void		Draw(RenderContext & context) override
 			{
-				renderable->Draw();
+				renderable->Draw(context);
 			}
 		};
 
@@ -45,16 +45,16 @@ namespace Graphics
 				if ( ROBlinnPhongCube::IsVertexFormatCompatible(vertexBuffer.GetVertexFormat()) )
 				{
 					renderable.reset(new ROBlinnPhongCube({ 1.0f, 0.0f, 3.0f }, 1.0f));
-					renderable->Initialize(context, vertexBuffer);
+					renderable->Initialize(vertexBuffer);
 				}
 			}
 			virtual void		Update(double ms) override
 			{
 				renderable->Update(ms);
 			}
-			virtual void		Draw() override
+			virtual void		Draw(RenderContext & context) override
 			{
-				renderable->Draw();
+				renderable->Draw(context);
 			}
 		};
 
@@ -69,16 +69,16 @@ namespace Graphics
 					renderable.reset(new ROTriangle({ -1.0f,   0.0f, 3.0f }, { 1.0f, 0.0f, 0.0f },
 									{ 0.0f,   0.0f, 3.0f }, { 0.0f, 1.0f, 0.0f },
 									{ -0.5f, 0.866f, 3.0f }, { 0.0f, 0.0f, 1.0f }));
-					renderable->Initialize(context, vertexBuffer);
+					renderable->Initialize(vertexBuffer);
 				}
 			}
 			virtual void		Update(double ms) override
 			{
 				renderable->Update(ms);
 			}
-			virtual void		Draw() override
+			virtual void		Draw(RenderContext & context) override
 			{
-				renderable->Draw();
+				renderable->Draw(context);
 			}
 		};
 	}
@@ -198,7 +198,7 @@ namespace Graphics
 					if ( i == 2 ) static_cast< BlinnPhongEffect * >( effect )->CBSetCameraPosition(m_controller->pos);
 					effect->Apply(*m_context);
 					camera->ObserveEntity(group);
-					camera->DrawObservedEntity();
+					camera->DrawObservedEntity(*m_context);
 				}
 			}
 		}

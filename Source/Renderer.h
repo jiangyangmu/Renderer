@@ -12,9 +12,9 @@ namespace Graphics
 	{
 	public:
 		virtual			~Renderable() = default;
-		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) {}
+		virtual void		Initialize(VertexBuffer & vertexBuffer) {}
 		virtual void		Update(double ms) {}
-		virtual void		Draw() {}
+		virtual void		Draw(RenderContext & renderContext) {}
 	};
 
 	class IRenderer
@@ -38,8 +38,8 @@ namespace Graphics
 
 		virtual			~ROTriangle();
 
-		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
-		virtual void		Draw() override;
+		virtual void		Initialize(VertexBuffer & vertexBuffer) override;
+		virtual void		Draw(RenderContext & renderContext) override;
 
 		static bool		IsVertexFormatCompatible(VertexFormat vertexFormat);
 
@@ -52,18 +52,17 @@ namespace Graphics
 		Vertex			m_vertex[ 3 ];
 		VertexRange		m_vertexRange;
 		VertexBuffer *		m_refVertexBuffer;
-		RenderContext *		m_refContext;
 	};
 
 	class ROTexRectangle : public Renderable
 	{
 	public:
-		ROTexRectangle(Vec3 center, float width, float height);
+		ROTexRectangle(Vec3 center, float width, float height, float uMin = 0.0f, float uMax = 1.0f, float vMin = 0.0f, float vMax = 1.0f);
 
 		virtual			~ROTexRectangle();
 
-		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
-		virtual void		Draw() override;
+		virtual void		Initialize(VertexBuffer & vertexBuffer) override;
+		virtual void		Draw(RenderContext & renderContext) override;
 
 		static bool		IsVertexFormatCompatible(VertexFormat vertexFormat);
 
@@ -76,7 +75,6 @@ namespace Graphics
 		Vertex			m_vertex[ 3 * 2 ];
 		VertexRange		m_vertexRange;
 		VertexBuffer *		m_refVertexBuffer;
-		RenderContext *		m_refContext;
 	};
 
 	class ROCube : public Renderable
@@ -86,8 +84,8 @@ namespace Graphics
 
 		virtual			~ROCube();
 
-		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
-		virtual void		Draw() override;
+		virtual void		Initialize(VertexBuffer & vertexBuffer) override;
+		virtual void		Draw(RenderContext & renderContext) override;
 
 		static bool		IsVertexFormatCompatible(VertexFormat vertexFormat);
 
@@ -100,7 +98,6 @@ namespace Graphics
 		Vertex			m_vertex[ 3 * 2 * 6 ];
 		VertexRange		m_vertexRange;
 		VertexBuffer *		m_refVertexBuffer;
-		RenderContext *		m_refContext;
 	};
 
 	class ROBlinnPhongCube : public Renderable
@@ -109,8 +106,8 @@ namespace Graphics
 		ROBlinnPhongCube(Vec3 center, float size);
 		virtual			~ROBlinnPhongCube();
 
-		virtual void		Initialize(RenderContext & renderContext, VertexBuffer & vertexBuffer) override;
-		virtual void		Draw() override;
+		virtual void		Initialize(VertexBuffer & vertexBuffer) override;
+		virtual void		Draw(RenderContext & renderContext) override;
 
 		static bool		IsVertexFormatCompatible(VertexFormat vertexFormat);
 
@@ -123,6 +120,5 @@ namespace Graphics
 		Vertex			m_vertex[ 3 * 2 * 6 ];
 		VertexRange		m_vertexRange;
 		VertexBuffer *		m_refVertexBuffer;
-		RenderContext *		m_refContext;
 	};
 }

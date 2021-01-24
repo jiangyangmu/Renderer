@@ -389,6 +389,31 @@ inline T AlignCeiling(T value, T alignment)
 	return m > 0 ? (value - m + alignment) : value;
 }
 
+inline bool ComputeRayPlaneIntersectionPoint(const Vec3 & posPlane, const Vec3 & normPlane, const Vec3 & posRay, const Vec3 & dirRay, Vec3 * pPoint)
+{
+	// ASSERT(all norm/dir normalized)
+
+	float denom = Vec3::Dot(-normPlane, dirRay);
+	
+	if ( denom <= 1e-6 )
+	{
+		return false;
+	}
+	
+	Vec3 v = posPlane - posRay;
+
+	float t = Vec3::Dot(v, -normPlane) / denom;
+	
+	if (t < 0.0f)
+	{
+		return false;
+	}
+
+	*pPoint = posRay + Vec3::Scale(dirRay, t);
+	
+	return true;
+}
+
 // --------------------------------------------------------------------------
 // Macros for debugging
 // --------------------------------------------------------------------------

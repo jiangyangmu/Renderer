@@ -82,6 +82,14 @@ namespace Graphics
 				Matrix4x4::RotationAxisLH(Vec3::UnitX(), rx) *
 				Matrix4x4::RotationAxisLH(Vec3::UnitZ(), rz);
 		}
+		Matrix4x4		GetInvertedMatrix()
+		{
+			return	Matrix4x4::Translation(-tx, -ty, -tz) *
+				Matrix4x4::RotationAxisLH(Vec3::UnitY(), -ry) *
+				Matrix4x4::RotationAxisLH(Vec3::UnitX(), -rx) *
+				Matrix4x4::RotationAxisLH(Vec3::UnitZ(), -rz);
+		}
+		bool			GetInvertedMirroredMatrix(const Vec3 & posMirror, const Vec3 & normMirror, Matrix4x4 * pMirroredMatrix);
 	};
 
 	enum class ConnectType
@@ -133,9 +141,9 @@ namespace Graphics
 
 	struct Entity : SceneObject
 	{
-		virtual void		Draw() {}
+		virtual void		Draw(RenderContext & context) {}
 
-		static void		DrawAll(Entity * pEntity);
+		static void		DrawAll(Entity * pEntity, RenderContext & context);
 	};
 
 	struct Light : Entity
@@ -187,7 +195,7 @@ namespace Graphics
 		{
 			m_observedEntity	= pEntity;
 		}
-		void			DrawObservedEntity();
+		void			DrawObservedEntity(RenderContext & context);
 
 		void			SetAspectRatio(float value)
 		{
@@ -195,7 +203,7 @@ namespace Graphics
 		}
 		Matrix4x4		GetViewTransform()
 		{
-			return transform.GetMatrix();
+			return transform.GetInvertedMatrix();
 		}
 		Matrix4x4		GetProjTransform()
 		{

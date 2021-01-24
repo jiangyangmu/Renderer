@@ -60,7 +60,15 @@ namespace Graphics
 		out.color		= in.color;
 	}
 
-	TextureEffect::TextureEffect(LPCWSTR lpTexFilePath) : m_texFilePath(lpTexFilePath)
+	TextureEffect::TextureEffect(LPCWSTR lpTexFilePath)
+		: m_texFilePath(lpTexFilePath)
+	{
+		m_vs = VSImpl;
+		m_ps = PSImpl;
+	}
+	TextureEffect::TextureEffect(Texture2D texture2D)
+		: m_texFilePath(NULL)
+		, m_texture2D(texture2D)
 	{
 		m_vs = VSImpl;
 		m_ps = PSImpl;
@@ -79,8 +87,7 @@ namespace Graphics
 		m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
 		m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
 
-
-		Texture2D texture;
+		if (m_texFilePath != NULL)
 		{
 			LONG nWidth;
 			LONG nHeight;
@@ -89,12 +96,12 @@ namespace Graphics
 			win32::LoadBMP(m_texFilePath, &nWidth, &nHeight, &lpPixelData);
 			ASSERT(nWidth > 0 && nHeight > 0 && lpPixelData != nullptr);
 
-			texture		= device.CreateTexture2D(nWidth, nHeight, 4, 4, 0, lpPixelData);
+			m_texture2D	= device.CreateTexture2D(nWidth, nHeight, 4, 4, 0, lpPixelData);
 
 			delete[] lpPixelData;
 		}
-		m_vsData.tex		= texture;
-		m_psData.tex		= texture;
+		m_vsData.tex		= m_texture2D;
+		m_psData.tex		= m_texture2D;
 	}
 	void		TextureEffect::Apply(RenderContext & context)
 	{

@@ -3,6 +3,8 @@
 #include "RenderWindow.h"
 #include "win32/Win32App.h"
 
+#include <deque>
+
 #define NUM_MAX_VERTEX_FIELD (5)
 
 namespace Graphics
@@ -25,6 +27,7 @@ namespace Graphics
 
 	struct SwapChain_Desc
 	{
+		DescIndex		iRenderTargetDesc;
 		BufferIndex		iBuffers[ 2 ];
 		bool			bSwapped;
 	};
@@ -92,7 +95,7 @@ namespace Graphics
 
 	struct Device_Impl
 	{
-		std::vector<Buffer>			buffers;
+		std::deque<Buffer>			buffers;
 
 		std::vector<SwapChain_Desc>		swapChainDescs;
 		std::vector<DepthStencil_Desc>		depthStencilDescs;
@@ -438,9 +441,9 @@ namespace Graphics
 		return pRenderTargetDesc->rect;
 	}
 
-	static inline void			_ResetBackBuffer(Buffer & b)
+	static inline void			_ResetBackBuffer(Buffer & b, Byte value)
 	{
-		b.SetAll(0);
+		b.SetAll(value);
 	}
 	static inline void			_ResetDepthBuffer(Buffer & b)
 	{
@@ -478,17 +481,34 @@ namespace Graphics
 
 		device.buffers.emplace_back(width, height, elementSize, alignment, rowPadding);
 		
-		memcpy(device.buffers.back().Data(),
-		       pData,
-		       device.buffers.back().SizeInBytes());
+		if (pData)
+		{
+			memcpy(device.buffers.back().Data(),
+			       pData,
+			       device.buffers.back().SizeInBytes());
+		}
+		else
+		{
+			memset(device.buffers.back().Data(),
+			       0,
+			       device.buffers.back().SizeInBytes());
+		}
 
 		return iBuffer;
 	}
-	static inline SwapChain_Desc		_CreateSwapChain(Device_Impl & device, Integer nWidth, Integer nHeight)
+	static inline SwapChain_Desc		_CreateSwapChain(Device_Impl & device, DescIndex iRenderTargetDesc)
 	{
+		RenderTarget_Desc * pRenderTargetDesc;
+
+		pRenderTargetDesc	= &device.renderTargetDescs[ iRenderTargetDesc.value ];
+
+		Integer nWidth		= pRenderTargetDesc->rect.right - pRenderTargetDesc->rect.left;
+		Integer nHeight		= pRenderTargetDesc->rect.bottom - pRenderTargetDesc->rect.top;
+		Integer rowPadding	= ( 4 - ( ( nWidth * 3 ) & 0x3 ) ) & 0x3;
+
 		SwapChain_Desc sc;
 
-		int rowPadding		= ( 4 - ( ( nWidth * 3 ) & 0x3 ) ) & 0x3;
+		sc.iRenderTargetDesc	= iRenderTargetDesc;
 		sc.iBuffers[0]		= _CreateBuffer(device, nWidth, nHeight, 3, 4, rowPadding);
 		sc.iBuffers[1]		= _CreateBuffer(device, nWidth, nHeight, 3, 4, rowPadding);
 		sc.bSwapped		= false;
@@ -533,6 +553,27 @@ namespace Graphics
 
 		target.pUnknown			= pUnknown;
 		target.rect			= rect;
+
+		RenderWindow * pWindow;
+		Buffer * pBuffer;
+		Rect rectOrigin;
+		if ( pUnknown->QueryInterface(&pWindow) )
+		{
+			rectOrigin.left		= 0;
+			rectOrigin.right	= pWindow->GetWidth();
+			rectOrigin.top		= 0;
+			rectOrigin.bottom	= pWindow->GetHeight();
+		}
+		else
+		{
+			ENSURE_TRUE(pUnknown->QueryInterface(&pBuffer));
+
+			rectOrigin.left		= 0;
+			rectOrigin.right	= pBuffer->Width();
+			rectOrigin.top		= 0;
+			rectOrigin.bottom	= pBuffer->Height();
+		}
+		ENSURE_TRUE(rectOrigin.Contains(rect));
 
 		return target;
 	}
@@ -875,18 +916,43 @@ namespace Graphics
 		Device_Impl *		pDevice;
 		BufferIndex		iSwapChainDesc;
 		SwapChain_Desc *	pSwapChainDesc;
+		RenderTarget_Desc *	pRenderTargetDesc;
+		RenderWindow *		pWindow;
+		Buffer *		pBuffer;
 
 		_LoadIndex(*this, &iSwapChainDesc);
 
-		pDevice			= static_cast<Device_Impl *>(pParam);
-		pSwapChainDesc		= &pDevice->swapChainDescs[iSwapChainDesc.value];
+		pDevice				= static_cast<Device_Impl *>(pParam);
+		pSwapChainDesc			= &pDevice->swapChainDescs[iSwapChainDesc.value];
+		pSwapChainDesc->bSwapped	= !pSwapChainDesc->bSwapped;
 
-		pSwapChainDesc->bSwapped = !pSwapChainDesc->bSwapped;
+		pRenderTargetDesc		= &pDevice->renderTargetDescs[ pSwapChainDesc->iRenderTargetDesc.value ];
+
+		Buffer & buffer	= _GetBackBuffer(*pDevice, *pSwapChainDesc);
+		Integer nWidth	= buffer.Width();
+		Integer nHeight	= buffer.Height();
+		ASSERT(buffer.ElementSize() == 3);
+		if ( pRenderTargetDesc->pUnknown->QueryInterface(&pWindow) )
+		{
+			ASSERT(pWindow->GetWidth() == nWidth && pWindow->GetHeight() == nHeight);
+
+			pWindow->Paint(pWindow->GetWidth(), pWindow->GetHeight(), FrameBuffer());
+		}
+		else
+		{
+			ENSURE_TRUE(pRenderTargetDesc->pUnknown->QueryInterface(&pBuffer));
+
+			ASSERT(pBuffer->Width() == nWidth && pBuffer->Height() == nHeight);
+
+			memcpy(pBuffer->Data(),
+			       FrameBuffer(),
+			       pBuffer->SizeInBytes());
+		}
 	}
-	void			SwapChain::ResetBackBuffer()
+	void			SwapChain::ResetBackBuffer(Byte value)
 	{
 		Device_Impl *		pDevice;
-		BufferIndex		iSwapChainDesc;
+		DescIndex		iSwapChainDesc;
 		SwapChain_Desc *	pSwapChainDesc;
 
 		_LoadIndex(*this, &iSwapChainDesc);
@@ -894,12 +960,12 @@ namespace Graphics
 		pDevice			= static_cast< Device_Impl * >( pParam );
 		pSwapChainDesc		= &pDevice->swapChainDescs[ iSwapChainDesc.value ];
 
-		_ResetBackBuffer(_GetBackBuffer(*pDevice, *pSwapChainDesc));
+		_ResetBackBuffer(_GetBackBuffer(*pDevice, *pSwapChainDesc), value);
 	}
 	void			SwapChain::ResetBackBuffer(const Rect & rect, Byte value)
 	{
 		Device_Impl *		pDevice;
-		BufferIndex		iSwapChainDesc;
+		DescIndex		iSwapChainDesc;
 		SwapChain_Desc *	pSwapChainDesc;
 
 		_LoadIndex(*this, &iSwapChainDesc);
@@ -919,7 +985,7 @@ namespace Graphics
 	void *			SwapChain::FrameBuffer()
 	{
 		Device_Impl *		pDevice;
-		BufferIndex		iSwapChainDesc;
+		DescIndex		iSwapChainDesc;
 		SwapChain_Desc *	pSwapChainDesc;
 
 		_LoadIndex(*this, &iSwapChainDesc);
@@ -1051,49 +1117,21 @@ namespace Graphics
 		pColor[ 2 ] = static_cast< float >( bgra[ 0 ] ) / 255.f;
 	}
 
-	void			RenderTarget::InitCache()
+	Rect			RenderTarget::GetRect() const
 	{
-		Device_Impl *		pDevice;
-		DescIndex		iRenderTargetDesc;
-		RenderTarget_Desc *	pRenderTargetDesc;
-		RenderWindow *		pWindow;
-
-		_LoadIndex(*this, &iRenderTargetDesc);
-
-		pDevice			= static_cast< Device_Impl * >( pParam );
-		pRenderTargetDesc	= &pDevice->renderTargetDescs[ iRenderTargetDesc.value ];
-		
-		ENSURE_TRUE(pRenderTargetDesc->pUnknown->QueryInterface(&pWindow));
-
-		pDescCache		= pRenderTargetDesc;
-		pObjectCache		= pWindow;
+		return _GetRenderTargetDesc(*static_cast< Device_Impl * >( pParam ), *this)->rect;
 	}
-	Rect			RenderTarget::GetRect()
+	Integer			RenderTarget::GetWidth() const
 	{
-		if ( !pDescCache )
-		{
-			InitCache();
-		}
+		const Rect & rect = _GetRenderTargetDesc(*static_cast< Device_Impl * >( pParam ), *this)->rect;
 
-		return static_cast< RenderTarget_Desc * >( pDescCache )->rect;
+		return rect.right - rect.left;
 	}
-	Integer			RenderTarget::GetWidth()
+	Integer			RenderTarget::GetHeight() const
 	{
-		if ( !pObjectCache )
-		{
-			InitCache();
-		}
+		const Rect & rect = _GetRenderTargetDesc(*static_cast< Device_Impl * >( pParam ), *this)->rect;
 
-		return static_cast< RenderWindow * >( pObjectCache )->GetWidth();
-	}
-	Integer			RenderTarget::GetHeight()
-	{
-		if ( !pObjectCache )
-		{
-			InitCache();
-		}
-
-		return static_cast< RenderWindow * >( pObjectCache )->GetHeight();
+		return rect.bottom - rect.top;
 	}
 	bool			RenderTarget::QueryInterface(Integer iid, void ** ppvObject)
 	{
@@ -1192,14 +1230,16 @@ namespace Graphics
 		handle.pParam = self;
 		return handle;
 	}
-	SwapChain		Device::CreateSwapChain(Integer width, Integer height, bool enableAutoResize)
+	SwapChain		Device::CreateSwapChain(RenderTarget renderTarget, bool enableAutoResize)
 	{
 		Device_Impl * self = static_cast<Device_Impl *>(pImpl);
 
 		DescIndex iSwapChain;
 		iSwapChain.value = self->swapChainDescs.size();
 
-		self->swapChainDescs.emplace_back(_CreateSwapChain(*self, width, height));
+		DescIndex iRenderTargetDesc;
+		_LoadIndex(renderTarget, &iRenderTargetDesc);
+		self->swapChainDescs.emplace_back(_CreateSwapChain(*self, iRenderTargetDesc));
 
 		SwapChain handle;
 		_StoreIndex(&handle, iSwapChain);
@@ -1234,6 +1274,18 @@ namespace Graphics
 		handle.pParam = self;
 		return handle;
 	}
+	RenderTarget		Device::CreateRenderTarget(Texture2D texture, const Rect & rect)
+	{
+		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
+
+		Texture2D_Desc * pTextureDesc;
+		Buffer * pBuffer;
+		
+		pTextureDesc	= _GetTextureDesc(*self, texture);
+		pBuffer		= &_GetBuffer(*self, pTextureDesc->iTexDataBuffer);
+
+		return CreateRenderTarget(pBuffer, rect);
+	}
 	RenderTarget		Device::CreateRenderTarget(RenderTarget renderTarget, const Rect & rectSub)
 	{
 		Device_Impl * self = static_cast< Device_Impl * >( pImpl );
@@ -1261,7 +1313,6 @@ namespace Graphics
 		handle.pParam = self;
 		return handle;
 	}
-
 
 	VertexFormat		Device::CreateVertexFormat(VertexFieldType type0)
 	{

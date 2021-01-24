@@ -2,6 +2,45 @@
 
 namespace Graphics
 {
+	bool			Transform::GetInvertedMirroredMatrix(const Vec3 & posMirror, const Vec3 & normMirror, Matrix4x4 * pMirroredMatrix)
+	{
+		Vec3 dir = Vec3::Transform(Vec3::UnitZ(),
+					   Matrix4x4::RotationAxisLH(Vec3::UnitY(), ry) *
+					   Matrix4x4::RotationAxisLH(Vec3::UnitX(), rx) *
+					   Matrix4x4::RotationAxisLH(Vec3::UnitZ(), rz));
+		Vec3 dirInv = -dir;
+		Vec3 dirRef = Vec3::Normalize(dir - Vec3::Scale(normMirror, 2 * Vec3::Dot(normMirror, dir)));
+
+		float lenInvDir = dirInv.Length();
+		float lenNorm = normMirror.Length();
+
+		ASSERT(0.9f < lenInvDir && lenInvDir < 1.1f);
+		ASSERT(0.9f < lenNorm && lenNorm < 1.1f);
+
+		Vec3 posIntersect;
+		if ( !ComputeRayPlaneIntersectionPoint(posMirror, normMirror, translation, dir, &posIntersect) )
+		{
+			return false;
+		}
+
+		float fDist = ( posIntersect - translation ).Length();
+		Vec3 pos = posIntersect - Vec3::Scale(dirRef, fDist);
+
+		float fACos = acosf(Vec3::Dot(dirInv, normMirror) / ( lenInvDir * lenNorm ));
+		Vec3 axis = Vec3::CrossLH(dirInv, normMirror);
+
+		// TODO: mirror camera should only map the mirror part of near plane to texture.
+		*pMirroredMatrix =
+			Matrix4x4::Translation(-pos.x, -pos.y, -pos.z) *
+			Matrix4x4::RotationAxisLH(axis, PI - 2.0f * fACos) *
+			Matrix4x4::RotationAxisLH(Vec3::UnitY(), -ry) *
+			Matrix4x4::RotationAxisLH(Vec3::UnitX(), -rx) *
+			Matrix4x4::RotationAxisLH(Vec3::UnitZ(), -rz)
+			;
+
+		return true;
+	}
+
 	void			SceneObject::InitializeAll(SceneObject * pRootObject, RenderContext & context, VertexBuffer & vertexBuffer)
 	{
 		ASSERT(pRootObject);
@@ -59,7 +98,7 @@ namespace Graphics
 					pSlave->transform.tx = pSourceTransform->tx;
 					pSlave->transform.ty = -5.0f;
 					pSlave->transform.tz = pSourceTransform->tz;
-					pSlave->transform.rx = -90.0f;
+					pSlave->transform.rx = DegreeToRadian(-90.0f);
 					pSlave->transform.ry = 0.0f;
 					pSlave->transform.rz = 0.0f;
 					break;
@@ -71,19 +110,19 @@ namespace Graphics
 		}
 	}
 
-	void			Entity::DrawAll(Entity * pEntity)
+	void			Entity::DrawAll(Entity * pEntity, RenderContext & context)
 	{
 		ASSERT(pEntity);
-		pEntity->Draw();
+		pEntity->Draw(context);
 		for ( TreeNode * pNode = FirstChild(pEntity); pNode; pNode = NextChild(pNode) )
 		{
-			DrawAll(static_cast< Entity * >( pNode ));
+			DrawAll(static_cast< Entity * >( pNode ), context);
 		}
 	}
 
-	void			Camera::DrawObservedEntity()
+	void			Camera::DrawObservedEntity(RenderContext & context)
 	{
-		Entity::DrawAll(m_observedEntity);
+		Entity::DrawAll(m_observedEntity, context);
 	}
 
 	void			Controller::Initialize(RenderContext & context, VertexBuffer & vertexBuffer)
@@ -142,9 +181,9 @@ namespace Graphics
 			vRotDeg	+= 0.2f * ms * vFactor;
 		}
 
-		transform.translation = -pos;
-		transform.rx = vRotRad;
-		transform.ry = -hRotRad;
+		transform.translation = pos;
+		transform.rx = -vRotRad;
+		transform.ry = hRotRad;
 		transform.rz = 0.0f;
 
 		ApplyChangeToConnectionTree(this, &transform);
@@ -211,7 +250,7 @@ namespace Graphics
 		target			= m_device.CreateRenderTarget(&m_window, rect);
 
 		m_context		= m_device.CreateRenderContext();
-		m_swapChain		= m_device.CreateSwapChain(target.GetWidth(), target.GetHeight());
+		m_swapChain		= m_device.CreateSwapChain(target);
 		m_depthStencilBuffer	= m_device.CreateDepthStencilBuffer(target.GetWidth(), target.GetHeight());
 
 		m_context.SetSwapChain(m_swapChain);
@@ -230,7 +269,6 @@ namespace Graphics
 	void			SceneRenderer::Present()
 	{
 		m_swapChain.Swap();
-		m_window.Paint(m_window.GetWidth(), m_window.GetHeight(), m_swapChain.FrameBuffer());
 	}
 	void			SceneRenderer::Clear()
 	{

@@ -102,7 +102,8 @@ namespace Graphics
 	class TextureEffect : public Effect
 	{
 	public:
-		TextureEffect(LPCWSTR lpTexFilePath);
+		explicit TextureEffect(LPCWSTR lpTexFilePath);
+		explicit TextureEffect(Texture2D texture2D);
 
 		virtual void		Initialize(Device & device) override;
 		virtual void		Apply(RenderContext & context) override;
@@ -145,7 +146,9 @@ namespace Graphics
 		VS_DATA		m_vsData;
 		PS_DATA		m_psData;
 
+		// Texture Data
 		LPCWSTR		m_texFilePath;
+		Texture2D	m_texture2D;
 	};
 
 	class BlinnPhongEffect : public Effect
