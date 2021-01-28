@@ -228,7 +228,7 @@ namespace Event
 // --------------------------------------------------------------------------
 
 #include <Windows.h>
-#include "Common.h"
+#include "_Math.h"
 
 namespace win32
 {
@@ -273,8 +273,8 @@ _DEFINE_EVENT1(OnKeyUp, win32::KeyboardEventArgs);
 _DEFINE_EVENT1(OnAspectRatioChange, float);
 
 // camera
-_DEFINE_EVENT1(OnCameraDirChange, Vec3);
-_DEFINE_EVENT1(OnCameraPosChange, Vec3);
+_DEFINE_EVENT1(OnCameraDirChange, Graphics::Vector3);
+_DEFINE_EVENT1(OnCameraPosChange, Graphics::Vector3);
 
 class IMouseEventHandler
 {

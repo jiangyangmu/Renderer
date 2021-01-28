@@ -20,11 +20,11 @@ namespace Graphics
 	enum class VertexFieldType
 	{
 		UNKNOWN,
-		POSITION,	// Vec3, occur 1 time
-		COLOR,		// Vec3, occur 0+ times
-		TEXCOORD,	// Vec2, occur 0+ times
-		NORMAL,		// Vec3, occur 0+ times
-		MATERIAL,	// Vec3, occur 0+ times
+		POSITION,	// Vector3, occur 1 time
+		COLOR,		// Vector3, occur 0+ times
+		TEXCOORD,	// Vector2, occur 0+ times
+		NORMAL,		// Vector3, occur 0+ times
+		MATERIAL,	// Vector3, occur 0+ times
 		SV_POSITION,
 	};
 

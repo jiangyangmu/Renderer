@@ -1,4 +1,5 @@
 #include "Resource.h"
+#include "_Math.h"
 
 #include "RenderWindow.h"
 #include "win32/Win32App.h"
@@ -114,23 +115,23 @@ namespace Graphics
 
 	struct ShaderContext
 	{
-		Matrix4x4 view;
-		Matrix4x4 proj;
+		Matrix44 view;
+		Matrix44 proj;
 	};
 
 	struct VS_DEFAULT_POS_RGB_IN
 	{
-		Vec3 posWld;
-		Vec3 color;
+		Vector3 posWld;
+		Vector3 color;
 	};
 	struct VS_DEFAULT_POS_RGB_OUT
 	{
-		Vec3 posNDC;
-		Vec3 color;
+		Vector3 posNDC;
+		Vector3 color;
 	};
 	struct PS_DEFAULT_POS_RGB_OUT
 	{
-		Vec3 color;
+		Vector3 color;
 	};
 
 	static inline void			_StoreIndex(Handle * h, const ResourceIndex & i)
@@ -717,13 +718,13 @@ namespace Graphics
 			vertexShader(pVSOut1, pVSIn1, pVSData);
 			vertexShader(pVSOut2, pVSIn2, pVSData);
 
-			const Vec3 & p0Cam = reinterpret_cast< Vec3 * >( pVSOut0 )[ 0 ];
-			const Vec3 & p1Cam = reinterpret_cast< Vec3 * >( pVSOut1 )[ 0 ];
-			const Vec3 & p2Cam = reinterpret_cast< Vec3 * >( pVSOut2 )[ 0 ];
+			const Vector3 & p0Cam = reinterpret_cast< Vector3 * >( pVSOut0 )[ 0 ];
+			const Vector3 & p1Cam = reinterpret_cast< Vector3 * >( pVSOut1 )[ 0 ];
+			const Vector3 & p2Cam = reinterpret_cast< Vector3 * >( pVSOut2 )[ 0 ];
 
-			const Vec3 & p0NDC = reinterpret_cast< Vec3 * >( pVSOut0 )[ 1 ];
-			const Vec3 & p1NDC = reinterpret_cast< Vec3 * >( pVSOut1 )[ 1 ];
-			const Vec3 & p2NDC = reinterpret_cast< Vec3 * >( pVSOut2 )[ 1 ];
+			const Vector3 & p0NDC = reinterpret_cast< Vector3 * >( pVSOut0 )[ 1 ];
+			const Vector3 & p1NDC = reinterpret_cast< Vector3 * >( pVSOut1 )[ 1 ];
+			const Vector3 & p2NDC = reinterpret_cast< Vector3 * >( pVSOut2 )[ 1 ];
 
 			if (p0Cam.z <= 0.0f || p1Cam.z <= 0.0f || p2Cam.z <= 0.0f)
 			{
@@ -738,13 +739,13 @@ namespace Graphics
 			float z1NDCInv = 1.0f / p1NDC.z;
 			float z2NDCInv = 1.0f / p2NDC.z;
 
-			Vec2 p0Scn = { ( p0NDC.x + 1.0f ) * 0.5f, ( 1.0f - p0NDC.y ) * 0.5f };
-			Vec2 p1Scn = { ( p1NDC.x + 1.0f ) * 0.5f, ( 1.0f - p1NDC.y ) * 0.5f };
-			Vec2 p2Scn = { ( p2NDC.x + 1.0f ) * 0.5f, ( 1.0f - p2NDC.y ) * 0.5f };
+			Vector2 p0Scn = { ( p0NDC.x + 1.0f ) * 0.5f, ( 1.0f - p0NDC.y ) * 0.5f };
+			Vector2 p1Scn = { ( p1NDC.x + 1.0f ) * 0.5f, ( 1.0f - p1NDC.y ) * 0.5f };
+			Vector2 p2Scn = { ( p2NDC.x + 1.0f ) * 0.5f, ( 1.0f - p2NDC.y ) * 0.5f };
 
-			Vec2 p0Ras = { p0Scn.x * width, p0Scn.y * height };
-			Vec2 p1Ras = { p1Scn.x * width, p1Scn.y * height };
-			Vec2 p2Ras = { p2Scn.x * width, p2Scn.y * height };
+			Vector2 p0Ras = { p0Scn.x * width, p0Scn.y * height };
+			Vector2 p1Ras = { p1Scn.x * width, p1Scn.y * height };
+			Vector2 p2Ras = { p2Scn.x * width, p2Scn.y * height };
 
 			Integer xRasMin = static_cast< Integer >( Min3(p0Ras.x, p1Ras.x, p2Ras.x) );
 			Integer xRasMax = static_cast< Integer >( Max3(p0Ras.x, p1Ras.x, p2Ras.x) );
@@ -774,7 +775,7 @@ namespace Graphics
 				for ( xPix = xRasMin, xPixF = xPixMinF; xPix < xRasMax; ++xPix, xPixF += 1.0f )
 				{
 					// Intersection test
-					Vec2 pixel = { xPixF, yPixF };
+					Vector2 pixel = { xPixF, yPixF };
 
 					float e0 = EdgeFunction(p1Ras, p2Ras, pixel);
 					float e1 = EdgeFunction(p2Ras, p0Ras, pixel);
@@ -839,23 +840,23 @@ namespace Graphics
 						switch ( field.type )
 						{
 							case VertexFieldType::SV_POSITION:
-								*static_cast< Vec3 * >( pPSField ) = { xPixF, yPixF, zNDC };
+								*static_cast< Vector3 * >( pPSField ) = { xPixF, yPixF, zNDC };
 								break;
 							case VertexFieldType::POSITION:
 							case VertexFieldType::COLOR:
 							case VertexFieldType::NORMAL:
 							case VertexFieldType::MATERIAL:
-								*static_cast< Vec3 * >( pPSField ) = WeightedAdd(*static_cast< Vec3 * >( pVSField0 ),
-														 *static_cast< Vec3 * >( pVSField1 ),
-														 *static_cast< Vec3 * >( pVSField2 ),
+								*static_cast< Vector3 * >( pPSField ) = WeightedAdd(*static_cast< Vector3 * >( pVSField0 ),
+														 *static_cast< Vector3 * >( pVSField1 ),
+														 *static_cast< Vector3 * >( pVSField2 ),
 														 w0,
 														 w1,
 														 w2);
 								break;
 							case VertexFieldType::TEXCOORD:
-								*static_cast< Vec2 * >( pPSField ) = WeightedAdd(*static_cast< Vec2 * >( pVSField0 ),
-														 *static_cast< Vec2 * >( pVSField1 ),
-														 *static_cast< Vec2 * >( pVSField2 ),
+								*static_cast< Vector2 * >( pPSField ) = WeightedAdd(*static_cast< Vector2 * >( pVSField0 ),
+														 *static_cast< Vector2 * >( pVSField1 ),
+														 *static_cast< Vector2 * >( pVSField2 ),
 														 w0,
 														 w1,
 														 w2);
@@ -867,9 +868,9 @@ namespace Graphics
 					}
 					pixelShader(pPSOut, pPSIn, pPSData);
 
-					RGB color = Vec3ToRGB(*reinterpret_cast<Vec3 *>(pPSOut));
-					ASSERT(color.r >= 0.0f && color.g >= 0.0f && color.b >= 0.0f);
-					ASSERT(color.r <= 1.0001f && color.g <= 1.0001f && color.b <= 1.0001f);
+					Vector3 color = (*reinterpret_cast<Vector3 *>(pPSOut));
+					ASSERT(color.x >= 0.0f && color.y >= 0.0f && color.z >= 0.0f);
+					ASSERT(color.x <= 1.0001f && color.y <= 1.0001f && color.z <= 1.0001f);
 
 					/*
 					// Draw depth
@@ -882,9 +883,9 @@ namespace Graphics
 
 					// Draw pixel
 					Byte * pixelData = ( Byte * ) frameBuffer.At(rect.top + yPix, rect.left + xPix);
-					pixelData[ 0 ] = static_cast< Byte >( color.b * 255.0f );
-					pixelData[ 1 ] = static_cast< Byte >( color.g * 255.0f );
-					pixelData[ 2 ] = static_cast< Byte >( color.r * 255.0f );
+					pixelData[ 0 ] = static_cast< Byte >( color.x * 255.0f );
+					pixelData[ 1 ] = static_cast< Byte >( color.y * 255.0f );
+					pixelData[ 2 ] = static_cast< Byte >( color.z * 255.0f );
 				}
 			}
 		}
@@ -1112,9 +1113,9 @@ namespace Graphics
 
 		const Byte * bgra	= ( Byte * ) texData.At(row, col);
 
-		pColor[ 0 ] = static_cast< float >( bgra[ 2 ] ) / 255.f;
+		pColor[ 0 ] = static_cast< float >( bgra[ 0 ] ) / 255.f;
 		pColor[ 1 ] = static_cast< float >( bgra[ 1 ] ) / 255.f;
-		pColor[ 2 ] = static_cast< float >( bgra[ 0 ] ) / 255.f;
+		pColor[ 2 ] = static_cast< float >( bgra[ 2 ] ) / 255.f;
 	}
 
 	Rect			RenderTarget::GetRect() const

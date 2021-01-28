@@ -34,7 +34,7 @@ namespace Graphics
 	class ROTriangle : public Renderable
 	{
 	public:
-		ROTriangle(Vec3 pos0, Vec3 rgb0, Vec3 pos1, Vec3 rgb1, Vec3 pos2, Vec3 rgb2);
+		ROTriangle(Vector3 pos0, Vector3 rgb0, Vector3 pos1, Vector3 rgb1, Vector3 pos2, Vector3 rgb2);
 
 		virtual			~ROTriangle();
 
@@ -46,8 +46,8 @@ namespace Graphics
 	private:
 		struct Vertex
 		{
-			Vec3 pos;
-			Vec3 rgb;
+			Vector3 pos;
+			Vector3 rgb;
 		};
 		Vertex			m_vertex[ 3 ];
 		VertexRange		m_vertexRange;
@@ -57,7 +57,7 @@ namespace Graphics
 	class ROTexRectangle : public Renderable
 	{
 	public:
-		ROTexRectangle(Vec3 center, float width, float height, float uMin = 0.0f, float uMax = 1.0f, float vMin = 0.0f, float vMax = 1.0f);
+		ROTexRectangle(Vector3 center, float width, float height, float uMin = 0.0f, float uMax = 1.0f, float vMin = 0.0f, float vMax = 1.0f);
 
 		virtual			~ROTexRectangle();
 
@@ -69,8 +69,8 @@ namespace Graphics
 	private:
 		struct Vertex
 		{
-			Vec3 pos;
-			Vec2 uv;
+			Vector3 pos;
+			Vector2 uv;
 		};
 		Vertex			m_vertex[ 3 * 2 ];
 		VertexRange		m_vertexRange;
@@ -80,7 +80,7 @@ namespace Graphics
 	class ROCube : public Renderable
 	{
 	public:
-		ROCube(Vec3 center, float size);
+		ROCube(Vector3 center, float size);
 
 		virtual			~ROCube();
 
@@ -92,8 +92,8 @@ namespace Graphics
 	private:
 		struct Vertex
 		{
-			Vec3 pos;
-			Vec2 uv;
+			Vector3 pos;
+			Vector2 uv;
 		};
 		Vertex			m_vertex[ 3 * 2 * 6 ];
 		VertexRange		m_vertexRange;
@@ -103,7 +103,7 @@ namespace Graphics
 	class ROBlinnPhongCube : public Renderable
 	{
 	public:
-		ROBlinnPhongCube(Vec3 center, float size);
+		ROBlinnPhongCube(Vector3 center, float size);
 		virtual			~ROBlinnPhongCube();
 
 		virtual void		Initialize(VertexBuffer & vertexBuffer) override;
@@ -114,8 +114,8 @@ namespace Graphics
 	private:
 		struct Vertex
 		{
-			Vec3 pos;
-			Vec3 norm;
+			Vector3 pos;
+			Vector3 norm;
 		};
 		Vertex			m_vertex[ 3 * 2 * 6 ];
 		VertexRange		m_vertexRange;

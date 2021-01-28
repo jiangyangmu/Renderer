@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Common">
-      <UniqueIdentifier>{89ab8fc8-b744-4570-843a-fcb01d31da85}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Win32">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
@@ -21,6 +18,9 @@
     <Filter Include="TestScene">
       <UniqueIdentifier>{8428fc64-54d5-451f-80d3-7b5c367664e3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Utility">
+      <UniqueIdentifier>{89ab8fc8-b744-4570-843a-fcb01d31da85}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\Renderer.h">
@@ -36,7 +36,7 @@
       <Filter>Win32</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Common.h">
-      <Filter>Common</Filter>
+      <Filter>Utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Scene.h">
       <Filter>Graphics</Filter>
@@ -57,10 +57,13 @@
       <Filter>TestScene</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Event.h">
-      <Filter>Common</Filter>
+      <Filter>Utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Unknown.h">
-      <Filter>Common</Filter>
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\_Math.h">
+      <Filter>Utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

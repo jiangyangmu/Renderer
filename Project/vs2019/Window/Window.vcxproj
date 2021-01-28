@@ -173,6 +173,7 @@
     <ClInclude Include="..\..\..\Source\Unknown.h" />
     <ClInclude Include="..\..\..\Source\VisualEffects.h" />
     <ClInclude Include="..\..\..\Source\win32\Win32App.h" />
+    <ClInclude Include="..\..\..\Source\_Math.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>

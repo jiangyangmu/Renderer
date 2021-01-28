@@ -65,7 +65,7 @@ static const float gUnitCubeNorms[] =
 
 namespace Graphics
 {
-	ROTriangle::ROTriangle(Vec3 pos0, Vec3 rgb0, Vec3 pos1, Vec3 rgb1, Vec3 pos2, Vec3 rgb2)
+	ROTriangle::ROTriangle(Vector3 pos0, Vector3 rgb0, Vector3 pos1, Vector3 rgb1, Vector3 pos2, Vector3 rgb2)
 		: m_vertex { {pos0, rgb0}, {pos1, rgb1}, {pos2, rgb2} }
 		, m_vertexRange()
 		, m_refVertexBuffer(nullptr)
@@ -103,7 +103,7 @@ namespace Graphics
 			vertexFormat[ 1 ].type == VertexFieldType::COLOR;
 	}
 
-	ROTexRectangle::ROTexRectangle(Vec3 center, float width, float height, float uMin, float uMax, float vMin, float vMax)
+	ROTexRectangle::ROTexRectangle(Vector3 center, float width, float height, float uMin, float uMax, float vMin, float vMax)
 		: m_vertexRange()
 		, m_refVertexBuffer(nullptr)
 	{
@@ -153,7 +153,7 @@ namespace Graphics
 			vertexFormat[ 1 ].type == VertexFieldType::TEXCOORD;
 	}
 
-	ROCube::ROCube(Vec3 center, float size)
+	ROCube::ROCube(Vector3 center, float size)
 		: m_vertexRange()
 		, m_refVertexBuffer(nullptr)
 	{
@@ -204,7 +204,7 @@ namespace Graphics
 			vertexFormat[ 1 ].type == VertexFieldType::TEXCOORD;
 	}
 
-	ROBlinnPhongCube::ROBlinnPhongCube(Vec3 center, float size)
+	ROBlinnPhongCube::ROBlinnPhongCube(Vector3 center, float size)
 		: m_vertexRange()
 		, m_refVertexBuffer(nullptr)
 	{

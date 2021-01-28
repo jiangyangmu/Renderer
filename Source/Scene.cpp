@@ -2,14 +2,14 @@
 
 namespace Graphics
 {
-	bool			Transform::GetInvertedMirroredMatrix(const Vec3 & posMirror, const Vec3 & normMirror, Matrix4x4 * pMirroredMatrix)
+	bool			Transform::GetInvertedMirroredMatrix(const Vector3 & posMirror, const Vector3 & normMirror, Matrix44 * pMirroredMatrix)
 	{
-		Vec3 dir = Vec3::Transform(Vec3::UnitZ(),
-					   Matrix4x4::RotationAxisLH(Vec3::UnitY(), ry) *
-					   Matrix4x4::RotationAxisLH(Vec3::UnitX(), rx) *
-					   Matrix4x4::RotationAxisLH(Vec3::UnitZ(), rz));
-		Vec3 dirInv = -dir;
-		Vec3 dirRef = Vec3::Normalize(dir - Vec3::Scale(normMirror, 2 * Vec3::Dot(normMirror, dir)));
+		Vector3 dir = V3Transform(V3UnitZ(),
+					  M44RotationAxisLH(V3UnitY(), ry) *
+					  M44RotationAxisLH(V3UnitX(), rx) *
+					  M44RotationAxisLH(V3UnitZ(), rz));
+		Vector3 dirInv = -dir;
+		Vector3 dirRef = V3Normalize(dir - V3Scale(normMirror, 2 * V3Dot(normMirror, dir)));
 
 		float lenInvDir = dirInv.Length();
 		float lenNorm = normMirror.Length();
@@ -17,25 +17,25 @@ namespace Graphics
 		ASSERT(0.9f < lenInvDir && lenInvDir < 1.1f);
 		ASSERT(0.9f < lenNorm && lenNorm < 1.1f);
 
-		Vec3 posIntersect;
-		if ( !ComputeRayPlaneIntersectionPoint(posMirror, normMirror, translation, dir, &posIntersect) )
+		Vector3 posIntersect;
+		if ( !IntersectRayPlane(posMirror, normMirror, translation, dir, &posIntersect) )
 		{
 			return false;
 		}
 
 		float fDist = ( posIntersect - translation ).Length();
-		Vec3 pos = posIntersect - Vec3::Scale(dirRef, fDist);
+		Vector3 pos = posIntersect - V3Scale(dirRef, fDist);
 
-		float fACos = acosf(Vec3::Dot(dirInv, normMirror) / ( lenInvDir * lenNorm ));
-		Vec3 axis = Vec3::CrossLH(dirInv, normMirror);
+		float fACos = acosf(V3Dot(dirInv, normMirror) / ( lenInvDir * lenNorm ));
+		Vector3 axis = V3CrossLH(dirInv, normMirror);
 
 		// TODO: mirror camera should only map the mirror part of near plane to texture.
 		*pMirroredMatrix =
-			Matrix4x4::Translation(-pos.x, -pos.y, -pos.z) *
-			Matrix4x4::RotationAxisLH(axis, PI - 2.0f * fACos) *
-			Matrix4x4::RotationAxisLH(Vec3::UnitY(), -ry) *
-			Matrix4x4::RotationAxisLH(Vec3::UnitX(), -rx) *
-			Matrix4x4::RotationAxisLH(Vec3::UnitZ(), -rz)
+			M44Translation(-pos.x, -pos.y, -pos.z) *
+			M44RotationAxisLH(axis, PI - 2.0f * fACos) *
+			M44RotationAxisLH(V3UnitY(), -ry) *
+			M44RotationAxisLH(V3UnitX(), -rx) *
+			M44RotationAxisLH(V3UnitZ(), -rz)
 			;
 
 		return true;
@@ -96,9 +96,9 @@ namespace Graphics
 					break;
 				case ConnectType::MINI_MAP_VIEW:
 					pSlave->transform.tx = pSourceTransform->tx;
-					pSlave->transform.ty = -5.0f;
+					pSlave->transform.ty = 5.0f;
 					pSlave->transform.tz = pSourceTransform->tz;
-					pSlave->transform.rx = DegreeToRadian(-90.0f);
+					pSlave->transform.rx = ConvertToRadians(90.0f);
 					pSlave->transform.ry = 0.0f;
 					pSlave->transform.rz = 0.0f;
 					break;
@@ -138,35 +138,35 @@ namespace Graphics
 	}
 	void			Controller::Update(double ms)
 	{
-		const Vec3 up	= { 0.0f, 1.0f, 0.0f };
-		const Vec3 fwd	= { 0.0f, 0.0f, 1.0f };
-		const Vec3 rt	= { 1.0f, 0.0f, 0.0f };
+		const Vector3 up	= { 0.0f, 1.0f, 0.0f };
+		const Vector3 fwd	= { 0.0f, 0.0f, 1.0f };
+		const Vector3 rt	= { 1.0f, 0.0f, 0.0f };
 
 		float hRotRad;
 		float vRotRad;
-		Vec3 forwardDir;
-		Vec3 rightDir;
+		Vector3 forwardDir;
+		Vector3 rightDir;
 
-		hRotRad		= DegreeToRadian(hRotDeg);
-		vRotRad		= DegreeToRadian(Bound(-80.0f, vRotDeg, 80.0f));
+		hRotRad		= ConvertToRadians(hRotDeg);
+		vRotRad		= ConvertToRadians(Bound(-80.0f, vRotDeg, 80.0f));
 
-		forwardDir	= Vec3::Transform(fwd, Matrix4x4::RotationAxisLH(up, hRotRad));
+		forwardDir	= V3Transform(fwd, M44RotationAxisLH(up, hRotRad));
 		forwardDir.y	= 0.0f;
-		forwardDir	= Vec3::Normalize(forwardDir);
+		forwardDir	= V3Normalize(forwardDir);
 
-		rightDir	= Vec3::CrossLH(up, forwardDir);
+		rightDir	= V3CrossLH(up, forwardDir);
 		rightDir.y	= 0.0f;
-		rightDir	= Vec3::Normalize(rightDir);
+		rightDir	= V3Normalize(rightDir);
 
 		float duration	= static_cast< float >( ms / 1000.0f );
 
-		Vec3 delta =
+		Vector3 delta =
 		{
 			( forwardFactor * forwardDir.x + rightFactor * rightDir.x ),
 			( upFactor * up.y ),
 			( forwardFactor * forwardDir.z + rightFactor * rightDir.z ),
 		};
-		delta		= Vec3::Scale(Vec3::Normalize(delta), duration * speed);
+		delta		= V3Scale(V3Normalize(delta), duration * speed);
 		
 		if ( forwardFactor != 0.0f || rightFactor != 0.0f || upFactor != 0.0f )
 		{

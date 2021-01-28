@@ -1,5 +1,6 @@
 #pragma once
 
+#include "_Math.h"
 #include "Resource.h"
 
 namespace Graphics
@@ -15,8 +16,8 @@ namespace Graphics
 		virtual void		Initialize(Device & device) = 0;
 		virtual void		Apply(RenderContext & context) = 0;
 
-		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) = 0;
-		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) = 0;
+		virtual void		CBSetViewTransform(const Matrix44 & viewTransform) = 0;
+		virtual void		CBSetProjTransform(const Matrix44 & projTransform) = 0;
 
 		VS			GetVS()
 		{
@@ -61,32 +62,32 @@ namespace Graphics
 		virtual void		Initialize(Device & device) override;
 		virtual void		Apply(RenderContext & context) override;
 
-		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) override;
-		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) override;
+		virtual void		CBSetViewTransform(const Matrix44 & viewTransform) override;
+		virtual void		CBSetProjTransform(const Matrix44 & projTransform) override;
 
 	private:
 		struct VS_IN
 		{
-			Vec3 posWld;
-			Vec3 color;
+			Vector3 posWld;
+			Vector3 color;
 		};
 		struct VS_OUT
 		{
-			Vec3 posCam;
-			Vec3 posNDC;
-			Vec3 color;
+			Vector3 posCam;
+			Vector3 posNDC;
+			Vector3 color;
 		};
 		struct VS_DATA
 		{
-			Matrix4x4 view;
-			Matrix4x4 proj;
+			Matrix44 view;
+			Matrix44 proj;
 		};
 
 		typedef VS_OUT PS_IN;
 		typedef VS_DATA PS_DATA;
 		struct PS_OUT
 		{
-			Vec3 color;
+			Vector3 color;
 		};
 
 		static void VSImpl(void * pVSOut, const void * pVSIn, const void * pContext);
@@ -108,25 +109,25 @@ namespace Graphics
 		virtual void		Initialize(Device & device) override;
 		virtual void		Apply(RenderContext & context) override;
 
-		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) override;
-		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) override;
+		virtual void		CBSetViewTransform(const Matrix44 & viewTransform) override;
+		virtual void		CBSetProjTransform(const Matrix44 & projTransform) override;
 
 	private:
 		struct VS_IN
 		{
-			Vec3 posWld;
-			Vec2 uv;
+			Vector3 posWld;
+			Vector2 uv;
 		};
 		struct VS_OUT
 		{
-			Vec3 posCam;
-			Vec3 posNDC;
-			Vec2 uv;
+			Vector3 posCam;
+			Vector3 posNDC;
+			Vector2 uv;
 		};
 		struct VS_DATA
 		{
-			Matrix4x4 view;
-			Matrix4x4 proj;
+			Matrix44 view;
+			Matrix44 proj;
 			Texture2D tex;
 		};
 
@@ -134,7 +135,7 @@ namespace Graphics
 		typedef VS_DATA PS_DATA;
 		struct PS_OUT
 		{
-			Vec3 color;
+			Vector3 color;
 		};
 
 		static void VSImpl(void * pVSOut, const void * pVSIn, const void * pContext);
@@ -156,17 +157,17 @@ namespace Graphics
 	public:
 		struct MaterialParams
 		{
-			Vec4 rgbiAmbient;
-			Vec4 rgbiDiffuse;
-			Vec4 rgbiSpecular;
+			Vector4 rgbiAmbient;
+			Vector4 rgbiDiffuse;
+			Vector4 rgbiSpecular;
 		};
 		struct LightParams
 		{
-			Vec3 posWld;
-			Vec3 attenuation;
-			Vec4 rgbiAmbient;
-			Vec4 rgbiDiffuse;
-			Vec4 rgbiSpecular;
+			Vector3 posWld;
+			Vector3 attenuation;
+			Vector4 rgbiAmbient;
+			Vector4 rgbiDiffuse;
+			Vector4 rgbiSpecular;
 		};
 
 	public:
@@ -175,28 +176,28 @@ namespace Graphics
 		virtual void		Initialize(Device & device) override;
 		virtual void		Apply(RenderContext & context) override;
 
-		virtual void		CBSetViewTransform(const Matrix4x4 & viewTransform) override;
-		virtual void		CBSetProjTransform(const Matrix4x4 & projTransform) override;
-		void			CBSetCameraPosition(const Vec3 & cameraPosWld);
+		virtual void		CBSetViewTransform(const Matrix44 & viewTransform) override;
+		virtual void		CBSetProjTransform(const Matrix44 & projTransform) override;
+		void			CBSetCameraPosition(const Vector3 & cameraPosWld);
 
 	private:
 		struct VS_IN
 		{
-			Vec3 posWld;
-			Vec3 normWld;
+			Vector3 posWld;
+			Vector3 normWld;
 		};
 		struct VS_OUT
 		{
-			Vec3 posCam;
-			Vec3 posNDC;
-			Vec3 posWld;
-			Vec3 normWld;
+			Vector3 posCam;
+			Vector3 posNDC;
+			Vector3 posWld;
+			Vector3 normWld;
 		};
 		struct VS_DATA
 		{
-			Matrix4x4	view;
-			Matrix4x4	proj;
-			Vec3		cameraPosWld;
+			Matrix44	view;
+			Matrix44	proj;
+			Vector3		cameraPosWld;
 			MaterialParams	material;
 			LightParams	light;
 		};
@@ -205,12 +206,12 @@ namespace Graphics
 		typedef VS_DATA PS_DATA;
 		struct PS_OUT
 		{
-			Vec3 color;
+			Vector3 color;
 		};
 
 		static void VSImpl(void * pVSOut, const void * pVSIn, const void * pContext);
 		static void PSImpl(void * pPSOut, const void * pPSIn, const void * pContext);
-		static void ComputeBlinnPhong(Vec3 * rgb, Vec3 posWld, Vec3 eyeWld, Vec3 normWld, const MaterialParams & material, const LightParams & light);
+		static void ComputeBlinnPhong(Vector3 * rgb, Vector3 posWld, Vector3 eyeWld, Vector3 normWld, const MaterialParams & material, const LightParams & light);
 
 	private:
 		VertexShader	m_vertexShader;

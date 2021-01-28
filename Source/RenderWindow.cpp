@@ -116,7 +116,7 @@ namespace Graphics
 				static TCHAR strBuf[ 1024 ];
 				if ( ( totalMS += std::max(m_minFrameCostMS, m_lastFrameCostMS) ) > 500.0 ) // update once every 0.5 second
 				{
-					auto pos = Vec3::Zero();//static_cast< SceneRenderable * >( m_refRender->GetRenderable(0).get() )->GetSceneState().camera->GetPos();
+					auto pos = V3Zero();//static_cast< SceneRenderable * >( m_refRender->GetRenderable(0).get() )->GetSceneState().camera->GetPos();
 					float xDbg = 0.0f; //m_refRender->GetRenderContext().GetConstants().DebugPixel[ 0 ];
 					float yDbg = 0.0f; //m_refRender->GetRenderContext().GetConstants().DebugPixel[ 1 ];
 

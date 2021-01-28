@@ -13,10 +13,10 @@ namespace Graphics
 		struct TextureCube : Entity
 		{
 			Ptr<Renderable>		m_renderable;
-			Vec3			m_center;
+			Vector3			m_center;
 			float			m_size;
 
-			TextureCube(Vec3 center, float size)
+			TextureCube(Vector3 center, float size)
 				: m_center(center)
 				, m_size(size)
 			{
@@ -49,7 +49,7 @@ namespace Graphics
 				{
 					for ( Integer col = -size / 2; col <= size / 2; ++col )
 					{
-						m_cubes.emplace_back(Vec3 { ( float ) row, -1.0f, ( float ) col }, 1.0f);
+						m_cubes.emplace_back(Vector3 { ( float ) row, -1.0f, ( float ) col }, 1.0f);
 					}
 				}
 			}

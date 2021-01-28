@@ -13,10 +13,10 @@ namespace Graphics
 		struct Mirror : Entity
 		{
 			Ptr<Renderable>		m_renderable;
-			Vec3			m_center;
+			Vector3			m_center;
 			float			m_size;
 
-			Mirror(Vec3 center, float size)
+			Mirror(Vector3 center, float size)
 				: m_center(center)
 				, m_size(size)
 			{
@@ -41,10 +41,10 @@ namespace Graphics
 		struct TextureCube : Entity
 		{
 			Ptr<Renderable>		m_renderable;
-			Vec3			m_center;
+			Vector3			m_center;
 			float			m_size;
 
-			TextureCube(Vec3 center, float size)
+			TextureCube(Vector3 center, float size)
 				: m_center(center)
 				, m_size(size)
 			{
@@ -77,7 +77,7 @@ namespace Graphics
 				{
 					for ( Integer col = -size / 2; col <= size / 2; ++col )
 					{
-						m_cubes.emplace_back(Vec3 { ( float ) row, -0.5f, ( float ) col }, 1.0f);
+						m_cubes.emplace_back(Vector3 { ( float ) row, -0.5f, ( float ) col }, 1.0f);
 					}
 				}
 			}
@@ -157,7 +157,7 @@ namespace Graphics
 			m_controller		= NewObject<Controller>();
 			
 			m_terrain		= NewObject<Terrain>(5);
-			m_mirror		= NewObject<Mirror>(Vec3{0.0f, 2.5f, 2.5f}, 5.0f);
+			m_mirror		= NewObject<Mirror>(Vector3{0.0f, 2.5f, 2.5f}, 5.0f);
 
 			m_controller->ConnectTo(m_camera, ConnectType::SAME);
 			m_controller->pos = {5.0f, 3.0f, -5.0f};
@@ -183,9 +183,9 @@ namespace Graphics
 
 			m_camera->SetAspectRatio(1.0f);
 
-			Matrix4x4 viewTransform;
+			Matrix44 viewTransform;
 			if ( m_camera->transform.GetInvertedMirroredMatrix(m_mirror->transform.translation + m_mirror->m_center,
-									   -Vec3::UnitZ(),
+									   -V3UnitZ(),
 									   &viewTransform) )
 			{
 				m_scMirror.ResetBackBuffer(100);

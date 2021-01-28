@@ -16,7 +16,7 @@ namespace Graphics
 		m_vsOut			= device.CreateVertexFormat(VertexFieldType::POSITION, VertexFieldType::SV_POSITION, VertexFieldType::COLOR);
 		m_psIn			= m_vsOut;
 		m_psOut			= device.CreateVertexFormat(VertexFieldType::COLOR);
-		
+
 		ASSERT(m_vsIn.Size() == sizeof(VS_IN));
 		ASSERT(m_vsOut.Size() == sizeof(VS_OUT));
 		ASSERT(m_psIn.Size() == sizeof(PS_IN));
@@ -33,11 +33,11 @@ namespace Graphics
 		context.VSSetConstantBuffer(&m_vsData);
 		context.PSSetConstantBuffer(&m_psData);
 	}
-	void		RgbEffect::CBSetViewTransform(const Matrix4x4 & viewTransform)
+	void		RgbEffect::CBSetViewTransform(const Matrix44 & viewTransform)
 	{
 		m_vsData.view = m_psData.view = viewTransform;
 	}
-	void		RgbEffect::CBSetProjTransform(const Matrix4x4 & projTransform)
+	void		RgbEffect::CBSetProjTransform(const Matrix44 & projTransform)
 	{
 		m_vsData.proj = m_psData.proj = projTransform;
 	}
@@ -47,8 +47,8 @@ namespace Graphics
 		const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
 		VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
 
-		out.posCam		= Vec3::Transform(in.posWld, context.view);
-		out.posNDC		= Vec3::Transform(out.posCam, context.proj);
+		out.posCam		= V3Transform(in.posWld, context.view);
+		out.posNDC		= V3Transform(out.posCam, context.proj);
 		out.color		= in.color;
 	}
 	void		RgbEffect::PSImpl(void * pPSOut, const void * pPSIn, const void * pContext)
@@ -87,7 +87,7 @@ namespace Graphics
 		m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
 		m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
 
-		if (m_texFilePath != NULL)
+		if ( m_texFilePath != NULL )
 		{
 			LONG nWidth;
 			LONG nHeight;
@@ -111,11 +111,11 @@ namespace Graphics
 		context.VSSetConstantBuffer(&m_vsData);
 		context.PSSetConstantBuffer(&m_psData);
 	}
-	void		TextureEffect::CBSetViewTransform(const Matrix4x4 & viewTransform)
+	void		TextureEffect::CBSetViewTransform(const Matrix44 & viewTransform)
 	{
 		m_vsData.view = m_psData.view = viewTransform;
 	}
-	void		TextureEffect::CBSetProjTransform(const Matrix4x4 & projTransform)
+	void		TextureEffect::CBSetProjTransform(const Matrix44 & projTransform)
 	{
 		m_vsData.proj = m_psData.proj = projTransform;
 	}
@@ -125,8 +125,8 @@ namespace Graphics
 		const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
 		VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
 
-		out.posCam		= Vec3::Transform(in.posWld, context.view);
-		out.posNDC		= Vec3::Transform(out.posCam, context.proj);
+		out.posCam		= V3Transform(in.posWld, context.view);
+		out.posNDC		= V3Transform(out.posCam, context.proj);
 		out.uv			= in.uv;
 	}
 	void		TextureEffect::PSImpl(void * pPSOut, const void * pPSIn, const void * pContext)
@@ -168,15 +168,15 @@ namespace Graphics
 		context.VSSetConstantBuffer(&m_vsData);
 		context.PSSetConstantBuffer(&m_psData);
 	}
-	void		BlinnPhongEffect::CBSetViewTransform(const Matrix4x4 & viewTransform)
+	void		BlinnPhongEffect::CBSetViewTransform(const Matrix44 & viewTransform)
 	{
 		m_vsData.view = m_psData.view = viewTransform;
 	}
-	void		BlinnPhongEffect::CBSetProjTransform(const Matrix4x4 & projTransform)
+	void		BlinnPhongEffect::CBSetProjTransform(const Matrix44 & projTransform)
 	{
 		m_vsData.proj = m_psData.proj = projTransform;
 	}
-	void		BlinnPhongEffect::CBSetCameraPosition(const Vec3 & cameraPosWld)
+	void		BlinnPhongEffect::CBSetCameraPosition(const Vector3 & cameraPosWld)
 	{
 		m_vsData.cameraPosWld = m_psData.cameraPosWld = cameraPosWld;
 	}
@@ -186,8 +186,8 @@ namespace Graphics
 		const VS_DATA & ctx	= *static_cast< const VS_DATA * >( pContext );
 		VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
 
-		out.posCam		= Vec3::Transform(in.posWld, ctx.view);
-		out.posNDC		= Vec3::Transform(out.posCam, ctx.proj);
+		out.posCam		= V3Transform(in.posWld, ctx.view);
+		out.posNDC		= V3Transform(out.posCam, ctx.proj);
 		out.posWld		= in.posWld;
 		out.normWld		= in.normWld;
 	}
@@ -199,9 +199,9 @@ namespace Graphics
 
 		ComputeBlinnPhong(&out.color, in.posWld, ctx.cameraPosWld, in.normWld, ctx.material, ctx.light);
 	}
-	void		BlinnPhongEffect::ComputeBlinnPhong(Vec3 * rgb, Vec3 posWld, Vec3 eyeWld, Vec3 normWld, const MaterialParams & material, const LightParams & light)
+	void		BlinnPhongEffect::ComputeBlinnPhong(Vector3 * rgb, Vector3 posWld, Vector3 eyeWld, Vector3 normWld, const MaterialParams & material, const LightParams & light)
 	{
-		Vec3 lightDir;
+		Vector3 lightDir;
 		float lightDistance;
 		{
 			lightDir	= posWld - light.posWld;
@@ -210,49 +210,49 @@ namespace Graphics
 		}
 
 		// Ambient Color = C_material
-		Vec3 ambient;
+		Vector3 ambient;
 		{
-			ambient	= Vec3::ElementwiseProduct(material.rgbiAmbient.xyz, light.rgbiAmbient.xyz);
+			ambient	= V3ElementwiseProduct(material.rgbiAmbient.xyz, light.rgbiAmbient.xyz);
 		}
 
 		// Diffuse Color = max( cos(-L, norm), 0) * ElementwiseProduce(C_light, C_material)
-		Vec3 diffuse;
+		Vector3 diffuse;
 		{
-			float decayFactor = Max(0.0f, Vec3::Dot(-lightDir, normWld));
+			float decayFactor = Max(0.0f, V3Dot(-lightDir, normWld));
 
 			diffuse =
-				Vec3::Scale(
-					Vec3::ElementwiseProduct(light.rgbiDiffuse.xyz, material.rgbiDiffuse.xyz),
+				V3Scale(
+					V3ElementwiseProduct(light.rgbiDiffuse.xyz, material.rgbiDiffuse.xyz),
 					decayFactor);
 		}
 
 		// Specular Color = max( cos(L', to-eye), 0) * ElementwiseProduce(C_light, C_material)
-		Vec3 specular;
+		Vector3 specular;
 		{
-			Vec3 reflectLightDir = Vec3::Normalize(lightDir - Vec3::Scale(normWld, 2 * Vec3::Dot(normWld, lightDir)));
-			Vec3 toEyeDir = Vec3::Normalize(eyeWld - posWld);
+			Vector3 reflectLightDir = V3Normalize(lightDir - V3Scale(normWld, 2 * V3Dot(normWld, lightDir)));
+			Vector3 toEyeDir = V3Normalize(eyeWld - posWld);
 
-			float decayFactor = Max(0.0f, Vec3::Dot(reflectLightDir, toEyeDir));
+			float decayFactor = Max(0.0f, V3Dot(reflectLightDir, toEyeDir));
 			decayFactor = decayFactor * decayFactor;
 			decayFactor = decayFactor * decayFactor;
 			decayFactor = decayFactor * decayFactor;
 
 			specular =
-				Vec3::Scale(
-					Vec3::ElementwiseProduct(light.rgbiSpecular.xyz, material.rgbiSpecular.xyz),
+				V3Scale(
+					V3ElementwiseProduct(light.rgbiSpecular.xyz, material.rgbiSpecular.xyz),
 					decayFactor);
 		}
 
-		float atteFactor = 1.0f / Vec3::Dot(light.attenuation, Vec3 { 1.0f, lightDistance, lightDistance * lightDistance });
+		float atteFactor = 1.0f / V3Dot(light.attenuation, Vector3 { 1.0f, lightDistance, lightDistance * lightDistance });
 
-		Vec3 color = WeightedAdd(ambient,
-					 diffuse,
-					 specular,
-					 material.rgbiAmbient.w,
-					 material.rgbiDiffuse.w * atteFactor,
-					 material.rgbiSpecular.w * atteFactor);
+		Vector3 color = WeightedAdd(ambient,
+					    diffuse,
+					    specular,
+					    material.rgbiAmbient.w,
+					    material.rgbiDiffuse.w * atteFactor,
+					    material.rgbiSpecular.w * atteFactor);
 
-		*rgb = Vec3
+		*rgb = Vector3
 		{
 			Bound(0.0f, color.x, 1.0f),
 			Bound(0.0f, color.y, 1.0f),

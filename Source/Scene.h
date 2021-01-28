@@ -18,11 +18,12 @@ namespace Graphics
 			, lastChild(nullptr)
 			, rightSibling(nullptr)
 			, parent(nullptr)
-		{}
+		{
+		}
 
 		void			AddChild(TreeNode * child)
 		{
-			if (!firstChild)
+			if ( !firstChild )
 			{
 				firstChild = lastChild = child;
 			}
@@ -33,7 +34,7 @@ namespace Graphics
 				lastChild = child;
 			}
 		}
-		
+
 		static TreeNode *	Parent(TreeNode * pNode)
 		{
 			return pNode->parent;
@@ -54,7 +55,7 @@ namespace Graphics
 	{
 		union
 		{
-			Vec3 translation;
+			Vector3 translation;
 			struct
 			{
 				float tx, ty, tz;
@@ -62,8 +63,8 @@ namespace Graphics
 		};
 		union
 		{
-			Vec3 rotation;
-			struct 
+			Vector3 rotation;
+			struct
 			{
 				float rx, ry, rz;
 			};
@@ -71,25 +72,25 @@ namespace Graphics
 
 		static Transform	Identity()
 		{
-			Transform zeros = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+			Transform zeros = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 			return zeros;
 		}
 
-		Matrix4x4		GetMatrix()
+		Matrix44		GetMatrix()
 		{
-			return	Matrix4x4::Translation(tx, ty, tz) *
-				Matrix4x4::RotationAxisLH(Vec3::UnitY(), ry) *
-				Matrix4x4::RotationAxisLH(Vec3::UnitX(), rx) *
-				Matrix4x4::RotationAxisLH(Vec3::UnitZ(), rz);
+			return  M44RotationAxisLH(V3UnitZ(), rz) *
+				M44RotationAxisLH(V3UnitX(), rx) *
+				M44RotationAxisLH(V3UnitY(), ry) *
+				M44Translation(tx, ty, tz);
 		}
-		Matrix4x4		GetInvertedMatrix()
+		Matrix44		GetInvertedMatrix()
 		{
-			return	Matrix4x4::Translation(-tx, -ty, -tz) *
-				Matrix4x4::RotationAxisLH(Vec3::UnitY(), -ry) *
-				Matrix4x4::RotationAxisLH(Vec3::UnitX(), -rx) *
-				Matrix4x4::RotationAxisLH(Vec3::UnitZ(), -rz);
+			return	M44Translation(-tx, -ty, -tz) *
+				M44RotationAxisLH(V3UnitY(), -ry) *
+				M44RotationAxisLH(V3UnitX(), -rx) *
+				M44RotationAxisLH(V3UnitZ(), -rz);
 		}
-		bool			GetInvertedMirroredMatrix(const Vec3 & posMirror, const Vec3 & normMirror, Matrix4x4 * pMirroredMatrix);
+		bool			GetInvertedMirroredMatrix(const Vector3 & posMirror, const Vector3 & normMirror, Matrix44 * pMirroredMatrix);
 	};
 
 	enum class ConnectType
@@ -128,11 +129,15 @@ namespace Graphics
 		{
 			ASSERT(pSlave->pConnectMaster == nullptr);
 			pSlave->pConnectMaster = this;
-			vConnectSlaves.emplace_back(Connection{ type, pSlave });
+			vConnectSlaves.emplace_back(Connection { type, pSlave });
 		}
 
-		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) {}
-		virtual void		Update(double ms) {}
+		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer)
+		{
+		}
+		virtual void		Update(double ms)
+		{
+		}
 
 		static void		InitializeAll(SceneObject * pRootObject, RenderContext & context, VertexBuffer & vertexBuffer);
 		static void		UpdateAll(SceneObject * pRootObject, double ms);
@@ -141,7 +146,9 @@ namespace Graphics
 
 	struct Entity : SceneObject
 	{
-		virtual void		Draw(RenderContext & context) {}
+		virtual void		Draw(RenderContext & context)
+		{
+		}
 
 		static void		DrawAll(Entity * pEntity, RenderContext & context);
 	};
@@ -166,7 +173,7 @@ namespace Graphics
 		float			upFactor = 0.0f;
 		float			vFactor = 0.0f;
 		float			hFactor = 0.0f;
-		Vec3			pos = {0.0f, 0.0f, 0.0f};
+		Vector3			pos = { 0.0f, 0.0f, 0.0f };
 
 		virtual void		Initialize(RenderContext & context, VertexBuffer & vertexBuffer) override;
 		virtual void		Update(double ms) override;
@@ -201,16 +208,16 @@ namespace Graphics
 		{
 			m_aspectRatio		= value;
 		}
-		Matrix4x4		GetViewTransform()
+		Matrix44		GetViewTransform()
 		{
 			return transform.GetInvertedMatrix();
 		}
-		Matrix4x4		GetProjTransform()
+		Matrix44		GetProjTransform()
 		{
-			return Matrix4x4::PerspectiveFovLH(DegreeToRadian(90),
-							   m_aspectRatio,
-							   0.1f,
-							   1000.0f);
+			return M44PerspectiveFovLH(ConvertToRadians(90),
+						   m_aspectRatio,
+						   0.1f,
+						   1000.0f);
 		}
 
 	private:
