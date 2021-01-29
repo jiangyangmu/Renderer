@@ -25,6 +25,9 @@ namespace Graphics
 	constexpr f32		C_1DIVPI	= 0.318309886183790671538;
 	constexpr f32		C_1DIV2PI	= 0.318309886183790671538 * 0.5;
 	constexpr f32		C_F32_EPSILON	= FLT_EPSILON;
+	constexpr u32		C_F32_INFINITY	= 0x7F800000;
+	constexpr u32		C_F32_QNAN	= 0x7CF00000;
+	constexpr u32		C_F32_SIGN_BIT	= 0x80000000;
 
 	inline bool		IsNearZero(f32 value)
 	{
@@ -271,36 +274,98 @@ namespace Graphics
 		Vector3 v = { 0.0f, 0.0f, 1.0f };
 		return v;
 	}
-	inline f32		V3Length(Vector3 v)
+
+	inline Vector3		V3Replicate(f32 fValue)
 	{
-		return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+		return { fValue, fValue, fValue };
 	}
-	inline f32		V3ReciprocalLength(Vector3 v)
+	inline Vector3		V3ReplicatePtr(const f32 * pfValue)
 	{
-		return 1.0f / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+		return { *pfValue, *pfValue, *pfValue };
 	}
-	inline Vector3		V3Scale(Vector3 v, f32 fScale)
+	inline Vector3		V3Set(f32 x, f32 y, f32 z)
 	{
-		return { v.x * fScale, v.y * fScale, v.z * fScale };
+		return { x, y, z };
 	}
-	inline Vector3		V3Normalize(Vector3 v)
-	{
-		return V3Scale(v, V3ReciprocalLength(v));
+	inline Vector3		V3SetBinaryConstant(u32 c0, u32 c1, u32 c2, u32 c3);
+	inline Vector3		V3SplatConstant(i32 iConstant, u32 iDivExp);
+	inline Vector3		V3SplatConstantInt(i32 iConstant);
+	inline Vector3		V3SplatEpsilon()
+	{ 
+		return { C_F32_EPSILON, C_F32_EPSILON, C_F32_EPSILON };
 	}
-	inline f32		V3Dot(Vector3 v0, Vector3 v1)
+	inline Vector3		V3SplatInfinity()
 	{
-		return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
-	}
-	inline Vector3		V3CrossLH(Vector3 v0, Vector3 v1)
-	{
-		return
+		union __fu32
 		{
-			v0.y * v1.z - v0.z * v1.y,
-			v0.z * v1.x - v0.x * v1.z,
-			v0.x * v1.y - v0.y * v1.x
-		};
+			f32 f; u32 u;
+		} value;
+		value.u = C_F32_INFINITY;
+		return { value.f, value.f, value.f};
 	}
-	inline Vector3		V3ElementwiseProduct(Vector3 v0, Vector3 v1)
+	inline Vector3		V3SplatQNaN()
+	{
+		union __fu32
+		{
+			f32 f; u32 u;
+		} value;
+		value.u = C_F32_QNAN;
+		return { value.f, value.f, value.f };
+	}
+	inline Vector3		V3SplatSignMask()
+	{
+		union __fu32
+		{
+			f32 f; u32 u;
+		} value;
+		value.u = C_F32_SIGN_BIT;
+		return { value.f, value.f, value.f };
+	}
+	inline Vector3		V3TrueInt()
+	{
+		union __fu32
+		{
+			f32 f; u32 u;
+		} value;
+		value.u = 0xFFFFFFFF;
+		return { value.f, value.f, value.f };
+	}
+
+	// Vector3 - Bitwise
+	inline Vector3		V3AndCInt(Vector3 v0, Vector3 v1);
+	inline Vector3		V3AndInt(Vector3 v0, Vector3 v1);
+	inline Vector3		V3NorInt(Vector3 v0, Vector3 v1);
+	inline Vector3		V3OrInt(Vector3 v0, Vector3 v1);
+	inline Vector3		V3XorInt(Vector3 v0, Vector3 v1);
+
+	// Vector3 - Componentwise
+	inline Vector3		V3SplatX(Vector3 v);
+	inline Vector3		V3SplatY(Vector3 v);
+	inline Vector3		V3SplatZ(Vector3 v);
+	inline Vector3		V3Swizzle(Vector3 v, u32 iComponent0, u32 iComponent1, u32 iComponent2);
+	inline Vector3		V3Permute(Vector3 v0, Vector3 v1, u32 iPermuteX, u32 iPermuteY, u32 iPermuteZ);
+	inline Vector3		V3RotateLeft(Vector3 v, u32 iCount);
+	inline Vector3		V3RotateRight(Vector3 v, u32 iCount);
+	inline Vector3		V3ShiftLeft(Vector3 v0, Vector3 v1, u32 iCount);
+	inline Vector3		V3Insert(Vector3 vD, Vector3 vS, u32 iVSLeftRotateElements, u32 iVector0, u32 iVector1, u32 iVector2);
+	inline Vector3		V3Select(Vector3 v0, Vector3 v1, Vector3 vControl);
+	inline Vector3		V3SelectControl(u32 iVector0, u32 iVector1, u32 iVector2);
+
+	// Vector3 - Arithmetic
+	inline Vector3		V3Abs(Vector3 v);
+	inline Vector3		V3Add(Vector3 v0, Vector3 v1);
+	inline Vector3		V3AddAngles(Vector3 v0, Vector3 v1);
+	inline Vector3		V3Ceiling(Vector3 v);
+	inline Vector3		V3Clamp(Vector3 v, Vector3 vMin, Vector3 vMax);
+	inline Vector3		V3Divide(Vector3 v0, Vector3 v1);
+	inline Vector3		V3Floor(Vector3 v);
+	inline Vector3		V3IsInfinite(Vector3 v);
+	inline Vector3		V3IsNaN(Vector3 v);
+	inline Vector3		V3Max(Vector3 v0, Vector3 v1);
+	inline Vector3		V3Min(Vector3 v0, Vector3 v1);
+	inline Vector3		V3Mod(Vector3 v0, Vector3 v1);
+	inline Vector3		V3ModAngles(Vector3 vAngles);
+	inline Vector3		V3Multiply(Vector3 v0, Vector3 v1)
 	{
 		return
 		{
@@ -309,6 +374,73 @@ namespace Graphics
 			v0.z * v1.z
 		};
 	}
+	inline Vector3		V3MultiplyAdd(Vector3 v0, Vector3 v1, Vector3 v2);
+	inline Vector3		V3Negate(Vector3 v);
+	inline Vector3		V3NegativeMultiplySubtract(Vector3 v0, Vector3 v1, Vector3 v2);
+	inline Vector3		V3Pow(Vector3 v0, Vector3 v1);
+	inline Vector3		V3Reciprocal(Vector3 v);
+	inline Vector3		V3ReciprocalEst(Vector3 v);
+	inline Vector3		V3ReciprocalSqrt(Vector3 v);
+	inline Vector3		V3ReciprocalSqrtEst(Vector3 v);
+	inline Vector3		V3Round(Vector3 v);
+	inline Vector3		V3Saturate(Vector3 v);
+	inline Vector3		V3Scale(Vector3 v, f32 fScale)
+	{
+		return { v.x * fScale, v.y * fScale, v.z * fScale };
+	}
+	inline Vector3		V3Sqrt(Vector3 v);
+	inline Vector3		V3SqrtEst(Vector3 v);
+	inline Vector3		V3Subtract(Vector3 v0, Vector3 v1);
+	inline Vector3		V3SubtractAngles(Vector3 v0, Vector3 v1);
+	inline Vector3		V3Sum(Vector3 v);
+	inline Vector3		V3Truncate(Vector3 v);
+
+	// Vector3 - Transcendental
+	inline Vector3		V3Sin(Vector3 v);
+	inline Vector3		V3SinEst(Vector3 v);
+	inline Vector3		V3SinH(Vector3 v);
+	inline Vector3		V3Cos(Vector3 v);
+	inline Vector3		V3CosEst(Vector3 v);
+	inline Vector3		V3CosH(Vector3 v);
+	inline void		V3SinCos(Vector3 * pSin, Vector3 * pCos, Vector3 v);
+	inline void		V3SinCosEst(Vector3 * pSin, Vector3 * pCos, Vector3 v);
+	inline Vector3		V3Tan(Vector3 v);
+	inline Vector3		V3TanEst(Vector3 v);
+	inline Vector3		V3TanH(Vector3 v);
+	inline Vector3		V3ACos(Vector3 v);
+	inline Vector3		V3ACosEst(Vector3 v);
+	inline Vector3		V3ASin(Vector3 v);
+	inline Vector3		V3ASinEst(Vector3 v);
+	inline Vector3		V3ATan(Vector3 v);
+	inline Vector3		V3ATanEst(Vector3 v);
+	inline Vector3		V3ATan2(Vector3 vY, Vector3 vX);
+	inline Vector3		V3ATan2Est(Vector3 vY, Vector3 vX);
+	inline Vector3		V3Exp2(Vector3 v);
+	inline Vector3		V3ExpE(Vector3 v);
+	inline Vector3		V3Log2(Vector3 v);
+	inline Vector3		V3LogE(Vector3 v);
+
+	// Vector3 - Comparison
+	inline bool		V3HasInfinite(Vector3 v);
+	inline bool		V3HasNaN(Vector3 v);
+	inline bool		V3Equal(Vector3 v0, Vector3 v1);
+	inline bool		V3NearEqual(Vector3 v0, Vector3 v1);
+	inline bool		V3NotEqual(Vector3 v0, Vector3 v1);
+	inline bool		V3Greater(Vector3 v0, Vector3 v1);
+	inline bool		V3GreaterOrEqual(Vector3 v0, Vector3 v1);
+	inline bool		V3Less(Vector3 v0, Vector3 v1);
+	inline bool		V3LessOrEqual(Vector3 v0, Vector3 v1);
+
+	// Vector3 - Geometric
+	inline f32		V3AngleBetweenNormals(Vector3 v0, Vector3 v1);
+	inline f32		V3AngleBetweenNormalsEst(Vector3 v0, Vector3 v1);
+	inline f32		V3AngleBetweenVectors(Vector3 v0, Vector3 v1);
+	inline Vector3		V3BaryCentric(Vector3 vP0, Vector3 vP1, Vector3 vP2, f32 f, f32 g);
+	inline Vector3		V3BaryCentricV(Vector3 vP0, Vector3 vP1, Vector3 vP2, Vector3 vF, Vector3 vG);
+	inline Vector3		V3CatmullRom(Vector3 vP0, Vector3 vP1, Vector3 vP2, Vector3 vP3, f32 t);
+	inline Vector3		V3CatmullRomV(Vector3 vP0, Vector3 vP1, Vector3 vP2, Vector3 vP3, Vector3 vT);
+	inline Vector3		V3Hermite(Vector3 vP0, Vector3 vTangent0, Vector3 vP1, Vector3 vTangent1, f32 t);
+	inline Vector3		V3HermiteV(Vector3 vP0, Vector3 vTangent0, Vector3 vP1, Vector3 vTangent1, Vector3 vT);
 	inline Vector3		V3Lerp(Vector3 v0, Vector3 v1, f32 t)
 	{
 		return
@@ -327,9 +459,53 @@ namespace Graphics
 			( 1.0f - vT.z ) * v0.z + vT.z * v1.z,
 		};
 	}
-	inline Vector3		V3Reflect(Vector3 incident, Vector3 normal);
-	inline Vector3		V3Refract(Vector3 incident, Vector3 normal, f32 refractionIndex);
-	inline f32		V3AngleBetweenVectors(Vector3 v0, Vector3 v1);
+
+	inline Vector3		V3ClampLength(Vector3 v, f32 fLengthMin, f32 fLengthMax);
+	inline Vector3		V3ClampLengthV(Vector3 v, Vector3 vLengthMin, Vector3 vLengthMax);
+	inline bool		V3InBounds(Vector3 v, Vector3 vBounds);
+	inline f32		V3Length(Vector3 v)
+	{
+		return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	}
+	inline f32		V3LengthEst(Vector3 v);
+	inline f32		V3LengthSq(Vector3 v);
+	inline f32		V3ReciprocalLength(Vector3 v)
+	{
+		return 1.0f / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	}
+	inline f32		V3ReciprocalLengthEst(Vector3 v);
+	inline Vector3		V3Normalize(Vector3 v)
+	{
+		return V3Scale(v, V3ReciprocalLength(v));
+	}
+	inline Vector3		V3NormalizeEst(Vector3 v);
+	inline f32		V3LinePointDistance(Vector3 vL0, Vector3 vL1, Vector3 vPoint);
+
+	inline void		V3ComponentsFromNormal(Vector3 * pParallel, Vector3 * pPerpendicular, Vector3 v, Vector3 normal);
+	inline Vector3		V3CrossLH(Vector3 v0, Vector3 v1)
+	{
+		return
+		{
+			v0.y * v1.z - v0.z * v1.y,
+			v0.z * v1.x - v0.x * v1.z,
+			v0.x * v1.y - v0.y * v1.x
+		};
+	}
+	inline f32		V3Dot(Vector3 v0, Vector3 v1)
+	{
+		return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
+	}
+	inline Vector3		V3Orthogonal(Vector3 v);
+	inline Vector3		V3Reflect(Vector3 vIncident, Vector3 vNormal);
+	inline Vector3		V3Refract(Vector3 vIncident, Vector3 vNormal, f32 fRefractionIndex);
+	inline Vector3		V3RefractV(Vector3 vIncident, Vector3 vNormal, Vector3 vRefractionIndex);
+
+	inline Vector3		V3Rotate(Vector3 v, Vector4 vRotationQuaternion);
+	inline Vector3		V3InverseRotate(Vector3 v, Vector4 vRotationQuaternion);
+	inline Vector3		V3Project(Vector3 v, f32 fViewportX, f32 fViewportY, f32 fViewportWidth, f32 fViewportHeight, f32 fViewportMinZ, f32 fViewportMaxZ, const Matrix44 & mProjection, const Matrix44 & mView, const Matrix44 & mWorld);
+	inline Vector3		V3Unproject(Vector3 v, f32 fViewportX, f32 fViewportY, f32 fViewportWidth, f32 fViewportHeight, f32 fViewportMinZ, f32 fViewportMaxZ, const Matrix44 & mProjection, const Matrix44 & mView, const Matrix44 & mWorld);
+	inline Vector3 *	V3ProjectStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, f32 fViewportX, f32 fViewportY, f32 fViewportWidth, f32 fViewportHeight, f32 fViewportMinZ, f32 fViewportMaxZ, const Matrix44 & mProjection, const Matrix44 & mView, const Matrix44 & mWorld);
+	inline Vector3 *	V3UnprojectStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, f32 fViewportX, f32 fViewportY, f32 fViewportWidth, f32 fViewportHeight, f32 fViewportMinZ, f32 fViewportMaxZ, const Matrix44 & mProjection, const Matrix44 & mView, const Matrix44 & mWorld);
 	inline Vector3		V3Transform(Vector3 v, const Matrix44 & m)
 	{
 		f32 w = m._14 * v.x + m._24 * v.y + m._34 * v.z + m._44;
@@ -341,6 +517,11 @@ namespace Graphics
 			( m._13 * v.x + m._23 * v.y + m._33 * v.z + m._43 ) * wReciprocal,
 		};
 	}
+	inline Vector3		V3TransformNormal(Vector3 v, const Matrix44 & m);
+	inline Vector3		V3TransformCoord(Vector3 v, const Matrix44 & m);
+	inline Vector3 *	V3TransformStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, const Matrix44 & m);
+	inline Vector3 *	V3TransformNormalStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, const Matrix44 & m);
+	inline Vector3 *	V3TransformCoordStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, const Matrix44 & m);
 
 	// Matrix44
 	inline Matrix44		M44Zero()
@@ -366,7 +547,7 @@ namespace Graphics
 		return m;
 	}
 
-	// Matrix44 - Test
+	// Matrix44 - Comparison
 	inline bool		M44IsIdentity(const Matrix44 & m)
 	{
 		Matrix44 m1 = M44Identity();

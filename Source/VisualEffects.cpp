@@ -212,7 +212,7 @@ namespace Graphics
 		// Ambient Color = C_material
 		Vector3 ambient;
 		{
-			ambient	= V3ElementwiseProduct(material.rgbiAmbient.xyz, light.rgbiAmbient.xyz);
+			ambient	= V3Multiply(material.rgbiAmbient.xyz, light.rgbiAmbient.xyz);
 		}
 
 		// Diffuse Color = max( cos(-L, norm), 0) * ElementwiseProduce(C_light, C_material)
@@ -222,7 +222,7 @@ namespace Graphics
 
 			diffuse =
 				V3Scale(
-					V3ElementwiseProduct(light.rgbiDiffuse.xyz, material.rgbiDiffuse.xyz),
+					V3Multiply(light.rgbiDiffuse.xyz, material.rgbiDiffuse.xyz),
 					decayFactor);
 		}
 
@@ -239,7 +239,7 @@ namespace Graphics
 
 			specular =
 				V3Scale(
-					V3ElementwiseProduct(light.rgbiSpecular.xyz, material.rgbiSpecular.xyz),
+					V3Multiply(light.rgbiSpecular.xyz, material.rgbiSpecular.xyz),
 					decayFactor);
 		}
 
