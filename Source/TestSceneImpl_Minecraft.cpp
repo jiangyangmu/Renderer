@@ -101,7 +101,7 @@ namespace Graphics
 
 			// Setup display
 
-			Rect rect		= context.GetOutputTarget().GetRect();
+			Rect rect		= context.GetRenderTarget().GetRect();
 
 			// Setup scene
 

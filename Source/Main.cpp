@@ -26,7 +26,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		Graphics::SceneRenderer renderer(renderWindow);
 		renderWindow.SetRenderer(renderer);
 
-		Ptr<Graphics::IScene> scene = Graphics::CreateTestScene_Effects();
+		Ptr<Graphics::IScene> scene = Graphics::CreateTestScene_Mirror();
 		renderer.SwitchScene(*scene);
 
 		ret = app.Run(renderWindow);

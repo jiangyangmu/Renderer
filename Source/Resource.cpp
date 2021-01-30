@@ -92,6 +92,9 @@ namespace Graphics
 		ShaderIndex		iPixelShader;
 		const void *		pVertexShaderData;
 		const void *		pPixelShaderData;
+
+		DepthStencilState	stDepthStencil;
+		bool			bFlipHorizontal;
 	};
 
 	struct Device_Impl
@@ -446,13 +449,13 @@ namespace Graphics
 	{
 		b.SetAll(value);
 	}
-	static inline void			_ResetDepthBuffer(Buffer & b)
+	static inline void			_ResetDepthBuffer(Buffer & b, float value = 1.0f)
 	{
-		b.SetAllAs<float>(1.0f);
+		b.SetAllAs<float>(value);
 	}
-	static inline void			_ResetStencilBuffer(Buffer & b)
+	static inline void			_ResetStencilBuffer(Buffer & b, Byte value = 0xff)
 	{
-		b.SetAll(1);
+		b.SetAll(value);
 		/*
 		Integer xMid = stencilBuffer.Width() / 2;
 		Integer yMid = stencilBuffer.Height() / 2;
@@ -591,6 +594,13 @@ namespace Graphics
 		context->pVertexShaderData	= nullptr;
 		context->pPixelShaderData	= nullptr;
 
+		context->stDepthStencil.depthEnable		= true;
+		context->stDepthStencil.stencilEnable		= true;
+		context->stDepthStencil.depthWriteMask		= DepthWriteMask::ALL;
+		context->stDepthStencil.stencilWriteMask	= 0;
+		
+		context->bFlipHorizontal	= false;
+
 		return Ptr<RenderContext_Impl>(context);
 	}
 
@@ -667,6 +677,13 @@ namespace Graphics
 		Buffer & frameBuffer = _GetBackBuffer(context);
 		Buffer & depthBuffer = _GetDepthBuffer(context);
 		Buffer & stencilBuffer = _GetStencilBuffer(context);
+
+		bool depthEnable = context.stDepthStencil.depthEnable;
+		bool stencilEnable = context.stDepthStencil.stencilEnable;
+		bool depthWrite = (context.stDepthStencil.depthWriteMask == DepthWriteMask::ALL);
+		Byte stencilWriteMask = context.stDepthStencil.stencilWriteMask;
+
+		bool flipHorizontal = context.bFlipHorizontal;
 
 		Rect rect = _GetOutputTargetRect(context);
 		
@@ -802,20 +819,24 @@ namespace Graphics
 						continue;
 					}
 
+					Integer xPix2 = flipHorizontal ? ( width - xPix - 1 ) : xPix;
+
 					// Depth test
-					float * depth = static_cast< float * >( depthBuffer.At(rect.top + yPix, rect.left + xPix) );
-					if ( *depth <= zNDC )
+					float * depth = static_cast< float * >( depthBuffer.At(rect.top + yPix, rect.left + xPix2) );
+					if ( depthEnable && *depth <= zNDC )
 					{
 						continue;
 					}
-					*depth = zNDC;
 
 					// Stencil test
-					bool visible = *static_cast< Byte * >( stencilBuffer.At(rect.top + yPix, rect.left + xPix) );
-					if ( !visible )
+					Byte * stencil = static_cast< Byte * >( stencilBuffer.At(rect.top + yPix, rect.left + xPix2) );
+					if ( stencilEnable && *stencil == 0 )
 					{
 						continue;
 					}
+
+					if (depthWrite) *depth = zNDC;
+					if (stencilWriteMask) *stencil |= stencilWriteMask;
 
 					// Vertex properties
 					float zCam = 1.0f / ( z0CamInv * bary0 + z1CamInv * bary1 + z2CamInv * bary2 );
@@ -872,8 +893,8 @@ namespace Graphics
 					ASSERT(color.x >= 0.0f && color.y >= 0.0f && color.z >= 0.0f);
 					ASSERT(color.x <= 1.0001f && color.y <= 1.0001f && color.z <= 1.0001f);
 
-					/*
 					// Draw depth
+					/*
 					float fDepth = Bound(0.0f, *depth, 1.0f);
 					fDepth *= fDepth;
 					fDepth *= fDepth;
@@ -881,8 +902,14 @@ namespace Graphics
 					color = {fDepth, fDepth, fDepth};
 					*/
 
+					// Draw stencil
+					/*
+					float fStencil = (*stencil ? 1.0f : 0.0f);
+					color = {fStencil, fStencil, fStencil};
+					*/
+
 					// Draw pixel
-					Byte * pixelData = ( Byte * ) frameBuffer.At(rect.top + yPix, rect.left + xPix);
+					Byte * pixelData = ( Byte * ) frameBuffer.At(rect.top + yPix, rect.left + xPix2);
 					pixelData[ 0 ] = static_cast< Byte >( color.x * 255.0f );
 					pixelData[ 1 ] = static_cast< Byte >( color.y * 255.0f );
 					pixelData[ 2 ] = static_cast< Byte >( color.z * 255.0f );
@@ -1078,7 +1105,7 @@ namespace Graphics
 		return _GetVertexBuffer(*this).Data();
 	}
 
-	void			DepthStencilBuffer::Reset()
+	void			DepthStencilBuffer::ResetDepthBuffer(float value)
 	{
 		Device_Impl *		pDevice;
 		BufferIndex		iDepthStencilDesc;
@@ -1087,9 +1114,22 @@ namespace Graphics
 		_LoadIndex(*this, &iDepthStencilDesc);
 
 		pDevice			= static_cast< Device_Impl * >( pParam );
-		pDepthStencilDesc	= &pDevice->depthStencilDescs[iDepthStencilDesc.value];
+		pDepthStencilDesc	= &pDevice->depthStencilDescs[ iDepthStencilDesc.value ];
 
-		_ResetDepthBuffer(pDevice->buffers[ pDepthStencilDesc->iDepthBuffer.value ]);
+		_ResetDepthBuffer(pDevice->buffers[ pDepthStencilDesc->iDepthBuffer.value ], value);
+	}
+	void			DepthStencilBuffer::ResetStencilBuffer(Byte value)
+	{
+		Device_Impl *		pDevice;
+		BufferIndex		iDepthStencilDesc;
+		DepthStencil_Desc *	pDepthStencilDesc;
+
+		_LoadIndex(*this, &iDepthStencilDesc);
+
+		pDevice			= static_cast< Device_Impl * >( pParam );
+		pDepthStencilDesc	= &pDevice->depthStencilDescs[ iDepthStencilDesc.value ];
+
+		_ResetStencilBuffer(pDevice->buffers[ pDepthStencilDesc->iStencilBuffer.value ], value);
 	}
 
 	void			Texture2D::Sample(float u, float v, float * pColor) const
@@ -1174,11 +1214,29 @@ namespace Graphics
 	{
 		_LoadIndex(dsb,	&static_cast< RenderContext_Impl * >( pImpl )->iDepthStencilDesc);
 	}
-	void			RenderContext::SetOutputTarget(RenderTarget target)
+	void			RenderContext::SetRenderTarget(RenderTarget target)
 	{
 		_LoadIndex(target, &static_cast< RenderContext_Impl * >( pImpl )->iRenderTargetDesc);
 	}
-	RenderTarget		RenderContext::GetOutputTarget()
+	void			RenderContext::SetDepthStencilState(DepthStencilState st)
+	{
+		static_cast< RenderContext_Impl * >( pImpl )->stDepthStencil = st;
+	}
+	void			RenderContext::RSSetFlipHorizontal(bool bFlipHorizontal)
+	{
+		static_cast< RenderContext_Impl * >( pImpl )->bFlipHorizontal = bFlipHorizontal;
+	}
+
+	DepthStencilBuffer	RenderContext::GetDepthStencilBuffer()
+	{
+		Device_Impl * pDevice = static_cast< Device_Impl * >( pParam );
+
+		DepthStencilBuffer dsb;
+		_StoreIndex(&dsb, static_cast< RenderContext_Impl * >( pImpl )->iDepthStencilDesc);
+		dsb.pParam = pDevice;
+		return dsb;
+	}
+	RenderTarget		RenderContext::GetRenderTarget()
 	{
 		Device_Impl * pDevice = static_cast< Device_Impl * >( pParam );
 
@@ -1231,7 +1289,7 @@ namespace Graphics
 		handle.pParam = self;
 		return handle;
 	}
-	SwapChain		Device::CreateSwapChain(RenderTarget renderTarget, bool enableAutoResize)
+	SwapChain		Device::CreateSwapChain(RenderTarget renderTarget)
 	{
 		Device_Impl * self = static_cast<Device_Impl *>(pImpl);
 
@@ -1247,7 +1305,7 @@ namespace Graphics
 		handle.pParam = self;
 		return handle;
 	}
-	DepthStencilBuffer	Device::CreateDepthStencilBuffer(Integer width, Integer height, bool enableAutoResize)
+	DepthStencilBuffer	Device::CreateDepthStencilBuffer(Integer width, Integer height)
 	{
 		Device_Impl * self = static_cast<Device_Impl *>(pImpl);
 

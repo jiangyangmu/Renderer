@@ -122,12 +122,12 @@ namespace Graphics
 
 			// Setup display
 
-			Rect rect		= context.GetOutputTarget().GetRect();
+			Rect rect		= context.GetRenderTarget().GetRect();
 			Rect leftRect		= Rect { 0, rect.right / 2, 0, rect.bottom };
 			Rect rightRect		= Rect { rect.right / 2, rect.right, 0, rect.bottom };
 
-			m_rdtgLeftRect		= device.CreateRenderTarget(context.GetOutputTarget(), leftRect);
-			m_rdtgRightRect		= device.CreateRenderTarget(context.GetOutputTarget(), rightRect);
+			m_rdtgLeftRect		= device.CreateRenderTarget(context.GetRenderTarget(), leftRect);
+			m_rdtgRightRect		= device.CreateRenderTarget(context.GetRenderTarget(), rightRect);
 
 			// Setup scene
 
@@ -186,7 +186,7 @@ namespace Graphics
 				RenderTarget * target = targets[ iView ];
 				Camera * camera = cameras[ iView ];
 
-				m_context->SetOutputTarget(*target);
+				m_context->SetRenderTarget(*target);
 
 				for ( Integer i = 0; i < 3; ++i )
 				{

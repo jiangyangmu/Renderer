@@ -93,10 +93,25 @@ namespace Graphics
 		void *		FrameBuffer();
 	};
 
+	enum class DepthWriteMask
+	{
+		ALL,
+		ZERO,
+	};
+
+	struct DepthStencilState
+	{
+		bool		depthEnable;
+		bool		stencilEnable;
+		DepthWriteMask	depthWriteMask;
+		Byte		stencilWriteMask;
+	};
+
 	struct DepthStencilBuffer : public Handle
 	{
 	public:
-		void		Reset();
+		void		ResetDepthBuffer(float value = 1.0f);
+		void		ResetStencilBuffer(Byte value);
 	};
 
 	// ---------------------------------------------------------------
@@ -161,11 +176,14 @@ namespace Graphics
 		void			VSSetConstantBuffer(const void * pBuffer);
 		void			PSSetConstantBuffer(const void * pBuffer);
 		// textures
-		// states
 		void			SetDepthStencilBuffer(DepthStencilBuffer dsb);
-		void			SetOutputTarget(RenderTarget target);
+		void			SetRenderTarget(RenderTarget target);
 
-		RenderTarget		GetOutputTarget();
+		void			SetDepthStencilState(DepthStencilState st);
+		void			RSSetFlipHorizontal(bool bFlipHorizontal);
+
+		DepthStencilBuffer	GetDepthStencilBuffer();
+		RenderTarget		GetRenderTarget();
 
 		void			Draw(VertexBuffer vb, Integer nOffset, Integer nCount);
 		// void			DrawIndexed(VertexBuffer vb, IndexBuffer ib, Integer nOffset, Integer nCount);
@@ -181,8 +199,8 @@ namespace Graphics
 		static Device		Default();
 
 		RenderContext		CreateRenderContext();
-		SwapChain		CreateSwapChain(RenderTarget renderTarget, bool enableAutoResize = true);
-		DepthStencilBuffer	CreateDepthStencilBuffer(Integer width, Integer height, bool enableAutoResize = true);
+		SwapChain		CreateSwapChain(RenderTarget renderTarget);
+		DepthStencilBuffer	CreateDepthStencilBuffer(Integer width, Integer height);
 		RenderTarget		CreateRenderTarget(IUnknown * pUnknown, const Rect & rect);
 		RenderTarget		CreateRenderTarget(Texture2D texture, const Rect & rect);
 		RenderTarget		CreateRenderTarget(RenderTarget renderTarget, const Rect & rectSub);

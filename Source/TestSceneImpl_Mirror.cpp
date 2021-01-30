@@ -119,45 +119,47 @@ namespace Graphics
 		{
 			m_device		= &device;
 			m_ctxScreen		= &context;
+			m_depthStencilBuffer	= context.GetDepthStencilBuffer();
 
 			// Setup terrain resources
 
-			m_efGrass.reset(new TextureEffect(L"Resources/grass.bmp"));
-			m_efGrass->Initialize(device);
+			m_efObject.reset(new TextureEffect(L"Resources/grid.bmp"));
+			m_efObject->Initialize(device);
 
 			// Setup mirror resources
 
-			m_ctxMirror		= m_device->CreateRenderContext();
-			m_texMirror		= m_device->CreateTexture2D(256, 256, 3, 4, 0, nullptr);
-			m_rtMirror		= m_device->CreateRenderTarget(m_texMirror, Rect { 0, 256, 0, 256 });
-			m_scMirror		= m_device->CreateSwapChain(m_rtMirror);
-			m_dsbMirror		= m_device->CreateDepthStencilBuffer(256, 256);
-
-			m_ctxMirror.SetSwapChain(m_scMirror);
-			m_ctxMirror.SetDepthStencilBuffer(m_dsbMirror);
-			m_ctxMirror.SetOutputTarget(m_rtMirror);
-			
-			m_efMirror.reset(new TextureEffect(m_texMirror));
+			m_efMirror.reset(new TextureEffect(L"Resources/grey.bmp"));
 			m_efMirror->Initialize(device);
 
 			// Setup shared resources
 
-			// ASSERT(m_efGrass->GetVSInputFormat() == m_efMirror->GetVSInputFormat());
-			m_vbTexture		= m_device->CreateVertexBuffer(m_efGrass->GetVSInputFormat());
+			// ASSERT(m_efObject->GetVSInputFormat() == m_efMirror->GetVSInputFormat());
+			m_vbTexture		= m_device->CreateVertexBuffer(m_efObject->GetVSInputFormat());
 
 			// Setup display
 
-			Rect rect		= context.GetOutputTarget().GetRect();
+			Rect rect		= context.GetRenderTarget().GetRect();
+			Rect leftRect		= Rect { 0, rect.right / 2, 0, rect.bottom };
+			Rect rightRect		= Rect { rect.right / 2, rect.right, 0, rect.bottom };
+
+			m_rdtgScreen		= context.GetRenderTarget();
+			m_rdtgLeft		= device.CreateRenderTarget(context.GetRenderTarget(), leftRect);
+			m_rdtgRight		= device.CreateRenderTarget(context.GetRenderTarget(), rightRect);
+
 			m_fScreenAspectRatio	= static_cast< float >( rect.right - rect.left ) / ( rect.bottom - rect.top );
+			m_fLeftAspectRatio	= static_cast< float >( leftRect.right - leftRect.left ) / ( leftRect.bottom - leftRect.top );
+			m_fRightAspectRatio	= static_cast< float >( rightRect.right - rightRect.left ) / ( rightRect.bottom - rightRect.top );
 
 			// Setup scene
 
 			m_root			= NewObject<Root>();
 			m_camera		= NewObject<Camera>();
 			m_controller		= NewObject<Controller>();
-			
+
 			m_terrain		= NewObject<Terrain>(5);
-			m_mirror		= NewObject<Mirror>(Vector3{0.0f, 2.5f, 2.5f}, 5.0f);
+			m_mirror		= NewObject<Mirror>(Vector3 { 0.0f, 0.0f, 5.0f }, 10.0f);
+			
+			m_camera->SetAspectRatio(m_fScreenAspectRatio);
 
 			m_controller->ConnectTo(m_camera, ConnectType::SAME);
 			m_controller->pos = {5.0f, 3.0f, -5.0f};
@@ -179,40 +181,48 @@ namespace Graphics
 		}
 		virtual void			OnDraw() override
 		{
-			// Draw mirror texture
+			DepthStencilState dssDefault = { true, true, DepthWriteMask::ALL, 0 };
+			DepthStencilState dssWriteStencil = { true, false, DepthWriteMask::ZERO, 0xff };
 
-			m_camera->SetAspectRatio(1.0f);
+			// 1. reset stencil to 1
+			m_depthStencilBuffer.ResetStencilBuffer(1);
+			m_ctxScreen->SetDepthStencilState(dssDefault);
 
-			Matrix44 viewTransform;
-			if ( m_camera->transform.GetInvertedMirroredMatrix(m_mirror->transform.translation + m_mirror->m_center,
-									   -V3UnitZ(),
-									   &viewTransform) )
-			{
-				m_scMirror.ResetBackBuffer(100);
-				m_dsbMirror.Reset();
-				m_efGrass->CBSetViewTransform(viewTransform);
-				m_efGrass->CBSetProjTransform(m_camera->GetProjTransform());
-				m_efGrass->Apply(m_ctxMirror);
-				m_camera->ObserveEntity(m_terrain);
-				m_camera->DrawObservedEntity(m_ctxMirror);
-				m_scMirror.Swap();
-			}
-
-			// Draw terrain and mirror
-
-			m_camera->SetAspectRatio(m_fScreenAspectRatio);
-
-			m_efGrass->CBSetViewTransform(m_camera->GetViewTransform());
-			m_efGrass->CBSetProjTransform(m_camera->GetProjTransform());
-			m_efGrass->Apply(*m_ctxScreen);
+			// 2. main cam - draw object
+			m_ctxScreen->RSSetFlipHorizontal(false);
+			m_efObject->CBSetViewTransform(m_camera->GetViewTransform());
+			m_efObject->CBSetProjTransform(m_camera->GetProjTransform());
+			m_efObject->Apply(*m_ctxScreen);
 			m_camera->ObserveEntity(m_terrain);
 			m_camera->DrawObservedEntity(*m_ctxScreen);
-			
+
+			// 3. reset stencil to 0, enable stencil write, disable depth write
+			m_depthStencilBuffer.ResetStencilBuffer(0);
+			m_ctxScreen->SetDepthStencilState(dssWriteStencil);
+
+			// 4. draw mirror to stencil
 			m_efMirror->CBSetViewTransform(m_camera->GetViewTransform());
 			m_efMirror->CBSetProjTransform(m_camera->GetProjTransform());
 			m_efMirror->Apply(*m_ctxScreen);
 			m_camera->ObserveEntity(m_mirror);
 			m_camera->DrawObservedEntity(*m_ctxScreen);
+
+			// 5. disable stencil write, enable depth write
+			m_ctxScreen->SetDepthStencilState(dssDefault);
+
+			// 6. mirror cam - draw object
+			m_ctxScreen->RSSetFlipHorizontal(true);
+			Matrix44 viewTransform;
+			if ( m_camera->transform.GetInvertedMirroredMatrix(m_mirror->transform.translation + m_mirror->m_center,
+									   -V3UnitZ(),
+									   &viewTransform) )
+			{
+				m_efObject->CBSetViewTransform(viewTransform);
+				m_efObject->CBSetProjTransform(m_camera->GetProjTransform());
+				m_efObject->Apply(*m_ctxScreen);
+				m_camera->ObserveEntity(m_terrain);
+				m_camera->DrawObservedEntity(*m_ctxScreen);
+			}
 		}
 
 	private:
@@ -226,7 +236,15 @@ namespace Graphics
 
 		Device *			m_device;
 		RenderContext *			m_ctxScreen;
+		DepthStencilBuffer		m_depthStencilBuffer;
+
+		RenderTarget			m_rdtgScreen;
+		RenderTarget			m_rdtgLeft;
+		RenderTarget			m_rdtgRight;
+
 		float				m_fScreenAspectRatio;
+		float				m_fLeftAspectRatio;
+		float				m_fRightAspectRatio;
 
 		// Scene structure
 		std::vector<Ptr<SceneObject>>	m_sceneObjects;
@@ -240,15 +258,10 @@ namespace Graphics
 		VertexBuffer			m_vbTexture;
 
 		// Terrain resources
-		Ptr<TextureEffect>		m_efGrass;
+		Ptr<TextureEffect>		m_efObject;
 
 		// Mirror resources
 		Ptr<TextureEffect>		m_efMirror;
-		RenderContext			m_ctxMirror;
-		SwapChain			m_scMirror;
-		DepthStencilBuffer		m_dsbMirror;
-		RenderTarget			m_rtMirror;
-		Texture2D			m_texMirror;
 	};
 
 

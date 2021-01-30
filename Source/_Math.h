@@ -12,6 +12,8 @@ namespace Graphics
 	// --------------------------------------------------------------------------
 
 	typedef uint8_t		byte;
+	typedef int8_t		i8;
+	typedef uint8_t		u8;
 	typedef int32_t		i32;
 	typedef uint32_t	u32;
 	typedef float		f32;
@@ -20,10 +22,10 @@ namespace Graphics
 	// Constants & Routines
 	// --------------------------------------------------------------------------
 
-	constexpr f32		C_PI		= 3.14159265358979323846;
-	constexpr f32		C_2PI		= 3.14159265358979323846 * 2.0;
-	constexpr f32		C_1DIVPI	= 0.318309886183790671538;
-	constexpr f32		C_1DIV2PI	= 0.318309886183790671538 * 0.5;
+	constexpr f32		C_PI		= ( f32 ) 3.14159265358979323846;
+	constexpr f32		C_2PI		= ( f32 ) 3.14159265358979323846 * 2.0;
+	constexpr f32		C_1DIVPI	= ( f32 ) 0.318309886183790671538;
+	constexpr f32		C_1DIV2PI	= ( f32 ) 0.318309886183790671538 * 0.5;
 	constexpr f32		C_F32_EPSILON	= FLT_EPSILON;
 	constexpr u32		C_F32_INFINITY	= 0x7F800000;
 	constexpr u32		C_F32_QNAN	= 0x7CF00000;

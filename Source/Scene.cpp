@@ -11,12 +11,6 @@ namespace Graphics
 		Vector3 dirInv = -dir;
 		Vector3 dirRef = V3Normalize(dir - V3Scale(normMirror, 2 * V3Dot(normMirror, dir)));
 
-		float lenInvDir = dirInv.Length();
-		float lenNorm = normMirror.Length();
-
-		ASSERT(0.9f < lenInvDir && lenInvDir < 1.1f);
-		ASSERT(0.9f < lenNorm && lenNorm < 1.1f);
-
 		Vector3 posIntersect;
 		if ( !IntersectRayPlane(posMirror, normMirror, translation, dir, &posIntersect) )
 		{
@@ -26,16 +20,11 @@ namespace Graphics
 		float fDist = ( posIntersect - translation ).Length();
 		Vector3 pos = posIntersect - V3Scale(dirRef, fDist);
 
-		float fACos = acosf(V3Dot(dirInv, normMirror) / ( lenInvDir * lenNorm ));
-		Vector3 axis = V3CrossLH(dirInv, normMirror);
-
-		// TODO: mirror camera should only map the mirror part of near plane to texture.
 		*pMirroredMatrix =
 			M44Translation(-pos.x, -pos.y, -pos.z) *
-			M44RotationAxisLH(axis, PI - 2.0f * fACos) *
-			M44RotationAxisLH(V3UnitY(), -ry) *
+			M44RotationAxisLH(V3UnitY(), ry - C_PI) *
 			M44RotationAxisLH(V3UnitX(), -rx) *
-			M44RotationAxisLH(V3UnitZ(), -rz)
+			M44RotationAxisLH(V3UnitZ(), rz)
 			;
 
 		return true;
@@ -64,7 +53,6 @@ namespace Graphics
 		SceneObject * pMaster;
 		SceneObject * pSlave;
 		Transform * pPassTransform;
-		float posY;
 
 		ASSERT(pRootObject);
 
@@ -130,7 +118,7 @@ namespace Graphics
 		RenderWindow * pWindow;
 
 		ENSURE_TRUE(
-			static_cast< IUnknown && >( context.GetOutputTarget() ).QueryInterface(&pWindow));
+			static_cast< IUnknown && >( context.GetRenderTarget() ).QueryInterface(&pWindow));
 
 		_BIND_EVENT(OnMouseMove, *pWindow, *this);
 		_BIND_EVENT(OnKeyDown, *pWindow, *this);
@@ -255,7 +243,7 @@ namespace Graphics
 
 		m_context.SetSwapChain(m_swapChain);
 		m_context.SetDepthStencilBuffer(m_depthStencilBuffer);
-		m_context.SetOutputTarget(target);
+		m_context.SetRenderTarget(target);
 	}
 	void			SceneRenderer::SwitchScene(IScene & scene)
 	{
@@ -274,7 +262,7 @@ namespace Graphics
 	{
 		m_swapChain.ResetBackBuffer();
 		//m_swapChain.ResetBackBuffer(Rect { m_window.GetWidth() / 2, m_window.GetWidth(), 0, m_window.GetHeight() }, 50);
-		m_depthStencilBuffer.Reset();
+		m_depthStencilBuffer.ResetDepthBuffer();
 	}
 	void			SceneRenderer::Update(double ms)
 	{
