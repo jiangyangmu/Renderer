@@ -29,6 +29,11 @@ namespace Graphics
 	constexpr u32		C_F32_QNAN	= 0x7CF00000;
 	constexpr u32		C_F32_SIGN_BIT	= 0x80000000;
 
+	inline bool		IsNear(f32 f0, f32 f1)
+	{
+		f32 fd = fabsf(f0 - f1);
+		return fd <= C_F32_EPSILON;
+	}
 	inline bool		IsNearZero(f32 value)
 	{
 		return -C_F32_EPSILON <= value && value <= C_F32_EPSILON;
@@ -396,36 +401,93 @@ namespace Graphics
 	inline Vector3		V3Truncate(Vector3 v);
 
 	// Vector3 - Transcendental
-	inline Vector3		V3Sin(Vector3 v);
+	inline Vector3		V3Sin(Vector3 v)
+	{
+		return { sinf(v.x), sinf(v.y), sinf(v.z) };
+	}
 	inline Vector3		V3SinEst(Vector3 v);
-	inline Vector3		V3SinH(Vector3 v);
-	inline Vector3		V3Cos(Vector3 v);
+	inline Vector3		V3SinH(Vector3 v)
+	{
+		return { sinhf(v.x), sinhf(v.y), sinhf(v.z) };
+	}
+	inline Vector3		V3Cos(Vector3 v)
+	{
+		return { cosf(v.x), cosf(v.y), cosf(v.z) };
+	}
 	inline Vector3		V3CosEst(Vector3 v);
-	inline Vector3		V3CosH(Vector3 v);
+	inline Vector3		V3CosH(Vector3 v)
+	{
+		return { coshf(v.x), coshf(v.y), coshf(v.z) };
+	}
 	inline void		V3SinCos(Vector3 * pSin, Vector3 * pCos, Vector3 v);
 	inline void		V3SinCosEst(Vector3 * pSin, Vector3 * pCos, Vector3 v);
-	inline Vector3		V3Tan(Vector3 v);
+	inline Vector3		V3Tan(Vector3 v)
+	{
+		return { tanf(v.x), tanf(v.y), tanf(v.z) };
+	}
 	inline Vector3		V3TanEst(Vector3 v);
-	inline Vector3		V3TanH(Vector3 v);
-	inline Vector3		V3ACos(Vector3 v);
+	inline Vector3		V3TanH(Vector3 v)
+	{
+		return { tanhf(v.x), tanhf(v.y), tanhf(v.z) };
+	}
+	inline Vector3		V3ACos(Vector3 v)
+	{
+		return { acosf(v.x), acosf(v.y), acosf(v.z) };
+	}
 	inline Vector3		V3ACosEst(Vector3 v);
-	inline Vector3		V3ASin(Vector3 v);
+	inline Vector3		V3ASin(Vector3 v)
+	{
+		return { asinf(v.x), asinf(v.y), asinf(v.z) };
+	}
 	inline Vector3		V3ASinEst(Vector3 v);
-	inline Vector3		V3ATan(Vector3 v);
+	inline Vector3		V3ATan(Vector3 v)
+	{
+		return { atanf(v.x), atanf(v.y), atanf(v.z) };
+	}
 	inline Vector3		V3ATanEst(Vector3 v);
-	inline Vector3		V3ATan2(Vector3 vY, Vector3 vX);
+	inline Vector3		V3ATan2(Vector3 vY, Vector3 vX)
+	{
+		return { atan2f(vY.x, vX.x), atan2f(vY.y, vX.y), atan2f(vY.z, vX.z) };
+	}
 	inline Vector3		V3ATan2Est(Vector3 vY, Vector3 vX);
-	inline Vector3		V3Exp2(Vector3 v);
-	inline Vector3		V3ExpE(Vector3 v);
-	inline Vector3		V3Log2(Vector3 v);
-	inline Vector3		V3LogE(Vector3 v);
+	inline Vector3		V3Exp2(Vector3 v)
+	{
+		return { exp2f(v.x), exp2f(v.y), exp2f(v.z) };
+	}
+	inline Vector3		V3ExpE(Vector3 v)
+	{
+		return { expf(v.x), expf(v.y), expf(v.z) };
+	}
+	inline Vector3		V3Log2(Vector3 v)
+	{
+		return { log2f(v.x), log2f(v.y), log2f(v.z) };
+	}
+	inline Vector3		V3LogE(Vector3 v)
+	{
+		return { logf(v.x), logf(v.y), logf(v.z) };
+	}
 
 	// Vector3 - Comparison
-	inline bool		V3HasInfinite(Vector3 v);
-	inline bool		V3HasNaN(Vector3 v);
-	inline bool		V3Equal(Vector3 v0, Vector3 v1);
-	inline bool		V3NearEqual(Vector3 v0, Vector3 v1);
-	inline bool		V3NotEqual(Vector3 v0, Vector3 v1);
+	inline bool		V3HasInfinite(Vector3 v)
+	{
+		return isinf(v.x) || isinf(v.y) || isinf(v.z);
+	}
+	inline bool		V3HasNaN(Vector3 v)
+	{
+		return isnan(v.x) || isnan(v.y) || isnan(v.z);
+	}
+	inline bool		V3Equal(Vector3 v0, Vector3 v1)
+	{
+		return v0.x == v1.x && v0.y == v1.y && v0.z == v1.z;
+	}
+	inline bool		V3NearEqual(Vector3 v0, Vector3 v1)
+	{
+		return IsNear(v0.x, v1.x) && IsNear(v0.y, v1.y) && IsNear(v0.z, v1.z);
+	}
+	inline bool		V3NotEqual(Vector3 v0, Vector3 v1)
+	{
+		return v0.x != v1.x || v0.y != v1.y || v0.z != v1.z;
+	}
 	inline bool		V3Greater(Vector3 v0, Vector3 v1);
 	inline bool		V3GreaterOrEqual(Vector3 v0, Vector3 v1);
 	inline bool		V3Less(Vector3 v0, Vector3 v1);
@@ -479,7 +541,6 @@ namespace Graphics
 		return V3Scale(v, V3ReciprocalLength(v));
 	}
 	inline Vector3		V3NormalizeEst(Vector3 v);
-	inline f32		V3LinePointDistance(Vector3 vL0, Vector3 vL1, Vector3 vPoint);
 
 	inline void		V3ComponentsFromNormal(Vector3 * pParallel, Vector3 * pPerpendicular, Vector3 v, Vector3 normal);
 	inline Vector3		V3CrossLH(Vector3 v0, Vector3 v1)
@@ -864,7 +925,7 @@ namespace Graphics
 
 		return true;
 	}
-
+	inline f32		DistancePointLine(Vector3 vL0, Vector3 vL1, Vector3 vPoint);
 
 	// --------------------------------------------------------------------------
 	// Classes
