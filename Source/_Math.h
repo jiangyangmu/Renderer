@@ -488,10 +488,22 @@ namespace Graphics
 	{
 		return v0.x != v1.x || v0.y != v1.y || v0.z != v1.z;
 	}
-	inline bool		V3Greater(Vector3 v0, Vector3 v1);
-	inline bool		V3GreaterOrEqual(Vector3 v0, Vector3 v1);
-	inline bool		V3Less(Vector3 v0, Vector3 v1);
-	inline bool		V3LessOrEqual(Vector3 v0, Vector3 v1);
+	inline bool		V3Greater(Vector3 v0, Vector3 v1)
+	{
+		return v0.x > v1.x && v0.y > v1.y && v0.z > v1.z;
+	}
+	inline bool		V3GreaterOrEqual(Vector3 v0, Vector3 v1)
+	{
+		return v0.x >= v1.x && v0.y >= v1.y && v0.z >= v1.z;
+	}
+	inline bool		V3Less(Vector3 v0, Vector3 v1)
+	{
+		return v0.x < v1.x && v0.y < v1.y && v0.z < v1.z;
+	}
+	inline bool		V3LessOrEqual(Vector3 v0, Vector3 v1)
+	{
+		return v0.x <= v1.x && v0.y <= v1.y && v0.z <= v1.z;
+	}
 
 	// Vector3 - Geometric
 	inline f32		V3AngleBetweenNormals(Vector3 v0, Vector3 v1);
