@@ -93,6 +93,17 @@ namespace Graphics
 		void *		FrameBuffer();
 	};
 
+	struct DepthStencilBuffer : public Handle
+	{
+	public:
+		void		ResetDepthBuffer(float value = 1.0f);
+		void		ResetStencilBuffer(Byte value);
+	};
+
+	// ---------------------------------------------------------------
+	// State
+	// ---------------------------------------------------------------
+
 	enum class DepthWriteMask
 	{
 		ALL,
@@ -107,11 +118,39 @@ namespace Graphics
 		Byte		stencilWriteMask;
 	};
 
-	struct DepthStencilBuffer : public Handle
+	enum class BlendOp
 	{
-	public:
-		void		ResetDepthBuffer(float value = 1.0f);
-		void		ResetStencilBuffer(Byte value);
+		ADD,
+		SUBTRACT,
+		REV_SUBTRACT,
+		MIN,
+		MAX,
+	};
+
+	enum class BlendFactor
+	{
+		ZERO,
+		ONE,
+		SRC_COLOR,
+		DEST_COLOR,
+		SRC_ALPHA,
+		DEST_ALPHA,
+		INV_SRC_COLOR,
+		INV_DEST_COLOR,
+		// INV_SRC_ALPHA,
+		// INV_DEST_ALPHA,
+		// SRC_ALPHA_SAT,
+	};
+
+	struct BlendState
+	{
+		bool		blendEnable;
+		BlendFactor	srcFactor;
+		BlendFactor	dstFactor;
+		BlendOp		op;
+		BlendFactor	srcFactorAlpha;
+		BlendFactor	dstFactorAlpha;
+		BlendOp		opAlpha;
 	};
 
 	// ---------------------------------------------------------------
@@ -179,8 +218,9 @@ namespace Graphics
 		void			SetDepthStencilBuffer(DepthStencilBuffer dsb);
 		void			SetRenderTarget(RenderTarget target);
 
-		void			SetDepthStencilState(DepthStencilState st);
 		void			RSSetFlipHorizontal(bool bFlipHorizontal);
+		void			OMSetDepthStencilState(DepthStencilState st);
+		void			OMSetBlendState(BlendState bs);
 
 		DepthStencilBuffer	GetDepthStencilBuffer();
 		RenderTarget		GetRenderTarget();

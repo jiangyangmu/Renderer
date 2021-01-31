@@ -187,6 +187,7 @@
     <ClCompile Include="..\..\..\Source\TestSceneImpl_Minecraft.cpp" />
     <ClCompile Include="..\..\..\Source\TestSceneImpl_Effects.cpp" />
     <ClCompile Include="..\..\..\Source\TestSceneImpl_Mirror.cpp" />
+    <ClCompile Include="..\..\..\Source\TestSceneImpl_Water.cpp" />
     <ClCompile Include="..\..\..\Source\VisualEffects.cpp" />
     <ClCompile Include="..\..\..\Source\win32\Win32App.cpp" />
   </ItemGroup>

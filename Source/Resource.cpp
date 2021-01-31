@@ -93,8 +93,9 @@ namespace Graphics
 		const void *		pVertexShaderData;
 		const void *		pPixelShaderData;
 
-		DepthStencilState	stDepthStencil;
 		bool			bFlipHorizontal;
+		DepthStencilState	stDepthStencil;
+		BlendState		stBlend;
 	};
 
 	struct Device_Impl
@@ -594,12 +595,20 @@ namespace Graphics
 		context->pVertexShaderData	= nullptr;
 		context->pPixelShaderData	= nullptr;
 
+		context->bFlipHorizontal	= false;
+		
 		context->stDepthStencil.depthEnable		= true;
 		context->stDepthStencil.stencilEnable		= true;
 		context->stDepthStencil.depthWriteMask		= DepthWriteMask::ALL;
 		context->stDepthStencil.stencilWriteMask	= 0;
 		
-		context->bFlipHorizontal	= false;
+		context->stBlend.blendEnable	= false;
+		context->stBlend.srcFactor	= BlendFactor::ONE;
+		context->stBlend.dstFactor	= BlendFactor::ZERO;
+		context->stBlend.op		= BlendOp::ADD;
+		context->stBlend.srcFactorAlpha	= BlendFactor::ONE;
+		context->stBlend.dstFactorAlpha	= BlendFactor::ZERO;
+		context->stBlend.opAlpha	= BlendOp::ADD;
 
 		return Ptr<RenderContext_Impl>(context);
 	}
@@ -682,6 +691,7 @@ namespace Graphics
 		bool stencilEnable = context.stDepthStencil.stencilEnable;
 		bool depthWrite = (context.stDepthStencil.depthWriteMask == DepthWriteMask::ALL);
 		Byte stencilWriteMask = context.stDepthStencil.stencilWriteMask;
+		BlendState blendState = context.stBlend;
 
 		bool flipHorizontal = context.bFlipHorizontal;
 
@@ -835,8 +845,8 @@ namespace Graphics
 						continue;
 					}
 
-					if (depthWrite) *depth = zNDC;
-					if (stencilWriteMask) *stencil |= stencilWriteMask;
+					if ( depthWrite ) *depth = zNDC;
+					if ( stencilWriteMask ) *stencil |= stencilWriteMask;
 
 					// Vertex properties
 					float zCam = 1.0f / ( z0CamInv * bary0 + z1CamInv * bary1 + z2CamInv * bary2 );
@@ -892,6 +902,16 @@ namespace Graphics
 					Vector3 color = (*reinterpret_cast<Vector3 *>(pPSOut));
 					ASSERT(color.x >= 0.0f && color.y >= 0.0f && color.z >= 0.0f);
 					ASSERT(color.x <= 1.0001f && color.y <= 1.0001f && color.z <= 1.0001f);
+
+					// Blend test
+					Byte * bgr = ( Byte * ) frameBuffer.At(rect.top + yPix, rect.left + xPix2);
+					if (blendState.blendEnable)
+					{
+						bgr[0] = bgr[0] / 2 + static_cast< Byte >( color.x * 255.0f * 0.5f );
+						bgr[1] = bgr[1] / 2 + static_cast< Byte >( color.y * 255.0f * 0.5f );
+						bgr[2] = bgr[2] / 2 + static_cast< Byte >( color.z * 255.0f * 0.5f );
+						continue;
+					}
 
 					// Draw depth
 					/*
@@ -1134,9 +1154,9 @@ namespace Graphics
 
 	void			Texture2D::Sample(float u, float v, float * pColor) const
 	{
-		ASSERT(0.0f <= u && u <= 1.0001f);
-		ASSERT(0.0f <= v && v <= 1.0001f);
-		ASSERT(u + v <= 2.0f);
+		//ASSERT(0.0f <= u && u <= 1.0001f);
+		//ASSERT(0.0f <= v && v <= 1.0001f);
+		//ASSERT(u + v <= 2.0f);
 
 		const Device_Impl * pDevice		= _GetDevice(*this);
 		const Texture2D_Desc * pTextureDesc	= _GetTextureDesc(*pDevice, *this);
@@ -1145,8 +1165,8 @@ namespace Graphics
 
 		LONG width = texData.Width();
 		LONG height = texData.Height();
-		LONG col = static_cast< LONG >( width * u );
-		LONG row = static_cast< LONG >( height * v );
+		LONG col = static_cast< LONG >( width * u ) % width;
+		LONG row = static_cast< LONG >( height * v ) % height;
 		
 		col = Bound(( LONG ) 0, col, width - 1);
 		row = Bound(( LONG ) 0, row, height - 1);
@@ -1218,15 +1238,18 @@ namespace Graphics
 	{
 		_LoadIndex(target, &static_cast< RenderContext_Impl * >( pImpl )->iRenderTargetDesc);
 	}
-	void			RenderContext::SetDepthStencilState(DepthStencilState st)
-	{
-		static_cast< RenderContext_Impl * >( pImpl )->stDepthStencil = st;
-	}
 	void			RenderContext::RSSetFlipHorizontal(bool bFlipHorizontal)
 	{
 		static_cast< RenderContext_Impl * >( pImpl )->bFlipHorizontal = bFlipHorizontal;
 	}
-
+	void			RenderContext::OMSetDepthStencilState(DepthStencilState st)
+	{
+		static_cast< RenderContext_Impl * >( pImpl )->stDepthStencil = st;
+	}
+	void			RenderContext::OMSetBlendState(BlendState bs)
+	{
+		static_cast< RenderContext_Impl * >( pImpl )->stBlend = bs;
+	}
 	DepthStencilBuffer	RenderContext::GetDepthStencilBuffer()
 	{
 		Device_Impl * pDevice = static_cast< Device_Impl * >( pParam );

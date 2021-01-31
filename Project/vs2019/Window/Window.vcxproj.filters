@@ -98,6 +98,9 @@
     <ClCompile Include="..\..\..\Source\TestSceneImpl_Mirror.cpp">
       <Filter>TestScene</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\TestSceneImpl_Water.cpp">
+      <Filter>TestScene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Window.rc">
