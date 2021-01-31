@@ -250,6 +250,13 @@ namespace Graphics
 		};
 	}
 
+	// Scalar
+	inline void		ScalarSinCos(f32 * pfSin, f32 * pfCos, f32 fAngle)
+	{
+		*pfSin = sinf(fAngle);
+		*pfCos = cosf(fAngle);
+	}
+
 	// Point3
 	inline f32		P3Distance(Point3 p0, Point3 p1)
 	{
@@ -545,7 +552,10 @@ namespace Graphics
 		return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
 	}
 	inline f32		V3LengthEst(Vector3 v);
-	inline f32		V3LengthSq(Vector3 v);
+	inline f32		V3LengthSq(Vector3 v)
+	{
+		return v.x * v.x + v.y * v.y + v.z * v.z;
+	}
 	inline f32		V3ReciprocalLength(Vector3 v)
 	{
 		return 1.0f / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
@@ -598,6 +608,12 @@ namespace Graphics
 	inline Vector3 *	V3TransformStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, const Matrix44 & m);
 	inline Vector3 *	V3TransformNormalStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, const Matrix44 & m);
 	inline Vector3 *	V3TransformCoordStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, const Matrix44 & m);
+
+	// Vector4 - Arithmetic
+	inline Vector4		V4Scale(Vector4 v, f32 fScale)
+	{
+		return { v.x * fScale, v.y * fScale, v.z * fScale, v.w * fScale };
+	}
 
 	// Matrix44
 	inline Matrix44		M44Zero()
@@ -895,7 +911,7 @@ namespace Graphics
 		// assert: angle is in radian.
 		return M44RotationAxisNormalLH(V3Normalize(vAsix), fAngle);
 	}
-	inline Matrix44		M44RotationQuaternion(Vector4 vQuaternion);
+	inline Matrix44		M44RotationQuaternion(Quaternion q);
 	inline Matrix44		M44RotationRollPitchYaw(f32 fPitch, f32 fYaw, f32 fRoll);
 	inline Matrix44		M44RotationRollPitchYawFromVector(Vector3 vAngles);
 	inline Matrix44		M44RotationX(f32 fAngle);
@@ -913,14 +929,10 @@ namespace Graphics
 	}
 
 	// Quaternion - Arithmetic
-	inline Quaternion	Q4Scale(Quaternion q, f32 fScale)
-	{
-		return { q.x * fScale, q.y * fScale, q.z * fScale, q.w * fScale };
-	}
 	inline Quaternion	Q4Exp(Quaternion q);
 	inline Quaternion	Q4Ln(Quaternion q);
 
-	// Quaternion - Comparision
+	// Quaternion - Comparison
 	inline bool		Q4Equal(Quaternion q0, Quaternion q1)
 	{
 		return q0.x == q1.x && q0.y == q1.y && q0.z == q1.z && q0.w == q1.w;
@@ -957,7 +969,7 @@ namespace Graphics
 	}
 	inline Quaternion	Q4Normalize(Quaternion q)
 	{
-		return Q4Scale(q, Q4ReciprocalLength(q));
+		return V4Scale(q, Q4ReciprocalLength(q));
 	}
 	inline Quaternion	Q4NormalizeEst(Quaternion q);
 	inline Quaternion	Q4Slerp(Quaternion qNorm0, Quaternion qNorm1, f32 t);
@@ -965,36 +977,59 @@ namespace Graphics
 	inline void		Q4SquadSetup(Quaternion * pqA, Quaternion * pqB, Quaternion * pqC, Quaternion q0, Quaternion q1, Quaternion q2, Quaternion q3);
 	inline void		Q4ToAxisAngle(Vector3 * pvAxis, f32 * pfAngle, Quaternion q);
 
-	// Quaternion - Transform
-	inline Quaternion	Q4RotationAxis(Vector3 vAxis, f32 fAngle)
-	{
-		Quaternion q;
-		q.xyz	= V3Normalize(vAxis);
-		q.w	= fAngle;
-		return q;
-	}
-	inline Quaternion	Q4RotationMatrix(Matrix44 m);
-	inline Quaternion	Q4RotationNormal(Vector3 vNormalAxis, f32 fAngle)
-	{
-		Quaternion q;
-		q.xyz	= vNormalAxis;
-		q.w	= fAngle;
-		return q;
-	}
-	inline Quaternion	Q4RotationRollPitchYaw(f32 fPitch, f32 fYaw, f32 fRoll);
-	inline Quaternion	Q4RotationRollPitchYawFromVector(Vector3 vAngles);
-
 	inline Quaternion	Q4BaryCentric(Quaternion q0, Quaternion q1, Quaternion q2, f32 f, f32 g);
 	inline Quaternion	Q4Conjugate(Quaternion q)
 	{
 		Quaternion qc;
 		qc.xyz	= -q.xyz;
 		qc.w	= q.w;
+		return qc;
+	}
+	inline f32		Q4Dot(Quaternion q0, Quaternion q1)
+	{
+		return q0.x * q1.x + q0.y * q1.y + q0.z * q1.z + q0.w * q1.w; 
+	}
+	inline Quaternion	Q4HamiltonProductLH(Quaternion q0, Quaternion q1)
+	{
+		Quaternion q;
+		q.xyz	= V3CrossLH(q0.xyz, q1.xyz) + V3Scale(q0.xyz, q1.w) + V3Scale(q1.xyz, q0.w);
+		q.w	= q0.w * q1.w - V3Dot(q0.xyz, q1.xyz);
 		return q;
 	}
-	inline f32		Q4Dot(Quaternion q0, Quaternion q1);
-	inline Quaternion	Q4Multiply(Quaternion q0, Quaternion q1);
-	inline Quaternion	Q4Inverse(Quaternion q);
+	inline Quaternion	Q4Inverse(Quaternion q)
+	{
+		return V4Scale(Q4Conjugate(q), 1.0f / Q4LengthSq(q));
+	}
+
+	// Quaternion - Transform
+	inline Quaternion	Q4RotationNormalLH(Vector3 vNormalAxis, f32 fAngle)
+	{
+		f32 fSin;
+		f32 fCos;
+
+		ScalarSinCos(&fSin, &fCos, 0.5f * fAngle);
+
+		Quaternion q;
+
+		q.xyz	= V3Scale(vNormalAxis, fSin);
+		q.w	= fCos;
+		
+		return q;
+	}
+	inline Quaternion	Q4RotationAxisLH(Vector3 vAxis, f32 fAngle)
+	{
+		return Q4RotationNormalLH(V3Normalize(vAxis), fAngle);
+	}
+	inline Quaternion	Q4RotationMatrix(Matrix44 m);
+	inline Quaternion	Q4RotationRollPitchYaw(f32 fPitch, f32 fYaw, f32 fRoll);
+	inline Quaternion	Q4RotationRollPitchYawFromVector(Vector3 vAngles);
+
+	// Vector3 x Quaternion
+	inline Vector3		V3Transform(Vector3 v, const Quaternion & q, const Quaternion & qInv)
+	{
+		Quaternion qv = { v, 1.0f };
+		return Q4HamiltonProductLH(Q4HamiltonProductLH(q, qv), qInv).xyz;
+	}
 
 	// Conversion
 	inline f32		ConvertToDegrees(f32 fRadians)
