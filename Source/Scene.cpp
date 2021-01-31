@@ -2,32 +2,19 @@
 
 namespace Graphics
 {
-	bool			Transform::GetInvertedMirroredMatrix(const Vector3 & posMirror, const Vector3 & normMirror, Matrix44 * pMirroredMatrix)
+	void			Transform::GetInvertedMirroredMatrix(const Vector3 & posMirror, const Vector3 & normMirror, Matrix44 * pMirroredMatrix)
 	{
-		Vector3 dir = V3Transform(V3UnitZ(),
-					  M44RotationAxisLH(V3UnitY(), ry) *
-					  M44RotationAxisLH(V3UnitX(), rx) *
-					  M44RotationAxisLH(V3UnitZ(), rz));
-		Vector3 dirInv = -dir;
-		Vector3 dirRef = V3Normalize(dir - V3Scale(normMirror, 2 * V3Dot(normMirror, dir)));
+		const Vector3 & posOrig = translation.xyz;
+		const Vector3 & dirOrig = V3Transform(V3UnitZ(), GetRotationXYZMatrix());
+		const Vector3 & upOrig = V3UnitY();
+		Vector3 posMirr;
+		Vector3 dirMirr;
+		Vector3 upMirr;
 
-		Vector3 posIntersect;
-		if ( !IntersectRayPlane(posMirror, normMirror, translation, dir, &posIntersect) )
-		{
-			return false;
-		}
+		MirrorRayPlane(posMirror, normMirror, posOrig, dirOrig, &posMirr, &dirMirr);
+		MirrorRayPlane(posMirror, normMirror, posOrig, upOrig, &posMirr, &upMirr);
 
-		float fDist = ( posIntersect - translation ).Length();
-		Vector3 pos = posIntersect - V3Scale(dirRef, fDist);
-
-		*pMirroredMatrix =
-			M44Translation(-pos.x, -pos.y, -pos.z) *
-			M44RotationAxisLH(V3UnitY(), ry - C_PI) *
-			M44RotationAxisLH(V3UnitX(), -rx) *
-			M44RotationAxisLH(V3UnitZ(), rz)
-			;
-
-		return true;
+		*pMirroredMatrix = M44LookToLH(posMirr, dirMirr, upMirr);
 	}
 
 	void			SceneObject::InitializeAll(SceneObject * pRootObject, RenderContext & context, VertexBuffer & vertexBuffer)
@@ -98,19 +85,20 @@ namespace Graphics
 		}
 	}
 
-	void			Entity::DrawAll(Entity * pEntity, RenderContext & context)
+	void			Entity::DrawAll(Entity * pEntity, RenderContext & context, Effect & effect)
 	{
 		ASSERT(pEntity);
+		effect.CBSetModelTransform(pEntity->transform.GetMatrix());
 		pEntity->Draw(context);
 		for ( TreeNode * pNode = FirstChild(pEntity); pNode; pNode = NextChild(pNode) )
 		{
-			DrawAll(static_cast< Entity * >( pNode ), context);
+			DrawAll(static_cast< Entity * >( pNode ), context, effect);
 		}
 	}
 
-	void			Camera::DrawObservedEntity(RenderContext & context)
+	void			Camera::DrawObservedEntity(RenderContext & context, Effect & effect)
 	{
-		Entity::DrawAll(m_observedEntity, context);
+		Entity::DrawAll(m_observedEntity, context, effect);
 	}
 
 	void			Controller::Initialize(RenderContext & context, VertexBuffer & vertexBuffer)
@@ -169,7 +157,7 @@ namespace Graphics
 			vRotDeg	+= 0.2f * ms * vFactor;
 		}
 
-		transform.translation = pos;
+		transform.translation.xyz = pos;
 		transform.rx = -vRotRad;
 		transform.ry = hRotRad;
 		transform.rz = 0.0f;

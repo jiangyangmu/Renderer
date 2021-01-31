@@ -3,6 +3,7 @@
 #include "Buffer.h"
 #include "Renderer.h"
 #include "RenderWindow.h"
+#include "VisualEffects.h"
 
 namespace Graphics
 {
@@ -55,18 +56,18 @@ namespace Graphics
 	{
 		union
 		{
-			Vector3 translation;
+			Vector4 translation;
 			struct
 			{
-				float tx, ty, tz;
+				float tx, ty, tz, tw;
 			};
 		};
 		union
 		{
-			Vector3 rotation;
+			Vector4 rotationXYZ;
 			struct
 			{
-				float rx, ry, rz;
+				float rx, ry, rz, rw;
 			};
 		};
 
@@ -90,7 +91,19 @@ namespace Graphics
 				M44RotationAxisLH(V3UnitX(), -rx) *
 				M44RotationAxisLH(V3UnitZ(), -rz);
 		}
-		bool			GetInvertedMirroredMatrix(const Vector3 & posMirror, const Vector3 & normMirror, Matrix44 * pMirroredMatrix);
+		Matrix44		GetRotationXYZMatrix()
+		{
+			return  M44RotationAxisLH(V3UnitZ(), rz) *
+				M44RotationAxisLH(V3UnitX(), rx) *
+				M44RotationAxisLH(V3UnitY(), ry);
+		}
+		Matrix44		GetInvertedRotationXYZMatrix()
+		{
+			return  M44RotationAxisLH(V3UnitY(), -ry) *
+				M44RotationAxisLH(V3UnitX(), -rx) *
+				M44RotationAxisLH(V3UnitZ(), -rz);
+		}
+		void			GetInvertedMirroredMatrix(const Vector3 & posMirror, const Vector3 & normMirror, Matrix44 * pMirroredMatrix);
 	};
 
 	enum class ConnectType
@@ -150,7 +163,7 @@ namespace Graphics
 		{
 		}
 
-		static void		DrawAll(Entity * pEntity, RenderContext & context);
+		static void		DrawAll(Entity * pEntity, RenderContext & context, Effect & effect);
 	};
 
 	struct Light : Entity
@@ -202,7 +215,7 @@ namespace Graphics
 		{
 			m_observedEntity	= pEntity;
 		}
-		void			DrawObservedEntity(RenderContext & context);
+		void			DrawObservedEntity(RenderContext & context, Effect & effect);
 
 		void			SetAspectRatio(float value)
 		{

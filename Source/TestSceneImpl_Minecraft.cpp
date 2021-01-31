@@ -84,7 +84,7 @@ namespace Graphics
 	// Scene
 	// --------------------------------------------------------------------------
 
-	class TestScene1 : public IScene
+	class TestScene_Minecraft : public IScene
 	{
 	public:
 		virtual void			OnLoad(Device & device, RenderContext & context) override
@@ -136,7 +136,7 @@ namespace Graphics
 			m_texEffect->CBSetProjTransform(m_camera->GetProjTransform());
 			m_texEffect->Apply(*m_context);
 			m_camera->ObserveEntity(m_texGroup);
-			m_camera->DrawObservedEntity(*m_context);
+			m_camera->DrawObservedEntity(*m_context, *m_texEffect);
 		}
 
 	private:
@@ -165,6 +165,6 @@ namespace Graphics
 
 	Ptr<IScene>	CreateTestScene_Minecraft()
 	{
-		return Ptr<IScene>(new TestScene1());
+		return Ptr<IScene>(new TestScene_Minecraft());
 	}
 }

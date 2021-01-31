@@ -840,7 +840,26 @@ namespace Graphics
 	// Matrix44 - Transform
 	inline Matrix44		M44LookAtLH(Vector3 vEyePosition, Vector3 vFocusPosition, Vector3 vUpDirection);
 	inline Matrix44		M44LookAtRH(Vector3 vEyePosition, Vector3 vFocusPosition, Vector3 vUpDirection);
-	inline Matrix44		M44LookToLH(Vector3 vEyePosition, Vector3 vEyeDirection, Vector3 vUpDirection);
+	inline Matrix44		M44LookToLH(Vector3 vEyePosition, Vector3 vEyeDirection, Vector3 vUpDirection)
+	{
+		// assert: eyeDirection not zero or infinite
+		// assert: up not zero or infinite
+		Vector3 r2 = V3Normalize(vEyeDirection);
+		Vector3 r0 = V3Normalize(V3CrossLH(vUpDirection, r2));
+		Vector3 r1 = V3CrossLH(r2, r0);
+		Vector3 vNegEyePosition = -vEyePosition;
+		f32 d0 = V3Dot(r0, vNegEyePosition);
+		f32 d1 = V3Dot(r1, vNegEyePosition);
+		f32 d2 = V3Dot(r2, vNegEyePosition);
+		Matrix44 m =
+		{
+			r0.x, r1.x, r2.x, 0.0f,
+			r0.y, r1.y, r2.y, 0.0f,
+			r0.z, r1.z, r2.z, 0.0f,
+			d0, d1, d2, 1.0f
+		};
+		return m;
+	}
 	inline Matrix44		M44LookToRH(Vector3 vEyePosition, Vector3 vEyeDirection, Vector3 vUpDirection);
 	
 	inline Matrix44		M44AffineTransformation(Vector3 vScaling, Vector3 vRotationOrigin, Vector4 vRotationQuaternion, Vector3 vTranslation);
@@ -1042,31 +1061,55 @@ namespace Graphics
 	}
 
 	// Collision Detection
-	inline bool		IntersectRayPlane(const Vector3 & posPlane, const Vector3 & normPlane, const Vector3 & posRay, const Vector3 & dirRay, Vector3 * pPoint)
+	inline Vector3		ProjectPointPlane(const Vector3 & posPlane, const Vector3 & normPlane, const Vector3 & p)
+	{
+		Vector3 v = p - posPlane;
+		f32 dist = V3Dot(v, normPlane);
+		return p - V3Scale(normPlane, dist);
+	}
+	inline bool		IntersectLinePlane(const Vector3 & posPlane, const Vector3 & normPlane, const Vector3 & posLine, const Vector3 & dirLine, f32 * pT)
 	{
 		// assert: all norm/dir normalized
 
-		f32 vn = V3Dot(dirRay, normPlane);
+		f32 vn = V3Dot(dirLine, normPlane);
 
 		if ( fabsf(vn) <= 1e-6 )
 		{
 			return false;
 		}
 
-		Vector3 v = posPlane - posRay;
+		Vector3 v = posPlane - posLine;
 
-		f32 t = V3Dot(v, normPlane) / vn;
-
-		if ( t < 0.0f )
-		{
-			return false;
-		}
-
-		*pPoint = posRay + V3Scale(dirRay, t);
+		*pT = V3Dot(v, normPlane) / vn;
 
 		return true;
 	}
 	inline f32		DistancePointLine(Vector3 vL0, Vector3 vL1, Vector3 vPoint);
+	inline void		MirrorRayPlane(const Vector3 & posPlane, const Vector3 & normPlane, const Vector3 & posRay, const Vector3 & dirRay, Vector3 * pPosRayMirr, Vector3 * pDirRayMirr)
+	{
+		const Vector3 & posOrig = posRay;
+		const Vector3 & dirOrig = dirRay;
+		Vector3 posProject;
+		Vector3 posIntersect;
+		f32 t;
+
+		posProject = ProjectPointPlane(posPlane, normPlane, posOrig);
+
+		*pPosRayMirr = posOrig + V3Scale(posProject - posOrig, 2.0f);
+
+		if ( IntersectLinePlane(posPlane, normPlane, posOrig, dirOrig, &t) )
+		{
+			posIntersect = posOrig + V3Scale(dirOrig, t);
+			*pDirRayMirr = V3Normalize(posIntersect - *pPosRayMirr);
+			if (t < 0.0f) *pDirRayMirr = -*pDirRayMirr;
+		}
+		else
+		{
+			*pDirRayMirr = dirOrig;
+		}
+	}
+
+	//
 
 	// --------------------------------------------------------------------------
 	// Classes

@@ -24,14 +24,21 @@ namespace Graphics
 
 		m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
 		m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
-	}
-	void		RgbEffect::Apply(RenderContext & context)
-	{
-		context.SetVertexShader(m_vertexShader);
-		context.SetPixelShader(m_pixelShader);
 
-		context.VSSetConstantBuffer(&m_vsData);
-		context.PSSetConstantBuffer(&m_psData);
+		m_vsData.model		= M44Identity();
+		m_psData.model		= M44Identity();
+	}
+	void		RgbEffect::Apply(RenderContext & ctx)
+	{
+		ctx.SetVertexShader(m_vertexShader);
+		ctx.SetPixelShader(m_pixelShader);
+
+		ctx.VSSetConstantBuffer(&m_vsData);
+		ctx.PSSetConstantBuffer(&m_psData);
+	}
+	void		RgbEffect::CBSetModelTransform(const Matrix44 & modelTransform)
+	{
+		m_vsData.model = m_psData.model = modelTransform;
 	}
 	void		RgbEffect::CBSetViewTransform(const Matrix44 & viewTransform)
 	{
@@ -44,17 +51,17 @@ namespace Graphics
 	void		RgbEffect::VSImpl(void * pVSOut, const void * pVSIn, const void * pContext)
 	{
 		const VS_IN & in	= *static_cast< const VS_IN * >( pVSIn );
-		const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
+		const VS_DATA & ctx	= *static_cast< const VS_DATA * >( pContext );
 		VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
 
-		out.posCam		= V3Transform(in.posWld, context.view);
-		out.posNDC		= V3Transform(out.posCam, context.proj);
+		out.posCam		= V3Transform(in.posWld, M44Multiply(ctx.model, ctx.view));
+		out.posNDC		= V3Transform(out.posCam, ctx.proj);
 		out.color		= in.color;
 	}
 	void		RgbEffect::PSImpl(void * pPSOut, const void * pPSIn, const void * pContext)
 	{
 		const PS_IN & in	= *static_cast< const PS_IN * >( pPSIn );
-		const PS_DATA & context	= *static_cast< const PS_DATA * >( pContext );
+		const PS_DATA & ctx	= *static_cast< const PS_DATA * >( pContext );
 		PS_OUT & out		= *static_cast< PS_OUT * >( pPSOut );
 
 		out.color		= in.color;
@@ -102,14 +109,21 @@ namespace Graphics
 		}
 		m_vsData.tex		= m_texture2D;
 		m_psData.tex		= m_texture2D;
-	}
-	void		TextureEffect::Apply(RenderContext & context)
-	{
-		context.SetVertexShader(m_vertexShader);
-		context.SetPixelShader(m_pixelShader);
 
-		context.VSSetConstantBuffer(&m_vsData);
-		context.PSSetConstantBuffer(&m_psData);
+		m_vsData.model		= M44Identity();
+		m_psData.model		= M44Identity();
+	}
+	void		TextureEffect::Apply(RenderContext & ctx)
+	{
+		ctx.SetVertexShader(m_vertexShader);
+		ctx.SetPixelShader(m_pixelShader);
+
+		ctx.VSSetConstantBuffer(&m_vsData);
+		ctx.PSSetConstantBuffer(&m_psData);
+	}
+	void		TextureEffect::CBSetModelTransform(const Matrix44 & modelTransform)
+	{
+		m_vsData.model = m_psData.model = modelTransform;
 	}
 	void		TextureEffect::CBSetViewTransform(const Matrix44 & viewTransform)
 	{
@@ -122,20 +136,20 @@ namespace Graphics
 	void		TextureEffect::VSImpl(void * pVSOut, const void * pVSIn, const void * pContext)
 	{
 		const VS_IN & in	= *static_cast< const VS_IN * >( pVSIn );
-		const VS_DATA & context	= *static_cast< const VS_DATA * >( pContext );
+		const VS_DATA & ctx	= *static_cast< const VS_DATA * >( pContext );
 		VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
 
-		out.posCam		= V3Transform(in.posWld, context.view);
-		out.posNDC		= V3Transform(out.posCam, context.proj);
+		out.posCam		= V3Transform(in.posWld, M44Multiply(ctx.model, ctx.view));
+		out.posNDC		= V3Transform(out.posCam, ctx.proj);
 		out.uv			= in.uv;
 	}
 	void		TextureEffect::PSImpl(void * pPSOut, const void * pPSIn, const void * pContext)
 	{
 		const PS_IN & in	= *static_cast< const PS_IN * >( pPSIn );
-		const PS_DATA & context	= *static_cast< const PS_DATA * >( pContext );
+		const PS_DATA & ctx	= *static_cast< const PS_DATA * >( pContext );
 		PS_OUT & out		= *static_cast< PS_OUT * >( pPSOut );
 
-		context.tex.Sample(in.uv.x, in.uv.y, reinterpret_cast< float * >( &out.color ));
+		ctx.tex.Sample(in.uv.x, in.uv.y, reinterpret_cast< float * >( &out.color ));
 	}
 
 	BlinnPhongEffect::BlinnPhongEffect(const MaterialParams & materialParams, const LightParams & lightParams)
@@ -159,14 +173,21 @@ namespace Graphics
 
 		m_vertexShader		= device.CreateVertexShader(m_vs, m_vsIn, m_vsOut);
 		m_pixelShader		= device.CreatePixelShader(m_ps, m_psIn, m_psOut);
-	}
-	void		BlinnPhongEffect::Apply(RenderContext & context)
-	{
-		context.SetVertexShader(m_vertexShader);
-		context.SetPixelShader(m_pixelShader);
 
-		context.VSSetConstantBuffer(&m_vsData);
-		context.PSSetConstantBuffer(&m_psData);
+		m_vsData.model		= M44Identity();
+		m_psData.model		= M44Identity();
+	}
+	void		BlinnPhongEffect::Apply(RenderContext & ctx)
+	{
+		ctx.SetVertexShader(m_vertexShader);
+		ctx.SetPixelShader(m_pixelShader);
+
+		ctx.VSSetConstantBuffer(&m_vsData);
+		ctx.PSSetConstantBuffer(&m_psData);
+	}
+	void		BlinnPhongEffect::CBSetModelTransform(const Matrix44 & modelTransform)
+	{
+		m_vsData.model = m_psData.model = modelTransform;
 	}
 	void		BlinnPhongEffect::CBSetViewTransform(const Matrix44 & viewTransform)
 	{
@@ -186,7 +207,7 @@ namespace Graphics
 		const VS_DATA & ctx	= *static_cast< const VS_DATA * >( pContext );
 		VS_OUT & out		= *static_cast< VS_OUT * >( pVSOut );
 
-		out.posCam		= V3Transform(in.posWld, ctx.view);
+		out.posCam		= V3Transform(in.posWld, M44Multiply(ctx.model, ctx.view));
 		out.posNDC		= V3Transform(out.posCam, ctx.proj);
 		out.posWld		= in.posWld;
 		out.normWld		= in.normWld;

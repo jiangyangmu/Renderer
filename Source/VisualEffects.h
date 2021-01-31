@@ -16,6 +16,7 @@ namespace Graphics
 		virtual void		Initialize(Device & device) = 0;
 		virtual void		Apply(RenderContext & context) = 0;
 
+		virtual void		CBSetModelTransform(const Matrix44 & modelTransform) = 0;
 		virtual void		CBSetViewTransform(const Matrix44 & viewTransform) = 0;
 		virtual void		CBSetProjTransform(const Matrix44 & projTransform) = 0;
 
@@ -62,6 +63,7 @@ namespace Graphics
 		virtual void		Initialize(Device & device) override;
 		virtual void		Apply(RenderContext & context) override;
 
+		virtual void		CBSetModelTransform(const Matrix44 & modelTransform) override;
 		virtual void		CBSetViewTransform(const Matrix44 & viewTransform) override;
 		virtual void		CBSetProjTransform(const Matrix44 & projTransform) override;
 
@@ -79,6 +81,7 @@ namespace Graphics
 		};
 		struct VS_DATA
 		{
+			Matrix44 model;
 			Matrix44 view;
 			Matrix44 proj;
 		};
@@ -109,6 +112,7 @@ namespace Graphics
 		virtual void		Initialize(Device & device) override;
 		virtual void		Apply(RenderContext & context) override;
 
+		virtual void		CBSetModelTransform(const Matrix44 & modelTransform) override;
 		virtual void		CBSetViewTransform(const Matrix44 & viewTransform) override;
 		virtual void		CBSetProjTransform(const Matrix44 & projTransform) override;
 
@@ -126,6 +130,7 @@ namespace Graphics
 		};
 		struct VS_DATA
 		{
+			Matrix44 model;
 			Matrix44 view;
 			Matrix44 proj;
 			Texture2D tex;
@@ -176,6 +181,7 @@ namespace Graphics
 		virtual void		Initialize(Device & device) override;
 		virtual void		Apply(RenderContext & context) override;
 
+		virtual void		CBSetModelTransform(const Matrix44 & modelTransform) override;
 		virtual void		CBSetViewTransform(const Matrix44 & viewTransform) override;
 		virtual void		CBSetProjTransform(const Matrix44 & projTransform) override;
 		void			CBSetCameraPosition(const Vector3 & cameraPosWld);
@@ -195,6 +201,7 @@ namespace Graphics
 		};
 		struct VS_DATA
 		{
+			Matrix44	model;
 			Matrix44	view;
 			Matrix44	proj;
 			Vector3		cameraPosWld;

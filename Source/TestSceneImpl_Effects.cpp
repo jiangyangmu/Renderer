@@ -198,7 +198,7 @@ namespace Graphics
 					if ( i == 2 ) static_cast< BlinnPhongEffect * >( effect )->CBSetCameraPosition(m_controller->pos);
 					effect->Apply(*m_context);
 					camera->ObserveEntity(group);
-					camera->DrawObservedEntity(*m_context);
+					camera->DrawObservedEntity(*m_context, *effect);
 				}
 			}
 		}
