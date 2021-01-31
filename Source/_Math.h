@@ -82,6 +82,7 @@ namespace Graphics
 		};
 		f32 w;
 	};
+	typedef Vector4 Quaternion;
 	struct Matrix44
 	{
 		union
@@ -905,6 +906,97 @@ namespace Graphics
 	inline Matrix44		M44Reflect(Vector4 vReflectionPlane);
 	inline Matrix44		M44Shadow(Vector4 vShadowPlane, Vector3 vLightPosition);
 
+	// Quaternion
+	inline Quaternion	Q4Identity()
+	{
+		return { 0.0f, 0.0f, 0.0f, 1.0f };
+	}
+
+	// Quaternion - Arithmetic
+	inline Quaternion	Q4Scale(Quaternion q, f32 fScale)
+	{
+		return { q.x * fScale, q.y * fScale, q.z * fScale, q.w * fScale };
+	}
+	inline Quaternion	Q4Exp(Quaternion q);
+	inline Quaternion	Q4Ln(Quaternion q);
+
+	// Quaternion - Comparision
+	inline bool		Q4Equal(Quaternion q0, Quaternion q1)
+	{
+		return q0.x == q1.x && q0.y == q1.y && q0.z == q1.z && q0.w == q1.w;
+	}
+	inline bool		Q4NotEqual(Quaternion q0, Quaternion q1)
+	{
+		return q0.x != q1.x || q0.y != q1.y || q0.z != q1.z || q0.w != q1.w;
+	}
+	inline bool		Q4IsIdentity(Quaternion q)
+	{
+		return q.x == 0.0f && q.y == 0.0f && q.z == 0.0f && q.w == 1.0f;
+	}
+	inline bool		Q4HasInfinite(Quaternion q)
+	{
+		return isinf(q.x) || isinf(q.y) || isinf(q.z);
+	}
+	inline bool		Q4HasNaN(Quaternion q)
+	{
+		return isnan(q.x) || isnan(q.y) || isnan(q.z);
+	}
+
+	// Quaternion - Geometric
+	inline f32		Q4Length(Quaternion q)
+	{
+		return sqrtf(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+	}
+	inline f32		Q4LengthSq(Quaternion q)
+	{
+		return q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+	}
+	inline f32		Q4ReciprocalLength(Quaternion q)
+	{
+		return 1.0f / Q4Length(q);
+	}
+	inline Quaternion	Q4Normalize(Quaternion q)
+	{
+		return Q4Scale(q, Q4ReciprocalLength(q));
+	}
+	inline Quaternion	Q4NormalizeEst(Quaternion q);
+	inline Quaternion	Q4Slerp(Quaternion qNorm0, Quaternion qNorm1, f32 t);
+	inline Quaternion	Q4Squad(Quaternion qNorm0, Quaternion qNorm1, Quaternion qNorm2, Quaternion qNorm3, f32 t);
+	inline void		Q4SquadSetup(Quaternion * pqA, Quaternion * pqB, Quaternion * pqC, Quaternion q0, Quaternion q1, Quaternion q2, Quaternion q3);
+	inline void		Q4ToAxisAngle(Vector3 * pvAxis, f32 * pfAngle, Quaternion q);
+
+	// Quaternion - Transform
+	inline Quaternion	Q4RotationAxis(Vector3 vAxis, f32 fAngle)
+	{
+		Quaternion q;
+		q.xyz	= V3Normalize(vAxis);
+		q.w	= fAngle;
+		return q;
+	}
+	inline Quaternion	Q4RotationMatrix(Matrix44 m);
+	inline Quaternion	Q4RotationNormal(Vector3 vNormalAxis, f32 fAngle)
+	{
+		Quaternion q;
+		q.xyz	= vNormalAxis;
+		q.w	= fAngle;
+		return q;
+	}
+	inline Quaternion	Q4RotationRollPitchYaw(f32 fPitch, f32 fYaw, f32 fRoll);
+	inline Quaternion	Q4RotationRollPitchYawFromVector(Vector3 vAngles);
+
+	inline Quaternion	Q4BaryCentric(Quaternion q0, Quaternion q1, Quaternion q2, f32 f, f32 g);
+	inline Quaternion	Q4Conjugate(Quaternion q)
+	{
+		Quaternion qc;
+		qc.xyz	= -q.xyz;
+		qc.w	= q.w;
+		return q;
+	}
+	inline f32		Q4Dot(Quaternion q0, Quaternion q1);
+	inline Quaternion	Q4Multiply(Quaternion q0, Quaternion q1);
+	inline Quaternion	Q4Inverse(Quaternion q);
+
+	// Conversion
 	inline f32		ConvertToDegrees(f32 fRadians)
 	{
 		return fRadians * 180.0f * C_1DIVPI;
@@ -919,16 +1011,16 @@ namespace Graphics
 	{
 		// assert: all norm/dir normalized
 
-		f32 denom = V3Dot(-normPlane, dirRay);
+		f32 vn = V3Dot(dirRay, normPlane);
 
-		if ( denom <= 1e-6 )
+		if ( fabsf(vn) <= 1e-6 )
 		{
 			return false;
 		}
 
 		Vector3 v = posPlane - posRay;
 
-		f32 t = V3Dot(v, -normPlane) / denom;
+		f32 t = V3Dot(v, normPlane) / vn;
 
 		if ( t < 0.0f )
 		{
