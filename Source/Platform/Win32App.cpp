@@ -1,5 +1,5 @@
 #include "Win32App.h"
-#include "Common.h"
+#include "../Core/Common.h"
 
 #include <WindowsX.h>
 #include <Gdiplus.h>

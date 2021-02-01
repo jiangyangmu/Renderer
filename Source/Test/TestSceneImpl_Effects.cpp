@@ -1,7 +1,5 @@
 #include "TestScene.h"
 
-#include "VisualEffects.h"
-
 namespace Graphics
 {
 	// --------------------------------------------------------------------------

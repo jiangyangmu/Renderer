@@ -2,7 +2,7 @@
 #include "_Math.h"
 
 #include "RenderWindow.h"
-#include "win32/Win32App.h"
+#include "../Platform/Win32App.h"
 
 #include <deque>
 

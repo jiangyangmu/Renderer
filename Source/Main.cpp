@@ -1,7 +1,6 @@
-#include "Renderer.h"
-#include "RenderWindow.h"
-#include "TestScene.h"
-#include "win32/Win32App.h"
+#include "Includes/RendererApi.h"
+#include "Platform/Win32App.h"
+#include "Test/TestScene.h"
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		      _In_opt_ HINSTANCE hPrevInstance,

@@ -1,7 +1,5 @@
 #include "TestScene.h"
 
-#include "VisualEffects.h"
-
 namespace Graphics
 {
 	// --------------------------------------------------------------------------
@@ -73,14 +71,14 @@ namespace Graphics
 			CubeChunk(Integer nWidth, Integer nHeight, Integer nDepth)
 			{
 				m_cubes.reserve(nWidth * nHeight * nDepth);
-
-				for ( Integer h = nHeight - 1; h >= 0; --h )
+				
+				for (Integer h = nHeight - 1; h >= 0; --h)
 				{
-					for ( Integer d = 0; d < nDepth; ++d )
+					for (Integer d = 0; d < nDepth; ++d)
 					{
-						for ( Integer w = 0; w < nWidth; ++w )
+						for (Integer w = 0; w < nWidth; ++w)
 						{
-							m_cubes.emplace_back(Vector3 { w + 0.5f, h + 0.5f, d + 0.5f }, 1.0f);
+							m_cubes.emplace_back(Vector3 { w + 0.5f, h + 0.5f, d + 0.5f}, 1.0f);
 						}
 					}
 				}
@@ -116,7 +114,7 @@ namespace Graphics
 	// Scene
 	// --------------------------------------------------------------------------
 
-	class TestScene_Water : public IScene
+	class TestScene_Mirror : public IScene
 	{
 	public:
 		virtual void			OnLoad(Device & device, RenderContext & context) override
@@ -127,12 +125,12 @@ namespace Graphics
 
 			// Setup terrain resources
 
-			m_efObject.reset(new TextureEffect(L"Resources/grass.bmp"));
+			m_efObject.reset(new TextureEffect(L"Resources/grid.bmp"));
 			m_efObject->Initialize(device);
 
 			// Setup mirror resources
 
-			m_efMirror.reset(new TextureEffect(L"Resources/water.bmp"));
+			m_efMirror.reset(new TextureEffect(L"Resources/grey.bmp"));
 			m_efMirror->Initialize(device);
 
 			// Setup shared resources
@@ -160,50 +158,26 @@ namespace Graphics
 			m_camera		= NewObject<Camera>();
 			m_controller		= NewObject<Controller>();
 
-			m_terrain		= NewObject<EntityGroup>();
-
-			m_mirror		= NewObject<Mirror>(Vector3 { -0.5f, 0.0f, 0.0f }, 10.0f);
-
-			CubeChunk * g0		= NewObject<CubeChunk>(5, 1, 1);
-			CubeChunk * g1		= NewObject<CubeChunk>(5, 1, 1);
-			CubeChunk * g2		= NewObject<CubeChunk>(1, 1, 3);
-			CubeChunk * g3		= NewObject<CubeChunk>(1, 1, 3);
-			CubeChunk * s0		= NewObject<CubeChunk>(1, 3, 1);
-			CubeChunk * s1		= NewObject<CubeChunk>(1, 3, 1);
-			CubeChunk * s2		= NewObject<CubeChunk>(1, 3, 1);
-			CubeChunk * s3		= NewObject<CubeChunk>(1, 3, 1);
-
-			g0->transform.translation	= { -0.5f - 2.5f, -0.5f, -0.5f - 2.0f };
-			g1->transform.translation	= { -0.5f - 2.5f, -0.5f, -0.5f + 2.0f };
-			g2->transform.translation	= { -0.5f - 2.5f, -0.5f, -0.5f - 1.0f };
-			g3->transform.translation	= { -0.5f + 1.5f, -0.5f, -0.5f - 1.0f };
-			s0->transform.translation	= { -0.5f - 2.5f, -0.5f + 1.0f, -0.5f - 2.0f };
-			s1->transform.translation	= { -0.5f - 2.5f, -0.5f + 1.0f, -0.5f + 2.0f };
-			s2->transform.translation	= { -0.5f + 1.5f, -0.5f + 1.0f, -0.5f - 2.0f };
-			s3->transform.translation	= { -0.5f + 1.5f, -0.5f + 1.0f, -0.5f + 2.0f };
-			m_mirror->transform.ry		= ConvertToRadians(45.0f);
-			m_mirror->transform.rx		= ConvertToRadians(90.0f);
-
-			m_terrain->AddChild(g0);
-			m_terrain->AddChild(g1);
-			m_terrain->AddChild(g2);
-			m_terrain->AddChild(g3);
-			m_terrain->AddChild(s0);
-			m_terrain->AddChild(s1);
-			m_terrain->AddChild(s2);
-			m_terrain->AddChild(s3);
-
+			m_terrain		= NewObject<CubeChunk>(5, 1, 5);
+			m_terrain->transform.translation = {-2.5f, 0.0f, -2.5f};
+			
+			m_mirror1		= NewObject<Mirror>(Vector3 { 0.0f, 0.0f, 5.0f }, 10.0f);
+			m_mirror2		= NewObject<Mirror>(Vector3 { 0.0f, 0.0f, 0.0f }, 10.0f);
+			m_mirror2->transform.ty = -5.0f;
+			m_mirror2->transform.rx = ConvertToRadians(90.0f);
+			
 			m_camera->SetAspectRatio(m_fScreenAspectRatio);
 
 			m_controller->ConnectTo(m_camera, ConnectType::SAME);
-			m_controller->pos = { 5.0f, 3.0f, -5.0f };
-			m_controller->hRotDeg = -45.0f;
-			m_controller->vRotDeg = -10.0f;
+			m_controller->pos = {6.0f, 3.0f, -6.0f};
+			m_controller->hRotDeg = -40.0f;
+			m_controller->vRotDeg = -30.0f;
 
 			m_root->AddChild(m_camera);
 			m_root->AddChild(m_controller);
 			m_root->AddChild(m_terrain);
-			m_root->AddChild(m_mirror);
+			m_root->AddChild(m_mirror1);
+			m_root->AddChild(m_mirror2);
 			SceneObject::InitializeAll(m_root, *m_ctxScreen, m_vbTexture);
 		}
 		virtual void			OnUnload() override
@@ -217,69 +191,51 @@ namespace Graphics
 		{
 			DepthStencilState dssDefault = { true, true, DepthWriteMask::ALL, 0 };
 			DepthStencilState dssWriteStencil = { true, false, DepthWriteMask::ZERO, 0xff };
-			BlendState bsDefault =
+
+			Mirror * pMirrorList[] = { m_mirror1, m_mirror2 };
+
+			for ( Mirror * pMirror : pMirrorList )
 			{
-				false,		    // blendEnable
-				BlendFactor::ONE,   // srcFactor
-				BlendFactor::ZERO,  // dstFactor
-				BlendOp::ADD,	    // op
-				BlendFactor::ONE,   // srcFactorAlpha
-				BlendFactor::ZERO,  // dstFactorAlpha
-				BlendOp::ADD,	    // opAlpha
-			};
-			BlendState bsEnable =
-			{
-				true,		    // blendEnable
-				BlendFactor::ONE,   // srcFactor
-				BlendFactor::ZERO,  // dstFactor
-				BlendOp::ADD,	    // op
-				BlendFactor::ONE,   // srcFactorAlpha
-				BlendFactor::ZERO,  // dstFactorAlpha
-				BlendOp::ADD,	    // opAlpha
-			};
+				m_ctxScreen->OMSetDepthStencilState(dssDefault);
+			
+				// 1. reset stencil to 1
+				m_depthStencilBuffer.ResetStencilBuffer(1);
 
-			m_ctxScreen->OMSetDepthStencilState(dssDefault);
-			m_ctxScreen->OMSetBlendState(bsDefault);
+				// 2. main cam - draw object
+				m_ctxScreen->RSSetFlipHorizontal(false);
+				m_efObject->CBSetViewTransform(m_camera->GetViewTransform());
+				m_efObject->CBSetProjTransform(m_camera->GetProjTransform());
+				m_efObject->Apply(*m_ctxScreen);
+				m_camera->ObserveEntity(m_terrain);
+				m_camera->DrawObservedEntity(*m_ctxScreen, *m_efObject);
 
-			// 1. reset stencil to 1
-			m_depthStencilBuffer.ResetStencilBuffer(1);
+				// 3. reset stencil to 0, enable stencil write, disable depth write
+				m_ctxScreen->OMSetDepthStencilState(dssWriteStencil);
+				m_depthStencilBuffer.ResetStencilBuffer(0);
+			
+				// 4. draw mirror to stencil
+				m_efMirror->CBSetViewTransform(m_camera->GetViewTransform());
+				m_efMirror->CBSetProjTransform(m_camera->GetProjTransform());
+				m_efMirror->Apply(*m_ctxScreen);
+				m_camera->ObserveEntity(pMirror);
+				m_camera->DrawObservedEntity(*m_ctxScreen, *m_efMirror);
 
-			// 2. main cam - draw object
-			m_ctxScreen->RSSetFlipHorizontal(false);
-			m_efObject->CBSetViewTransform(m_camera->GetViewTransform());
-			m_efObject->CBSetProjTransform(m_camera->GetProjTransform());
-			m_efObject->Apply(*m_ctxScreen);
-			m_camera->ObserveEntity(m_terrain);
-			m_camera->DrawObservedEntity(*m_ctxScreen, *m_efObject);
+				// 5. disable stencil write, enable depth write
+				m_depthStencilBuffer.ResetDepthBuffer();
+				m_ctxScreen->OMSetDepthStencilState(dssDefault);
+				m_ctxScreen->RSSetFlipHorizontal(true);
 
-			m_ctxScreen->OMSetDepthStencilState(dssWriteStencil);
-
-			// 3. reset stencil to 0, enable stencil write, disable depth write
-			m_depthStencilBuffer.ResetStencilBuffer(0);
-
-			// 4. draw mirror to stencil
-			m_efMirror->CBSetViewTransform(m_camera->GetViewTransform());
-			m_efMirror->CBSetProjTransform(m_camera->GetProjTransform());
-			m_efMirror->Apply(*m_ctxScreen);
-			m_camera->ObserveEntity(m_mirror);
-			m_camera->DrawObservedEntity(*m_ctxScreen, *m_efMirror);
-
-			// 5. disable stencil write, enable depth write
-			m_depthStencilBuffer.ResetDepthBuffer();
-			m_ctxScreen->OMSetDepthStencilState(dssDefault);
-			m_ctxScreen->OMSetBlendState(bsEnable);
-			m_ctxScreen->RSSetFlipHorizontal(true);
-
-			// 6. mirror cam - draw object
-			Matrix44 viewTransform;
-			Vector3 posMirror = m_mirror->transform.translation.xyz + m_mirror->m_center;
-			Vector3 normMirror = V3Transform(-V3UnitZ(), m_mirror->transform.GetRotationXYZMatrix());
-			m_camera->transform.GetInvertedMirroredMatrix(posMirror, normMirror, &viewTransform);
-			m_efObject->CBSetViewTransform(viewTransform);
-			m_efObject->CBSetProjTransform(m_camera->GetProjTransform());
-			m_efObject->Apply(*m_ctxScreen);
-			m_camera->ObserveEntity(m_terrain);
-			m_camera->DrawObservedEntity(*m_ctxScreen, *m_efObject);
+				// 6. mirror cam - draw object
+				Matrix44 viewTransform;
+				Vector3 posMirror = pMirror->transform.translation.xyz + pMirror->m_center;
+				Vector3 normMirror = V3Transform(-V3UnitZ(), pMirror->transform.GetRotationXYZMatrix());
+				m_camera->transform.GetInvertedMirroredMatrix(posMirror, normMirror, &viewTransform);
+				m_efObject->CBSetViewTransform(viewTransform);
+				m_efObject->CBSetProjTransform(m_camera->GetProjTransform());
+				m_efObject->Apply(*m_ctxScreen);
+				m_camera->ObserveEntity(m_terrain);
+				m_camera->DrawObservedEntity(*m_ctxScreen, *m_efObject);
+			}
 		}
 
 	private:
@@ -308,8 +264,9 @@ namespace Graphics
 		Root *				m_root;
 		Camera *			m_camera;
 		Controller *			m_controller;
-		EntityGroup *			m_terrain;
-		Mirror *			m_mirror;
+		CubeChunk *			m_terrain;
+		Mirror *			m_mirror1;
+		Mirror *			m_mirror2;
 
 		// Shared resources
 		VertexBuffer			m_vbTexture;
@@ -322,8 +279,8 @@ namespace Graphics
 	};
 
 
-	Ptr<IScene>	CreateTestScene_Water()
+	Ptr<IScene>	CreateTestScene_Mirror()
 	{
-		return Ptr<IScene>(new TestScene_Water());
+		return Ptr<IScene>(new TestScene_Mirror());
 	}
 }

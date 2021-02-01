@@ -162,41 +162,33 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Source\Common.h" />
-    <ClInclude Include="..\..\..\Source\Buffer.h" />
-    <ClInclude Include="..\..\..\Source\Event.h" />
-    <ClInclude Include="..\..\..\Source\Renderer.h" />
-    <ClInclude Include="..\..\..\Source\RenderWindow.h" />
-    <ClInclude Include="..\..\..\Source\Resource.h" />
-    <ClInclude Include="..\..\..\Source\Scene.h" />
-    <ClInclude Include="..\..\..\Source\TestScene.h" />
-    <ClInclude Include="..\..\..\Source\Unknown.h" />
-    <ClInclude Include="..\..\..\Source\VisualEffects.h" />
-    <ClInclude Include="..\..\..\Source\win32\Win32App.h" />
-    <ClInclude Include="..\..\..\Source\_Math.h" />
-    <ClInclude Include="Resource.h" />
-    <ClInclude Include="targetver.h" />
+    <ClInclude Include="..\..\..\Source\Core\Buffer.h" />
+    <ClInclude Include="..\..\..\Source\Core\Common.h" />
+    <ClInclude Include="..\..\..\Source\Core\Event.h" />
+    <ClInclude Include="..\..\..\Source\Core\Renderer.h" />
+    <ClInclude Include="..\..\..\Source\Core\RenderWindow.h" />
+    <ClInclude Include="..\..\..\Source\Core\Resource.h" />
+    <ClInclude Include="..\..\..\Source\Core\Scene.h" />
+    <ClInclude Include="..\..\..\Source\Core\Unknown.h" />
+    <ClInclude Include="..\..\..\Source\Core\VisualEffects.h" />
+    <ClInclude Include="..\..\..\Source\Core\_Math.h" />
+    <ClInclude Include="..\..\..\Source\Includes\RendererApi.h" />
+    <ClInclude Include="..\..\..\Source\Platform\Win32App.h" />
+    <ClInclude Include="..\..\..\Source\Test\TestScene.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Source\Buffer.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Buffer.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Renderer.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\RenderWindow.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Resource.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Scene.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\VisualEffects.cpp" />
     <ClCompile Include="..\..\..\Source\Main.cpp" />
-    <ClCompile Include="..\..\..\Source\Renderer.cpp" />
-    <ClCompile Include="..\..\..\Source\RenderWindow.cpp" />
-    <ClCompile Include="..\..\..\Source\Resource.cpp" />
-    <ClCompile Include="..\..\..\Source\Scene.cpp" />
-    <ClCompile Include="..\..\..\Source\TestSceneImpl_Minecraft.cpp" />
-    <ClCompile Include="..\..\..\Source\TestSceneImpl_Effects.cpp" />
-    <ClCompile Include="..\..\..\Source\TestSceneImpl_Mirror.cpp" />
-    <ClCompile Include="..\..\..\Source\TestSceneImpl_Water.cpp" />
-    <ClCompile Include="..\..\..\Source\VisualEffects.cpp" />
-    <ClCompile Include="..\..\..\Source\win32\Win32App.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Window.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="small.ico" />
-    <Image Include="Window.ico" />
+    <ClCompile Include="..\..\..\Source\Platform\Win32App.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Effects.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Minecraft.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Mirror.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Water.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

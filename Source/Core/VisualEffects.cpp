@@ -1,6 +1,6 @@
 #include "VisualEffects.h"
 
-#include "win32/Win32App.h"
+#include "../Platform/Win32App.h"
 
 namespace Graphics
 {

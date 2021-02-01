@@ -1,118 +1,95 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Win32">
+    <Filter Include="Core">
+      <UniqueIdentifier>{8440a57f-92f8-4c27-9aa4-e34c736a28bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test">
+      <UniqueIdentifier>{8428fc64-54d5-451f-80d3-7b5c367664e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Win32\Misc">
-      <UniqueIdentifier>{57ce3b92-2b27-4ceb-bd20-48bfbb79d7e2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Win32\Misc\Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="Graphics">
-      <UniqueIdentifier>{8440a57f-92f8-4c27-9aa4-e34c736a28bc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="TestScene">
-      <UniqueIdentifier>{8428fc64-54d5-451f-80d3-7b5c367664e3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Utility">
-      <UniqueIdentifier>{89ab8fc8-b744-4570-843a-fcb01d31da85}</UniqueIdentifier>
+    <Filter Include="Includes">
+      <UniqueIdentifier>{7737defd-5ddb-4fc2-964e-09fe3ec451c3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Source\Renderer.h">
-      <Filter>Graphics</Filter>
+    <ClInclude Include="..\..\..\Source\Core\_Math.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>Win32\Misc</Filter>
+    <ClInclude Include="..\..\..\Source\Core\Buffer.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Win32\Misc</Filter>
+    <ClInclude Include="..\..\..\Source\Core\Common.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\win32\Win32App.h">
-      <Filter>Win32</Filter>
+    <ClInclude Include="..\..\..\Source\Core\Event.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Common.h">
-      <Filter>Utility</Filter>
+    <ClInclude Include="..\..\..\Source\Core\Renderer.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Scene.h">
-      <Filter>Graphics</Filter>
+    <ClInclude Include="..\..\..\Source\Core\RenderWindow.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\RenderWindow.h">
-      <Filter>Graphics</Filter>
+    <ClInclude Include="..\..\..\Source\Core\Resource.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Resource.h">
-      <Filter>Graphics</Filter>
+    <ClInclude Include="..\..\..\Source\Core\Scene.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Buffer.h">
-      <Filter>Graphics</Filter>
+    <ClInclude Include="..\..\..\Source\Core\Unknown.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\VisualEffects.h">
-      <Filter>Graphics</Filter>
+    <ClInclude Include="..\..\..\Source\Core\VisualEffects.h">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\TestScene.h">
-      <Filter>TestScene</Filter>
+    <ClInclude Include="..\..\..\Source\Platform\Win32App.h">
+      <Filter>Platform</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Event.h">
-      <Filter>Utility</Filter>
+    <ClInclude Include="..\..\..\Source\Test\TestScene.h">
+      <Filter>Test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Unknown.h">
-      <Filter>Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Source\_Math.h">
-      <Filter>Utility</Filter>
+    <ClInclude Include="..\..\..\Source\Includes\RendererApi.h">
+      <Filter>Includes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Source\Renderer.cpp">
-      <Filter>Graphics</Filter>
+    <ClCompile Include="..\..\..\Source\Core\Buffer.cpp">
+      <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\win32\Win32App.cpp">
-      <Filter>Win32</Filter>
+    <ClCompile Include="..\..\..\Source\Core\Renderer.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Core\RenderWindow.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Core\Resource.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Core\Scene.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Core\VisualEffects.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Platform\Win32App.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Main.cpp" />
-    <ClCompile Include="..\..\..\Source\RenderWindow.cpp">
-      <Filter>Graphics</Filter>
+    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Effects.cpp">
+      <Filter>Test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\Scene.cpp">
-      <Filter>Graphics</Filter>
+    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Minecraft.cpp">
+      <Filter>Test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\Resource.cpp">
-      <Filter>Graphics</Filter>
+    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Mirror.cpp">
+      <Filter>Test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\Buffer.cpp">
-      <Filter>Graphics</Filter>
+    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Water.cpp">
+      <Filter>Test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\VisualEffects.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\TestSceneImpl_Effects.cpp">
-      <Filter>TestScene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\TestSceneImpl_Minecraft.cpp">
-      <Filter>TestScene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\TestSceneImpl_Mirror.cpp">
-      <Filter>TestScene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\TestSceneImpl_Water.cpp">
-      <Filter>TestScene</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Window.rc">
-      <Filter>Win32\Misc\Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="small.ico">
-      <Filter>Win32\Misc\Resource Files</Filter>
-    </Image>
-    <Image Include="Window.ico">
-      <Filter>Win32\Misc\Resource Files</Filter>
-    </Image>
   </ItemGroup>
 </Project>
