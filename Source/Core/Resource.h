@@ -3,8 +3,6 @@
 #include "Buffer.h"
 #include "Unknown.h"
 
-#include <Windows.h>
-
 namespace Graphics
 {
 	// ---------------------------------------------------------------

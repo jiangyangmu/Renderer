@@ -2,14 +2,12 @@
 #include "Platform/Win32App.h"
 #include "Test/TestScene.h"
 
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-		      _In_opt_ HINSTANCE hPrevInstance,
-		      _In_ LPWSTR lpCmdLine,
-		      _In_ int nCmdShow)
+#include <Windows.h>
+
+int main(int argc, char * argv[])
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
-	UNREFERENCED_PARAMETER(nCmdShow);
+	HINSTANCE hInstance = GetModuleHandle(NULL);
+	ENSURE_NOT_NULL(hInstance);
 
 	win32::Application app;
 
