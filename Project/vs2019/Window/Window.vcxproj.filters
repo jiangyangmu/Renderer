@@ -7,12 +7,12 @@
     <Filter Include="Test">
       <UniqueIdentifier>{8428fc64-54d5-451f-80d3-7b5c367664e3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Platform">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="Includes">
       <UniqueIdentifier>{7737defd-5ddb-4fc2-964e-09fe3ec451c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Native">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -46,14 +46,14 @@
     <ClInclude Include="..\..\..\Source\Core\VisualEffects.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Platform\Win32App.h">
-      <Filter>Platform</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\Test\TestScene.h">
       <Filter>Test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Includes\RendererApi.h">
       <Filter>Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Native\Win32App.h">
+      <Filter>Native</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -75,9 +75,6 @@
     <ClCompile Include="..\..\..\Source\Core\VisualEffects.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\Platform\Win32App.cpp">
-      <Filter>Platform</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Effects.cpp">
       <Filter>Test</Filter>
@@ -90,6 +87,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Water.cpp">
       <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Native\Win32App.cpp">
+      <Filter>Native</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

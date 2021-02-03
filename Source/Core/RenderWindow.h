@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Platform/Win32App.h"
+#include "../Native/Win32App.h"
 #include "Resource.h"
 
 namespace Graphics
