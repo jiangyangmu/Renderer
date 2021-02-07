@@ -1,33 +1,35 @@
 #include "Includes/RendererApi.h"
 #include "Native/Win32App.h"
 #include "Test/TestScene.h"
+#include "Core/Native.h"
 
-#include <Windows.h>
+#include <iostream>
 
 int main(int argc, char * argv[])
 {
-	HINSTANCE hInstance = GetModuleHandle(NULL);
-	ENSURE_NOT_NULL(hInstance);
+	NativeWindow * pMain;
+	NativeWindow * pTool;
 
-	win32::Application app;
-
-	int ret;
+	if ( NativeInitialize() )
 	{
-		Integer W = 1080;
-		Integer H = 768;
+		pMain = NativeCreateWindow(L"Renderer", 800, 600);
 
-		Graphics::RenderWindow renderWindow(L"My Renderer", hInstance, W, H);
-		W = renderWindow.GetWidth();
-		H = renderWindow.GetHeight();
+		if ( pMain )
+		{
+			NativeRegisterWindowCallbacks(pMain, NativeGetDebugWindowCallbacks());
+			NativeRegisterKeyboardCallbacks(pMain, NativeGetDebugKeyboardCallbacks());
+			NativeRegisterMouseCallbacks(pMain, NativeGetDebugMouseCallbacks());
 
-		Graphics::SceneRenderer renderer(renderWindow);
-		renderWindow.SetRenderer(renderer);
+			while ( NativeGetWindowCount() > 0 )
+			{
+				NativeInputPoll();
+				Sleep(10);
+			}
+			NativeDestroyWindow(pMain);
+		}
 
-		Ptr<Graphics::IScene> scene = Graphics::CreateTestScene_Water();
-		renderer.SwitchScene(*scene);
-
-		ret = app.Run(renderWindow);
+		NativeTerminate();
 	}
 
-	return ret;
+	return 0;
 }

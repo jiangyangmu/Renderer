@@ -25,12 +25,7 @@ namespace Graphics
 
 		// Events
 
-	public: _SEND_EVENT(OnAspectRatioChange);
 	private: _RECV_EVENT_DECL(RenderWindow, OnWndIdle);
-	private: _RECV_EVENT_DECL1(RenderWindow, OnWndResize);
-	private: _RECV_EVENT_DECL1(RenderWindow, OnMouseMove);
-	private: _RECV_EVENT_DECL1(RenderWindow, OnMouseLButtonDown);
-	private: _RECV_EVENT_DECL1(RenderWindow, OnMouseLButtonUp);
 
 	private:
 

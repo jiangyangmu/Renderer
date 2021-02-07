@@ -24,10 +24,6 @@ namespace Graphics
 		m_debugMode = false;
 
 		_BIND_EVENT(OnWndIdle, *this, *this);
-
-		_BIND_EVENT(OnMouseMove, *this, *this);
-		_BIND_EVENT(OnMouseLButtonDown, *this, *this);
-		_BIND_EVENT(OnMouseLButtonUp, *this, *this);
 	}
 
 	void RenderWindow::Paint(LONG width, LONG height, LPVOID data)
@@ -111,34 +107,6 @@ namespace Graphics
 			m_refRender->Present();
 
 			// Show frame N debug info
-			{
-				static double totalMS = 0.0;
-				static TCHAR strBuf[ 1024 ];
-				if ( ( totalMS += std::max(m_minFrameCostMS, m_lastFrameCostMS) ) > 500.0 ) // update once every 0.5 second
-				{
-					auto pos = V3Zero();//static_cast< SceneRenderable * >( m_refRender->GetRenderable(0).get() )->GetSceneState().camera->GetPos();
-					float xDbg = 0.0f; //m_refRender->GetRenderContext().GetConstants().DebugPixel[ 0 ];
-					float yDbg = 0.0f; //m_refRender->GetRenderContext().GetConstants().DebugPixel[ 1 ];
-
-					StringCchPrintf(strBuf,
-							1024,
-							TEXT("FPS=%.2f Cost=%.2f(ms) Frame=%d/%d Pos=(%.2f, %.2f, %.2f) Debug%s=(%d, %d)"),
-							1000.0 / std::max(m_minFrameCostMS, m_lastFrameCostMS),
-							m_lastFrameCostMS,
-							m_presentedFrame,
-							m_drawnFrame,
-							pos.x,
-							pos.y,
-							pos.z,
-							( m_debugMode ? TEXT("On") : TEXT("Off") ),
-							xDbg,
-							yDbg);
-
-					SetWindowText(GetHWND(), strBuf);
-
-					totalMS = 0.0;
-				}
-			}
 		}
 
 		// Count frame N+1 cost - begin
@@ -151,34 +119,5 @@ namespace Graphics
 		m_refRender->Update(m_minFrameCostMS);
 		m_refRender->Draw();
 		++m_drawnFrame;
-	}
-
-	_RECV_EVENT_IMPL(RenderWindow, OnWndResize) ( void * sender, const win32::WindowRect & args )
-	{
-		float aspectRatio = ((float)args.width) / args.height;
-		_DISPATCH_EVENT1(OnAspectRatioChange, *this, aspectRatio);
-	}
-
-	_RECV_EVENT_IMPL(RenderWindow, OnMouseMove) ( void * sender, const win32::MouseEventArgs & args )
-	{
-		if ( m_debugMode )
-		{
-			//m_refRender->GetRenderContext().GetConstants().DebugPixel[ 0 ] = args.pixelX;
-			//m_refRender->GetRenderContext().GetConstants().DebugPixel[ 1 ] = args.pixelY;
-		}
-	}
-
-	_RECV_EVENT_IMPL(RenderWindow, OnMouseLButtonDown) ( void * sender, const win32::MouseEventArgs & args )
-	{
-		//m_refRender->GetRenderContext().GetConstants().DebugPixel[ 0 ] = args.pixelX;
-		//m_refRender->GetRenderContext().GetConstants().DebugPixel[ 1 ] = args.pixelY;
-		m_debugMode = true;
-	}
-
-	_RECV_EVENT_IMPL(RenderWindow, OnMouseLButtonUp) ( void * sender, const win32::MouseEventArgs & args )
-	{
-		m_debugMode = false;
-		//m_refRender->GetRenderContext().GetConstants().DebugPixel[ 0 ] = -1;
-		//m_refRender->GetRenderContext().GetConstants().DebugPixel[ 1 ] = -1;
 	}
 }

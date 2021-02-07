@@ -55,6 +55,9 @@
     <ClInclude Include="..\..\..\Source\Native\Win32App.h">
       <Filter>Native</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\Core\Native.h">
+      <Filter>Native</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Core\Buffer.cpp">
@@ -89,6 +92,9 @@
       <Filter>Test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Native\Win32App.cpp">
+      <Filter>Native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Native\Win32Native.cpp">
       <Filter>Native</Filter>
     </ClCompile>
   </ItemGroup>
