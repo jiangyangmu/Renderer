@@ -4,7 +4,7 @@
 
 // Entry point
 void			TestMain(int argc, char * argv[]);
-bool			TestScene(int argc, char * argv[]);
+void			TestScene(int argc, char * argv[]);
 
 // Test cases
 void			TestNative_Callbacks();

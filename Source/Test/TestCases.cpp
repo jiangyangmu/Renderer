@@ -30,8 +30,8 @@ void		TestMain(int argc, char * argv[])
 
 	if ( strcmp(pName, "scene") == 0 )
 	{
-		if ( TestScene(argc - 1, argv + 1) )
-			return;
+		TestScene(argc - 1, argv + 1);
+		return;
 	}
 	else
 	{

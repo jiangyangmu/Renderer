@@ -31,14 +31,13 @@ const wchar_t *		GetTitle(const char * pName)
 	return bufWndTitleW;
 }
 
-bool	TestScene(int argc, char * argv[])
+void	TestScene(int argc, char * argv[])
 {
 	NativeWindow * pWindow;
 	SceneTestCase * pCase;
 	Ptr<Graphics::IScene> scene;
 
 	NativeInitialize();
-
 	pWindow = NativeCreateWindow(GetTitle(TestCaseName()), 800, 600);
 	pCase = nullptr;
 
@@ -51,16 +50,17 @@ bool	TestScene(int argc, char * argv[])
 
 		if (pCase)
 		{
-			scene = TestScene_Water();
+			scene = pCase->pScene();
 		
 			renderer.SwitchScene(*scene);
 			RenderMainLoop(pWindow, &renderer);
 		}
+		else
+		{
+			TestListCase(tcScene);
+		}
 	}
 
 	NativeDestroyWindow(pWindow);
-
 	NativeTerminate();
-
-	return pCase != nullptr;
 }
