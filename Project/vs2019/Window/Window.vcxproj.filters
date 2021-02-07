@@ -79,18 +79,6 @@
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Main.cpp" />
-    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Effects.cpp">
-      <Filter>Test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Minecraft.cpp">
-      <Filter>Test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Mirror.cpp">
-      <Filter>Test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Water.cpp">
-      <Filter>Test</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Source\Native\Win32App.cpp">
       <Filter>Native</Filter>
     </ClCompile>
@@ -104,6 +92,18 @@
       <Filter>Test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Test\TestCases_Scene.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Test\TestScene_Effects.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Test\TestScene_Minecraft.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Test\TestScene_Mirror.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Test\TestScene_Water.cpp">
       <Filter>Test</Filter>
     </ClCompile>
   </ItemGroup>

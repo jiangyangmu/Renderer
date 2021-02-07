@@ -190,10 +190,10 @@
     <ClCompile Include="..\..\..\Source\Test\TestCases.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases_Native.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases_Scene.cpp" />
-    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Effects.cpp" />
-    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Minecraft.cpp" />
-    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Mirror.cpp" />
-    <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Water.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestScene_Effects.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestScene_Minecraft.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestScene_Mirror.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestScene_Water.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
