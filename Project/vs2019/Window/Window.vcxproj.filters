@@ -49,9 +49,6 @@
     <ClInclude Include="..\..\..\Source\Includes\RendererApi.h">
       <Filter>Includes</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Native\Win32App.h">
-      <Filter>Native</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\Core\Native.h">
       <Filter>Native</Filter>
     </ClInclude>
@@ -79,9 +76,6 @@
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Main.cpp" />
-    <ClCompile Include="..\..\..\Source\Native\Win32App.cpp">
-      <Filter>Native</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Source\Native\Win32Native.cpp">
       <Filter>Native</Filter>
     </ClCompile>

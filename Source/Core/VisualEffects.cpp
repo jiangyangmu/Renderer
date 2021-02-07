@@ -1,6 +1,6 @@
 #include "VisualEffects.h"
 
-#include "../Native/Win32App.h"
+#include "Native.h"
 
 namespace Graphics
 {
@@ -96,11 +96,11 @@ namespace Graphics
 
 		if ( m_texFilePath != NULL )
 		{
-			LONG nWidth;
-			LONG nHeight;
+			int nWidth;
+			int nHeight;
 			LPVOID lpPixelData = nullptr;
 
-			win32::LoadBMP(m_texFilePath, &nWidth, &nHeight, &lpPixelData);
+			NativeLoadBmp(m_texFilePath, &nWidth, &nHeight, &lpPixelData);
 			ASSERT(nWidth > 0 && nHeight > 0 && lpPixelData != nullptr);
 
 			m_texture2D	= device.CreateTexture2D(nWidth, nHeight, 4, 4, 0, lpPixelData);

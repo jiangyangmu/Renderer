@@ -2,6 +2,7 @@
 
 #include <WindowsX.h>
 #include <Windows.h>
+#include <Gdiplus.h>
 #include <crtdbg.h>
 
 #include <stdio.h>
@@ -57,6 +58,7 @@ static NativeWin32 native =
 	{},
 	{},
 };
+ULONG_PTR tkGdiPlus = NULL;
 
 // Methods
 
@@ -236,16 +238,22 @@ bool			NativeInitialize()
 
 	native.hInstance = GetModuleHandle(NULL);
 
-	if ( native.hInstance != NULL )
+	if ( native.hInstance == NULL )
 	{
-		native.bInitialized = true;
-		memset(native.sWindows, 0, sizeof(native.sWindows));
-		memset(native.bWindows, 0, sizeof(native.bWindows));
-
-		( void ) _RegisterWindowClass();
+		return false;
 	}
 
-	return native.bInitialized;
+	native.bInitialized = true;
+	memset(native.sWindows, 0, sizeof(native.sWindows));
+	memset(native.bWindows, 0, sizeof(native.bWindows));
+
+	( void ) _RegisterWindowClass();
+
+	// GDI+
+	Gdiplus::GdiplusStartupInput input;
+	Gdiplus::GdiplusStartup(&tkGdiPlus, &input, NULL);
+
+	return true;
 }
 void			NativeTerminate()
 {
@@ -262,6 +270,9 @@ void			NativeTerminate()
 			native.bWindows[ i ] = false;
 		}
 	}
+
+	// GDI+
+	Gdiplus::GdiplusShutdown(tkGdiPlus);
 }
 
 NativeWindow *		NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int nHeight)
@@ -494,6 +505,43 @@ void			AlignedFree(void * p)
 #else
 	return _aligned_free(p);
 #endif
+}
+
+// Image
+
+void			NativeLoadBmp(const wchar_t * pBmpFile, int * pWidth, int * pHeight, void ** ppPixels)
+{
+	Gdiplus::Bitmap * pBmp;
+	Gdiplus::Color color;
+	UINT w;
+	UINT h;
+	DWORD * pixels;
+	DWORD * pixel;
+
+	pBmp	= Gdiplus::Bitmap::FromFile(pBmpFile, false);
+	assert(pBmp);
+
+	w	= pBmp->GetWidth();
+	h	= pBmp->GetHeight();
+
+	pixels	= new DWORD[ w * h ];
+	pixel	= pixels;
+	assert(pixels);
+
+	for ( int y = 0; y < h; ++y )
+	{
+		for ( int x = 0; x < w; ++x )
+		{
+			pBmp->GetPixel(x, h - y - 1, &color);
+			*( pixel++ ) = color.GetValue();
+		}
+	}
+
+	delete pBmp;
+
+	*pWidth	= static_cast< int >( w );
+	*pHeight = static_cast< int >( h );
+	*ppPixels = pixels;
 }
 
 // Debug

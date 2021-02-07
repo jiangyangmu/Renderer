@@ -2,7 +2,6 @@
 #include "_Math.h"
 
 #include "RenderWindow.h"
-#include "../Native/Win32App.h"
 
 #include <deque>
 
@@ -19,12 +18,6 @@ namespace Graphics
 	static const BufferIndex	NULL_BUFFER = {};
 	static const DescIndex		NULL_DESC = {};
 	static const ShaderIndex	NULL_SHADER = {};
-
-	class Window_Desc : public win32::Window
-	{
-	public:
-		using Window::Window;
-	};
 
 	struct SwapChain_Desc
 	{
@@ -940,23 +933,6 @@ namespace Graphics
 		_aligned_free(pVSOut);
 		_aligned_free(pPSIn);
 		_aligned_free(pPSOut);
-	}
-
-	Window			Window::Default()
-	{
-		static Window_Desc * pWindow = nullptr;
-		if (!pWindow)
-		{
-			pWindow = new Window_Desc(L"Default", GetModuleHandle(NULL), 800, 600);
-		}
-
-		Window w;
-		w.pImpl = (void *)pWindow;
-		return w;
-	}
-	HWND			Window::GetHWND()
-	{
-		return static_cast<Window_Desc *>(pImpl)->GetHWND();
 	}
 
 	void			SwapChain::Swap()

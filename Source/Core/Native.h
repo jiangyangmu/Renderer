@@ -55,7 +55,6 @@ bool		NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMode
 void		NativeRegisterWindowCallbacks(NativeWindow * pWindow, const NativeWindowCallbacks * pCallbacks);
 void		NativeRegisterKeyboardCallbacks(NativeWindow * pWindow, const NativeKeyboardCallbacks * pCallbacks);
 void		NativeRegisterMouseCallbacks(NativeWindow * pWindow, const NativeMouseCallbacks * pCallbacks);
-
 void		NativeInputPoll();
 
 // Time
@@ -64,6 +63,9 @@ int64_t		NativeGetTick();
 // Memory
 void *		AlignedMalloc(size_t nSize, size_t nAlign);
 void		AlignedFree(void * p);
+
+// Image
+void		NativeLoadBmp(const wchar_t * pBmpFile, int * pWidth, int * pHeight, void ** ppPixels);
 
 // Debug
 const NativeWindowCallbacks *		NativeDebugGetWindowCallbacks();

@@ -1,6 +1,5 @@
 #include "TestCases.h"
 #include "../Core/Renderer.h"
-#include "../Native/Win32App.h"
 
 #include <cstdlib>
 
@@ -34,12 +33,10 @@ const wchar_t *		GetTitle(const char * pName)
 
 bool	TestScene(int argc, char * argv[])
 {
-	ULONG_PTR hGdiPlus;
 	NativeWindow * pWindow;
 	SceneTestCase * pCase;
 	Ptr<Graphics::IScene> scene;
 
-	hGdiPlus = win32::InitializeGdiplus();
 	NativeInitialize();
 
 	pWindow = NativeCreateWindow(GetTitle(TestCaseName()), 800, 600);
@@ -64,7 +61,6 @@ bool	TestScene(int argc, char * argv[])
 	NativeDestroyWindow(pWindow);
 
 	NativeTerminate();
-	win32::UninitializeGdiplus(hGdiPlus);
 
 	return pCase != nullptr;
 }

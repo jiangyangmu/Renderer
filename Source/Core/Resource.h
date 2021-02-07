@@ -169,14 +169,6 @@ namespace Graphics
 	// RenderContext, RenderTaret
 	// ---------------------------------------------------------------
 
-	class Window : public Handle
-	{
-	public:
-		static Window		Default();
-
-		HWND			GetHWND();
-	};
-
 	struct Rect
 	{
 		Integer left;
