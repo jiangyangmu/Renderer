@@ -24,7 +24,10 @@ using Ref = std::shared_ptr<T>; // TODO: implement a non thread-safe one
 
 #include <cassert>
 
-#define _ALERT_IF_FALSE(e) if (!(e)) { MessageBox(NULL, TEXT(#e), TEXT("Exception"), MB_OK); ExitProcess(0); }
+
+#define ____STR(x) #x
+#define ____MSG(e, l) (TEXT(#e "\nat " __FILE__ ":" ____STR(l)))
+#define _ALERT_IF_FALSE(e) if (!(e)) { MessageBox(NULL, ____MSG(e, __LINE__), TEXT("Exception"), MB_OK); ExitProcess(0); }
 
 #define ENSURE_NOT_NULL(e) _ALERT_IF_FALSE((e) != NULL)
 #define ENSURE_TRUE(e) _ALERT_IF_FALSE((e))

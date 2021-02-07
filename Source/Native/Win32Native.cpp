@@ -336,6 +336,15 @@ int			NativeGetWindowCount()
 {
 	return NUM_MAX_WINDOW - _CountFreeWindow();
 }
+
+int			NativeWindowGetWidth(NativeWindow * pWindow)
+{
+	return pWindow->nWidth;
+}
+int			NativeWindowGetHeight(NativeWindow * pWindow)
+{
+	return pWindow->nHeight;
+}
 bool			NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode)
 {
 	const BYTE * pbSrc;
@@ -451,6 +460,25 @@ void			NativeInputPoll()
 	while ( msg.message != WM_QUIT );
 }
 
+int64_t			NativeGetTick()
+{
+	static LARGE_INTEGER liFrequence = { 0 };
+	static LARGE_INTEGER liBegin = { 0 };
+	LARGE_INTEGER liEnd;
+	
+	if (liFrequence.QuadPart == 0)
+	{
+		QueryPerformanceFrequency(&liFrequence);
+		QueryPerformanceCounter(&liBegin);
+		return 0;
+	}
+	else
+	{
+		QueryPerformanceCounter(&liEnd);
+		return (liEnd.QuadPart - liBegin.QuadPart) * 1000000 / liFrequence.QuadPart;
+	}
+}
+
 void *			AlignedMalloc(size_t nSize, size_t nAlign)
 {
 #ifdef _DEBUG
@@ -485,11 +513,11 @@ static void		DebugWindow_Close()
 
 static void		DebugKeyboard_Down(int keycode)
 {
-	printf("Key Down:   %d(%c)\n", keycode, ( char ) keycode);
+	printf("Key Down:   %d(%c)\n", keycode, isprint(keycode) ? (char)keycode : '?');
 }
 static void		DebugKeyboard_Up(int keycode)
 {
-	printf("Key Up:     %d(%c)\n", keycode, ( char ) keycode);
+	printf("Key Up:     %d(%c)\n", keycode, isprint(keycode) ? (char)keycode : '?');
 }
 
 static void		DebugMouse_Move(int x, int y)

@@ -318,10 +318,9 @@ namespace Graphics
 		// Mirror resources
 		Ptr<TextureEffect>		m_efMirror;
 	};
+}
 
-
-	Ptr<IScene>	CreateTestScene_Water()
-	{
-		return Ptr<IScene>(new TestScene_Water());
-	}
+Ptr<Graphics::IScene>	TestScene_Water()
+{
+	return Ptr<Graphics::IScene>(new Graphics::TestScene_Water());
 }

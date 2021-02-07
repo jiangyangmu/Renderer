@@ -982,9 +982,10 @@ namespace Graphics
 		ASSERT(buffer.ElementSize() == 3);
 		if ( pRenderTargetDesc->pUnknown->QueryInterface(&pWindow) )
 		{
-			ASSERT(pWindow->GetWidth() == nWidth && pWindow->GetHeight() == nHeight);
-
-			pWindow->Paint(pWindow->GetWidth(), pWindow->GetHeight(), FrameBuffer());
+			ASSERT(pWindow->GetWidth() == nWidth &&
+			       pWindow->GetHeight() == nHeight);
+			
+			NativeWindowBilt(pWindow->GetWindow(), FrameBuffer(), NATIVE_BLIT_BGR);
 		}
 		else
 		{

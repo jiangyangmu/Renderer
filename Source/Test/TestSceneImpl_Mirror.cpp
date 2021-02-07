@@ -277,10 +277,9 @@ namespace Graphics
 		// Mirror resources
 		Ptr<TextureEffect>		m_efMirror;
 	};
+}
 
-
-	Ptr<IScene>	CreateTestScene_Mirror()
-	{
-		return Ptr<IScene>(new TestScene_Mirror());
-	}
+Ptr<Graphics::IScene>	TestScene_Mirror()
+{
+	return Ptr<Graphics::IScene>(new Graphics::TestScene_Mirror());
 }

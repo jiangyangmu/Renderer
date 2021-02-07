@@ -100,5 +100,11 @@
     <ClCompile Include="..\..\..\Source\Test\TestCases_Native.cpp">
       <Filter>Test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\Test\TestCases.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Test\TestCases_Scene.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

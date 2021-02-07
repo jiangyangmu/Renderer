@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Resource.h"
+#include "Native.h"
 
 namespace Graphics
 {
 	// --------------------------------------------------------------------------
-	// Rendering Interface
+	// Interfaces
 	// --------------------------------------------------------------------------
 
 	class Renderable
@@ -28,7 +29,13 @@ namespace Graphics
 	};
 
 	// --------------------------------------------------------------------------
-	// Rendering Implementation
+	// Methods
+	// --------------------------------------------------------------------------
+
+	void	RenderMainLoop(NativeWindow * pWindow, IRenderer * pRenderer);
+
+	// --------------------------------------------------------------------------
+	// Renderable Implementation
 	// --------------------------------------------------------------------------
 
 	class ROTriangle : public Renderable

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cwchar> // wchar_t, size_t
+#include <cstdint> // int64_t
 
 enum NativeBlitMode
 {
@@ -46,6 +47,8 @@ NativeWindow *	NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int 
 NativeWindow *	NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int nHeight, int nLeft, int nTop);
 void		NativeDestroyWindow(NativeWindow * pWindow);
 int		NativeGetWindowCount();
+int		NativeWindowGetWidth(NativeWindow * pWindow);
+int		NativeWindowGetHeight(NativeWindow * pWindow);
 bool		NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode);
 
 // Input
@@ -54,6 +57,9 @@ void		NativeRegisterKeyboardCallbacks(NativeWindow * pWindow, const NativeKeyboa
 void		NativeRegisterMouseCallbacks(NativeWindow * pWindow, const NativeMouseCallbacks * pCallbacks);
 
 void		NativeInputPoll();
+
+// Time
+int64_t		NativeGetTick();
 
 // Memory
 void *		AlignedMalloc(size_t nSize, size_t nAlign);

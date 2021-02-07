@@ -1,48 +1,45 @@
 #pragma once
 
-#include "../Native/Win32App.h"
+#include "Native.h"
 #include "Resource.h"
 
 namespace Graphics
 {
 	class IRenderer;
 
-	class RenderWindow : public win32::Window, public IUnknown
+	class RenderWindow : public IUnknown
 	{
 		_INTERFACE_DEFINE_IID(1610280267);
 	public:
+		explicit		RenderWindow(NativeWindow * pWindow_);
 
-		RenderWindow(LPCWSTR lpTitle, HINSTANCE hInstance, int nWidth, int nHeight);
-
-		// Operations
-
-		void			Paint(LONG width, LONG height, LPVOID data);
 		virtual bool		QueryInterface(Integer guid, void **  ppInterface) override;
+		void			RegisterEventListener(OnMouseMoveEventHandler * pOnMouseMove, OnKeyDownEventHandler * pOnKeyDown, OnKeyUpEventHandler * pOnKeyUp);
 
-		// Properties
-
-		void			SetRenderer(IRenderer & renderer);
-
-		// Events
-
-	private: _RECV_EVENT_DECL(RenderWindow, OnWndIdle);
+		NativeWindow *		GetWindow()
+		{
+			return pWindow;
+		}
+		Integer			GetWidth()
+		{
+			return NativeWindowGetWidth(pWindow);
+		}
+		Integer			GetHeight()
+		{
+			return NativeWindowGetHeight(pWindow);
+		}
 
 	private:
+		static void		OnMouseMove(int x, int y);
+		static void		OnKeyDown(int keycode);
+		static void		OnKeyUp(int keycode);
 
-		// Rendering
-		IRenderer *		m_refRender;
+		NativeWindow *			pWindow;
+		NativeMouseCallbacks		cbMouse;
+		NativeKeyboardCallbacks		cbKeyboard;
 
-		// FPS control
-		LARGE_INTEGER		m_timerFrequence;
-		LARGE_INTEGER		m_timerBegin;
-		LARGE_INTEGER		m_timerEnd;
-		double			m_minFrameCostMS; // each frame spend at least this milliseconds
-		double			m_lastFrameCostMS;
-
-		// Statistics
-		LONG			m_drawnFrame;
-		LONG			m_presentedFrame;
-
-		bool			m_debugMode;
+		OnMouseMoveEventHandler *	pOnMouseMove;
+		OnKeyDownEventHandler *		pOnKeyDown;
+		OnKeyUpEventHandler *		pOnKeyUp;
 	};
 }

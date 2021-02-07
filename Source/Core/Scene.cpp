@@ -108,9 +108,9 @@ namespace Graphics
 		ENSURE_TRUE(
 			static_cast< IUnknown && >( context.GetRenderTarget() ).QueryInterface(&pWindow));
 
-		_BIND_EVENT(OnMouseMove, *pWindow, *this);
-		_BIND_EVENT(OnKeyDown, *pWindow, *this);
-		_BIND_EVENT(OnKeyUp, *pWindow, *this);
+		pWindow->RegisterEventListener(&this->GetOnMouseMoveEventHandler(),
+					       &this->GetOnKeyDownEventHandler(),
+					       &this->GetOnKeyUpEventHandler());
 	}
 	void			Controller::Update(double ms)
 	{
@@ -161,6 +161,7 @@ namespace Graphics
 		transform.rx = -vRotRad;
 		transform.ry = hRotRad;
 		transform.rz = 0.0f;
+		//printf("Mouse Pos: %d, %d, %d\n", pos.x, pos.y, pos.z);
 
 		ApplyChangeToConnectionTree(this, &transform);
 	}

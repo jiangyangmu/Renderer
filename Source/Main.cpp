@@ -3,6 +3,6 @@
 
 int main(int argc, char * argv[])
 {
-	Test(argc - 1, argv + 1);
+	TestMain(argc - 1, argv + 1);
 	return 0;
 }

@@ -187,7 +187,9 @@
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Native\Win32App.cpp" />
     <ClCompile Include="..\..\..\Source\Native\Win32Native.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestCases.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases_Native.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestCases_Scene.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Effects.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Minecraft.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Mirror.cpp" />

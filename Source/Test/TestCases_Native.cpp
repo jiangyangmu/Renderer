@@ -4,19 +4,6 @@
 #define WINDOW_WIDTH	(800)
 #define WINDOW_HEIGHT	(600)
 
-struct TestCase
-{
-	const char * pName;
-	void (*pFunc)();
-};
-
-static TestCase cases[] =
-{
-	{"callback", TestNative_Callbacks},
-	{"blit", TestNative_Blit},
-	{"window", TestNative_MultipleWindow},
-};
-
 static NativeKeyboardCallbacks cbKeyboard;
 static NativeWindow * pMain = nullptr;
 static NativeWindow * pWindowGroup[4];
@@ -57,50 +44,18 @@ static void	Keyboard_Down(int keycode)
 		default: break;
 	}
 
-	printf("Key Down:   %d(%c) set color: %s\n", keycode, ( char ) keycode, bSuccess ? "ok" : "bad");
+	printf("Key Down:   %d(%c) set color: %s\n",
+	       keycode,
+	       isprint(keycode) ? (char)keycode : '?',
+	       bSuccess ? "ok" : "bad");
 }
 static void	Keyboard_Up(int keycode)
 {
-	printf("Key Up:     %d(%c)\n", keycode, ( char ) keycode);
+	printf("Key Up:     %d(%c)\n",
+	       keycode,
+	       isprint(keycode) ? (char)keycode : '?');
 }
 
-void		Test(int argc, char * argv[])
-{
-	if ( argc >= 1 )
-	{
-		const char * pName = argv[ 0 ];
-		bool bFound = false;
-
-		for ( TestCase & c : cases )
-		{
-			if ( strcmp(c.pName, pName) == 0 )
-			{
-				c.pFunc();
-				bFound = true;
-				break;
-			}
-		}
-
-		if ( bFound )
-		{
-			return;
-		}
-		else
-		{
-			printf("No test case matches name '%s'.\n", pName);
-		}
-	}
-	else
-	{
-		printf("Require test case name.\n");
-	}
-
-	printf("Valid names:\n");
-	for ( TestCase & c : cases )
-	{
-		printf("\t%s\n", c.pName);
-	}
-}
 void		TestNative_Callbacks()
 {
 	if ( NativeInitialize() )

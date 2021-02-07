@@ -233,10 +233,9 @@ namespace Graphics
 		EntityGroup *			m_texGroup;
 		EntityGroup *			m_bpGroup;
 	};
+}
 
-
-	Ptr<IScene>	CreateTestScene_Effects()
-	{
-		return Ptr<IScene>(new EffectTestScene());
-	}
+Ptr<Graphics::IScene>	TestScene_Effects()
+{
+	return Ptr<Graphics::IScene>(new Graphics::EffectTestScene());
 }

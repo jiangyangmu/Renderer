@@ -160,9 +160,9 @@ namespace Graphics
 		Controller *			m_controller;
 		Terrain *			m_terrain;
 	};
+}
 
-	Ptr<IScene>	CreateTestScene_Minecraft()
-	{
-		return Ptr<IScene>(new TestScene_Minecraft());
-	}
+Ptr<Graphics::IScene>	TestScene_Minecraft()
+{
+	return Ptr<Graphics::IScene>(new Graphics::TestScene_Minecraft());
 }
