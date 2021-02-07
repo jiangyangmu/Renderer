@@ -1,4 +1,4 @@
-#include "TestScene.h"
+#include "TestCases.h"
 
 namespace Graphics
 {

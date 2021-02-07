@@ -46,9 +46,6 @@
     <ClInclude Include="..\..\..\Source\Core\VisualEffects.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\Test\TestScene.h">
-      <Filter>Test</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Source\Includes\RendererApi.h">
       <Filter>Includes</Filter>
     </ClInclude>
@@ -57,6 +54,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Source\Core\Native.h">
       <Filter>Native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\Test\TestCases.h">
+      <Filter>Test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -96,6 +96,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Native\Win32Native.cpp">
       <Filter>Native</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Test\TestCases_Native.cpp">
+      <Filter>Test</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,6 +1,15 @@
 #pragma once
 
-#include <wchar.h> // wchar_t
+#include <cwchar> // wchar_t, size_t
+
+enum NativeBlitMode
+{
+	NATIVE_BLIT_UNKNOWN	= 0,
+	NATIVE_BLIT_BGRA	= 1,
+	NATIVE_BLIT_BGR		= 2,
+	NATIVE_BLIT_F32		= 3,
+	NATIVE_BLIT_U8		= 4,
+};
 
 struct NativeWindowCallbacks
 {
@@ -34,8 +43,10 @@ void		NativeTerminate();
 
 // Window
 NativeWindow *	NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int nHeight);
+NativeWindow *	NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int nHeight, int nLeft, int nTop);
 void		NativeDestroyWindow(NativeWindow * pWindow);
 int		NativeGetWindowCount();
+bool		NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode);
 
 // Input
 void		NativeRegisterWindowCallbacks(NativeWindow * pWindow, const NativeWindowCallbacks * pCallbacks);
@@ -43,6 +54,10 @@ void		NativeRegisterKeyboardCallbacks(NativeWindow * pWindow, const NativeKeyboa
 void		NativeRegisterMouseCallbacks(NativeWindow * pWindow, const NativeMouseCallbacks * pCallbacks);
 
 void		NativeInputPoll();
+
+// Memory
+void *		AlignedMalloc(size_t nSize, size_t nAlign);
+void		AlignedFree(void * p);
 
 // Debug
 const NativeWindowCallbacks *		NativeGetDebugWindowCallbacks();

@@ -175,7 +175,7 @@
     <ClInclude Include="..\..\..\Source\Core\_Math.h" />
     <ClInclude Include="..\..\..\Source\Includes\RendererApi.h" />
     <ClInclude Include="..\..\..\Source\Native\Win32App.h" />
-    <ClInclude Include="..\..\..\Source\Test\TestScene.h" />
+    <ClInclude Include="..\..\..\Source\Test\TestCases.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Core\Buffer.cpp" />
@@ -187,6 +187,7 @@
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Native\Win32App.cpp" />
     <ClCompile Include="..\..\..\Source\Native\Win32Native.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestCases_Native.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Effects.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Minecraft.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestSceneImpl_Mirror.cpp" />

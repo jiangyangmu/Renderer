@@ -2,14 +2,16 @@
 
 #include <WindowsX.h>
 #include <Windows.h>
+#include <crtdbg.h>
 
 #include <stdio.h>
 #include <assert.h>
 
 // Constants
 
-#define NUM_MAX_WINDOW 10
-#define NUM_MAX_EVENT_PER_POLL 10
+#define NUM_MAX_WINDOW (10)
+#define NUM_MAX_EVENT_PER_POLL (10)
+#define BYTES_PER_PIXEL (4)
 
 static LPCWSTR		StrWndClassName = L"Win32 Window Class";
 static UINT		DwWndClassStyle = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -20,9 +22,16 @@ static DWORD		DwWndStyle = WS_CAPTION;
 struct NativeWindow
 {
 	HWND		hWnd;
+
 	int		nWidth;
 	int		nHeight;
-	
+
+	// Surface
+	HDC		hWndDC;
+	HDC		hMemDC;
+	HBITMAP		hBmp;
+	void *		pPixels;
+
 	NativeWindowCallbacks	cbWindow;
 	NativeKeyboardCallbacks cbKeyboard;
 	NativeMouseCallbacks	cbMouse;
@@ -31,12 +40,12 @@ struct NativeWindow
 struct NativeWin32
 {
 	HINSTANCE	hInstance;
-	
+
 	bool		bInitialized;
-	
+
 	// windows
-	NativeWindow	sWindows[NUM_MAX_WINDOW];
-	bool		bWindows[NUM_MAX_WINDOW];
+	NativeWindow	sWindows[ NUM_MAX_WINDOW ];
+	bool		bWindows[ NUM_MAX_WINDOW ];
 };
 
 // Globals
@@ -72,9 +81,9 @@ static bool		_RegisterWindowClass()
 static int		_CountFreeWindow()
 {
 	int nCount = 0;
-	for (int i = 0; i < NUM_MAX_WINDOW; ++i)
+	for ( int i = 0; i < NUM_MAX_WINDOW; ++i )
 	{
-		if (!native.bWindows[i]) ++nCount;
+		if ( !native.bWindows[ i ] ) ++nCount;
 	}
 	return nCount;
 }
@@ -96,10 +105,78 @@ static NativeWindow *	_AllocWindow()
 }
 static void		_ReleaseWindow(NativeWindow * pWindow)
 {
-	assert(native.sWindows <= pWindow && pWindow < (native.sWindows + NUM_MAX_WINDOW));
+	assert(native.sWindows <= pWindow && pWindow < ( native.sWindows + NUM_MAX_WINDOW ));
 	assert(pWindow->hWnd == NULL);
 
-	native.bWindows[pWindow - native.sWindows] = false;
+	native.bWindows[ pWindow - native.sWindows ] = false;
+}
+
+static void		_CreateSurface(NativeWindow * pWindow)
+{
+	BITMAPINFOHEADER bi;
+	HDC hWndDC;
+	HDC hMemDC;
+	HBITMAP hBmp;
+	void * pPixels;
+
+	memset(&bi, 0, sizeof(BITMAPINFOHEADER));
+	bi.biSize		= sizeof(BITMAPINFOHEADER);
+	bi.biWidth		= pWindow->nWidth;
+	bi.biHeight		= -pWindow->nHeight;
+	bi.biPlanes		= 1;
+	bi.biBitCount		= BYTES_PER_PIXEL * 8;
+	bi.biCompression	= BI_RGB;
+
+	hWndDC			= GetDC(pWindow->hWnd);
+	hMemDC			= CreateCompatibleDC(hWndDC);
+
+	hBmp			= CreateDIBSection(hMemDC,
+						   ( const BITMAPINFO * ) &bi,
+						   DIB_RGB_COLORS,
+						   &pPixels,
+						   NULL,
+						   0);
+	assert(hMemDC);
+	assert(hBmp && pPixels);
+
+	DeleteObject(SelectObject(hMemDC, hBmp));
+
+	pWindow->hWndDC = hWndDC;
+	pWindow->hMemDC = hMemDC;
+	pWindow->hBmp = hBmp;
+	pWindow->pPixels = pPixels;
+}
+static void		_DestroySurface(NativeWindow * pWindow)
+{
+	DeleteObject(pWindow->hBmp);
+	DeleteDC(pWindow->hMemDC);
+	ReleaseDC(pWindow->hWnd, pWindow->hWndDC);
+
+	pWindow->hBmp = NULL;
+	pWindow->hMemDC = NULL;
+	pWindow->hWndDC = NULL;
+	pWindow->pPixels = NULL;
+}
+static bool		_PresentSurface(HWND hWnd, HDC hMemDC, int nWidth, int nHeight)
+{
+	HDC hDC;
+	bool bRet;
+
+	hDC	= GetDC(hWnd);
+
+	bRet	= BitBlt(hDC,
+			 0,
+			 0,
+			 nWidth,
+			 nHeight,
+			 hMemDC,
+			 0,
+			 0,
+			 SRCCOPY);
+
+	ReleaseDC(hWnd, hDC);
+
+	return bRet;
 }
 
 static LRESULT CALLBACK _WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -189,10 +266,8 @@ void			NativeTerminate()
 
 NativeWindow *		NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int nHeight)
 {
-	NativeWindow * pWindow;
 	int nScreenWidth;
 	int nScreenHeight;
-	RECT rect;
 
 	assert(pWindowTitle);
 	assert(nWidth > 0 && nHeight > 0);
@@ -200,13 +275,25 @@ NativeWindow *		NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int
 	nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
 	nScreenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-	rect.left = (nScreenWidth - nWidth) / 2;
+	return NativeCreateWindow(pWindowTitle, nWidth, nHeight, ( nScreenWidth - nWidth ) / 2, ( nScreenHeight - nHeight ) / 2);
+}
+NativeWindow *		NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int nHeight, int nLeft, int nTop)
+{
+	NativeWindow * pWindow;
+	RECT rect;
+
+	assert(pWindowTitle);
+	assert(nWidth > 0 && nHeight > 0);
+
+	rect.left = nLeft;
 	rect.right = rect.left + nWidth;
-	rect.top = (nScreenHeight - nHeight) / 2;
+	rect.top = nTop;
 	rect.bottom = rect.top + nHeight;
+
 	AdjustWindowRect(&rect, DwWndStyle, false);
 
 	pWindow = _AllocWindow();
+	memset(pWindow, 0, sizeof(NativeWindow));
 	pWindow->hWnd = CreateWindow(StrWndClassName,
 				     pWindowTitle,
 				     WS_OVERLAPPEDWINDOW,
@@ -218,21 +305,27 @@ NativeWindow *		NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int
 				     NULL,
 				     native.hInstance,
 				     ( LPVOID ) pWindow);
+	if ( !pWindow->hWnd )
+	{
+		return NULL;
+	}
+
 	pWindow->nWidth = nWidth;
 	pWindow->nHeight = nHeight;
 
-	if (pWindow->hWnd)
-	{
-		SetWindowText(pWindow->hWnd, pWindowTitle);
-		ShowWindow(pWindow->hWnd, SW_SHOW);
-	}
+	_CreateSurface(pWindow);
 
-	return pWindow->hWnd ? pWindow : NULL;
+	SetWindowText(pWindow->hWnd, pWindowTitle);
+	ShowWindow(pWindow->hWnd, SW_SHOW);
+
+	return pWindow;
 }
 void			NativeDestroyWindow(NativeWindow * pWindow)
 {
 	if ( pWindow->hWnd )
 	{
+		_DestroySurface(pWindow);
+
 		DestroyWindow(pWindow->hWnd);
 		pWindow->hWnd = NULL;
 	}
@@ -242,6 +335,81 @@ void			NativeDestroyWindow(NativeWindow * pWindow)
 int			NativeGetWindowCount()
 {
 	return NUM_MAX_WINDOW - _CountFreeWindow();
+}
+bool			NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode)
+{
+	const BYTE * pbSrc;
+	const float * pfSrc;
+	DWORD * pDst;
+	bool bBadMode;
+
+	pDst = ( DWORD * ) pWindow->pPixels;
+	bBadMode = false;
+	switch ( mode )
+	{
+		case NATIVE_BLIT_BGRA:
+			memcpy(pDst,
+			       pSrc,
+			       ( size_t ) pWindow->nWidth * pWindow->nHeight * BYTES_PER_PIXEL);
+			break;
+		case NATIVE_BLIT_BGR:
+			pbSrc	= ( const BYTE * ) pSrc;
+			for ( int r = 0; r < pWindow->nHeight; ++r )
+			{
+				for ( int c = 0; c < pWindow->nWidth; ++c )
+				{
+					*pDst = ( 0xff000000 ) |
+						( pbSrc[ 2 ] << 16 ) |
+						( pbSrc[ 1 ] << 8 ) |
+						( pbSrc[ 0 ] );
+
+					++pDst;
+					pbSrc += 3;
+				}
+			}
+			break;
+		case NATIVE_BLIT_F32:
+			pfSrc	= ( const float * ) pSrc;
+			for ( int r = 0; r < pWindow->nHeight; ++r )
+			{
+				for ( int c = 0; c < pWindow->nWidth; ++c )
+				{
+					BYTE grey = ( BYTE ) ( *pfSrc * 255.0f );
+
+					*pDst = ( 0xff000000 ) |
+						( grey << 16 ) |
+						( grey << 8 ) |
+						( grey );
+
+					++pDst;
+					++pfSrc;
+				}
+			}
+			break;
+		case NATIVE_BLIT_U8:
+			pbSrc	= ( const BYTE * ) pSrc;
+			for ( int r = 0; r < pWindow->nHeight; ++r )
+			{
+				for ( int c = 0; c < pWindow->nWidth; ++c )
+				{
+					BYTE grey = *pbSrc;
+
+					*pDst = ( 0xff000000 ) |
+						( grey << 16 ) |
+						( grey << 8 ) |
+						( grey );
+
+					++pDst;
+					++pbSrc;
+				}
+			}
+			break;
+		default:
+			bBadMode = true;
+			break;
+	}
+
+	return !bBadMode && _PresentSurface(pWindow->hWnd, pWindow->hMemDC, pWindow->nWidth, pWindow->nHeight);
 }
 
 void			NativeRegisterWindowCallbacks(NativeWindow * pWindow, const NativeWindowCallbacks * pCallbacks)
@@ -283,6 +451,23 @@ void			NativeInputPoll()
 	while ( msg.message != WM_QUIT );
 }
 
+void *			AlignedMalloc(size_t nSize, size_t nAlign)
+{
+#ifdef _DEBUG
+	return _aligned_malloc_dbg(nSize, nAlign, __FILE__, __LINE__);
+#else
+	return _aligned_malloc(nSize, nAlign);
+#endif
+}
+void			AlignedFree(void * p)
+{
+#ifdef _DEBUG
+	return _aligned_free_dbg(p);
+#else
+	return _aligned_free(p);
+#endif
+}
+
 // Debug
 
 static void		DebugWindow_Move(int x, int y)
@@ -300,11 +485,11 @@ static void		DebugWindow_Close()
 
 static void		DebugKeyboard_Down(int keycode)
 {
-	printf("Key Down:   %d(%c)\n", keycode, (char)keycode);
+	printf("Key Down:   %d(%c)\n", keycode, ( char ) keycode);
 }
 static void		DebugKeyboard_Up(int keycode)
 {
-	printf("Key Up:     %d(%c)\n", keycode, (char)keycode);
+	printf("Key Up:     %d(%c)\n", keycode, ( char ) keycode);
 }
 
 static void		DebugMouse_Move(int x, int y)
@@ -340,7 +525,7 @@ const NativeWindowCallbacks *		NativeGetDebugWindowCallbacks()
 {
 	static NativeWindowCallbacks cbs;
 	static bool init = false;
-	if (!init)
+	if ( !init )
 	{
 		cbs.move =   &DebugWindow_Move;
 		cbs.resize = &DebugWindow_Resize;

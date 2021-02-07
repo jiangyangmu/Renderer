@@ -9,3 +9,8 @@ namespace Graphics
 	Ptr<IScene>	CreateTestScene_Mirror();
 	Ptr<IScene>	CreateTestScene_Water();
 }
+
+void	Test(int argc, char * argv[]);
+void	TestNative_Callbacks();
+void	TestNative_Blit();
+void	TestNative_MultipleWindow();
