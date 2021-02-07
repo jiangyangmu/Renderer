@@ -521,7 +521,7 @@ static void		DebugMouse_MiddleUp(int x, int y)
 	printf("Mse M Up:   %d, %d\n", x, y);
 }
 
-const NativeWindowCallbacks *		NativeGetDebugWindowCallbacks()
+const NativeWindowCallbacks *		NativeDebugGetWindowCallbacks()
 {
 	static NativeWindowCallbacks cbs;
 	static bool init = false;
@@ -534,7 +534,7 @@ const NativeWindowCallbacks *		NativeGetDebugWindowCallbacks()
 	}
 	return &cbs;
 }
-const NativeKeyboardCallbacks *		NativeGetDebugKeyboardCallbacks()
+const NativeKeyboardCallbacks *		NativeDebugGetKeyboardCallbacks()
 {
 	static NativeKeyboardCallbacks cbs;
 	static bool init = false;
@@ -546,7 +546,7 @@ const NativeKeyboardCallbacks *		NativeGetDebugKeyboardCallbacks()
 	}
 	return &cbs;
 }
-const NativeMouseCallbacks *		NativeGetDebugMouseCallbacks()
+const NativeMouseCallbacks *		NativeDebugGetMouseCallbacks()
 {
 	static NativeMouseCallbacks cbs;
 	static bool init = false;

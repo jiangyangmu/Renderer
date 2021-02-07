@@ -44,7 +44,7 @@ static BGR	image1[ WINDOW_WIDTH * WINDOW_HEIGHT ];
 static DEPTH	image2[ WINDOW_WIDTH * WINDOW_HEIGHT ];
 static STENCIL	image3[ WINDOW_WIDTH * WINDOW_HEIGHT ];
 
-static void		Keyboard_Down(int keycode)
+static void	Keyboard_Down(int keycode)
 {
 	bool bSuccess = false;
 
@@ -59,21 +59,21 @@ static void		Keyboard_Down(int keycode)
 
 	printf("Key Down:   %d(%c) set color: %s\n", keycode, ( char ) keycode, bSuccess ? "ok" : "bad");
 }
-static void		Keyboard_Up(int keycode)
+static void	Keyboard_Up(int keycode)
 {
 	printf("Key Up:     %d(%c)\n", keycode, ( char ) keycode);
 }
 
-void	Test(int argc, char * argv[])
+void		Test(int argc, char * argv[])
 {
-	if (argc >= 1)
+	if ( argc >= 1 )
 	{
-		const char * pName = argv[0];
+		const char * pName = argv[ 0 ];
 		bool bFound = false;
 
 		for ( TestCase & c : cases )
 		{
-			if (strcmp(c.pName, pName) == 0)
+			if ( strcmp(c.pName, pName) == 0 )
 			{
 				c.pFunc();
 				bFound = true;
@@ -81,7 +81,7 @@ void	Test(int argc, char * argv[])
 			}
 		}
 
-		if (bFound)
+		if ( bFound )
 		{
 			return;
 		}
@@ -101,16 +101,16 @@ void	Test(int argc, char * argv[])
 		printf("\t%s\n", c.pName);
 	}
 }
-void	TestNative_Callbacks()
+void		TestNative_Callbacks()
 {
 	if ( NativeInitialize() )
 	{
 		pMain = NativeCreateWindow(L"Callbacks Test", WINDOW_WIDTH, WINDOW_HEIGHT);
 		if ( pMain )
 		{
-			NativeRegisterWindowCallbacks(pMain, NativeGetDebugWindowCallbacks());
-			NativeRegisterKeyboardCallbacks(pMain, NativeGetDebugKeyboardCallbacks());
-			NativeRegisterMouseCallbacks(pMain, NativeGetDebugMouseCallbacks());
+			NativeRegisterWindowCallbacks(pMain, NativeDebugGetWindowCallbacks());
+			NativeRegisterKeyboardCallbacks(pMain, NativeDebugGetKeyboardCallbacks());
+			NativeRegisterMouseCallbacks(pMain, NativeDebugGetMouseCallbacks());
 
 			while ( NativeGetWindowCount() > 0 )
 			{
@@ -123,7 +123,7 @@ void	TestNative_Callbacks()
 		NativeTerminate();
 	}
 }
-void	TestNative_Blit()
+void		TestNative_Blit()
 {
 	cbKeyboard.down = Keyboard_Down;
 	cbKeyboard.up = Keyboard_Up;
@@ -162,7 +162,7 @@ void	TestNative_Blit()
 		NativeTerminate();
 	}
 }
-void	TestNative_MultipleWindow()
+void		TestNative_MultipleWindow()
 {
 	memset(pWindowGroup, 0, sizeof(pWindowGroup));
 

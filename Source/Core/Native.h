@@ -60,6 +60,6 @@ void *		AlignedMalloc(size_t nSize, size_t nAlign);
 void		AlignedFree(void * p);
 
 // Debug
-const NativeWindowCallbacks *		NativeGetDebugWindowCallbacks();
-const NativeKeyboardCallbacks *		NativeGetDebugKeyboardCallbacks();
-const NativeMouseCallbacks *		NativeGetDebugMouseCallbacks();
+const NativeWindowCallbacks *		NativeDebugGetWindowCallbacks();
+const NativeKeyboardCallbacks *		NativeDebugGetKeyboardCallbacks();
+const NativeMouseCallbacks *		NativeDebugGetMouseCallbacks();
