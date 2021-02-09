@@ -48,9 +48,9 @@ void		TestGraphics_Buffer(int argc, char * argv[])
 		{0, 1, 2, 3, 4},
 		{1, 0, 3, 2, 4},
 	};
-	for ( int i = 0; i < ROUNDS; ++i )
+	for ( int iRound = 0; iRound < ROUNDS; ++iRound )
 	{
-		for ( int iBlock : iBlockSeq[ i % 2 ] )
+		for ( int iBlock : iBlockSeq[ iRound % 2 ] )
 		{
 			i64 & iCurrentTicks = iTicks[ iBlock ];
 			i64 & iCurrentCount = iCount[ iBlock ];
@@ -119,7 +119,7 @@ void		TestGraphics_Buffer(int argc, char * argv[])
 					memset(buf.pData, 24586257, SIZE);
 					iBegin = NativeGetTick();
 					bi2 = CreateBufferIt2D(&buf, &bv2, HEIGHT, WIDTH);
-					while ( BufferIt2DGetIncFast(&bi2, ( void ** ) &p, ( void ** ) &pEnd) )
+					while ( BufferIt2DGetIncRaw(&bi2, ( void ** ) &p, ( void ** ) &pEnd) )
 					{
 						while ( p < pEnd )
 						{
@@ -140,9 +140,9 @@ void		TestGraphics_Buffer(int argc, char * argv[])
 
 	DestroyBuffer(&buf);
 
-	printf("1D Raw:     %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 0 ], iChksm[ 0 ], iCount[ 0 ]);
-	printf("1D Buf:     %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 1 ], iChksm[ 1 ], iCount[ 1 ]);
-	printf("2D Raw:     %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 2 ], iChksm[ 2 ], iCount[ 2 ]);
-	printf("2D Buf:     %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 3 ], iChksm[ 3 ], iCount[ 3 ]);
-	printf("2D BufFast: %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 4 ], iChksm[ 4 ], iCount[ 4 ]);
+	printf("1D Raw:    %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 0 ], iChksm[ 0 ], iCount[ 0 ]);
+	printf("1D Buf:    %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 1 ], iChksm[ 1 ], iCount[ 1 ]);
+	printf("2D Raw:    %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 2 ], iChksm[ 2 ], iCount[ 2 ]);
+	printf("2D Buf:    %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 3 ], iChksm[ 3 ], iCount[ 3 ]);
+	printf("2D BufRaw: %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 4 ], iChksm[ 4 ], iCount[ 4 ]);
 }

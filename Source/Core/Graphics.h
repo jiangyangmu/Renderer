@@ -110,14 +110,14 @@ namespace Graphics
 			return false;
 		}
 	}
-	inline bool		BufferIt2DGetIncFast(BufferIt2D * pIt, void ** pp, void ** ppEnd)
+	inline bool		BufferIt2DGetIncRaw(BufferIt2D * pIt, void ** ppItemBegin, void ** ppItemEnd)
 	{
 		if ( pIt->nRCount > 0 )
 		{
 			--pIt->nRCount;
-			*pp = pIt->pData;
+			*ppItemBegin = pIt->pData;
 			pIt->pData += pIt->nRStride;
-			*ppEnd = pIt->pData;
+			*ppItemEnd = pIt->pData;
 			return true;
 		}
 		else
