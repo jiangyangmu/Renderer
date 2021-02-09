@@ -4,10 +4,12 @@
 using namespace Graphics;
 
 extern void		TestGraphics_Buffer0(int argc, char * argv[]);
+extern void		TestGraphics_Buffer1(int argc, char * argv[]);
 
 static TestCase		cases[] =
 {
 	{"buffer0",	TestGraphics_Buffer0},
+	{"buffer1",	TestGraphics_Buffer1},
 };
 TestSuitEntry(Graphics)
 
@@ -20,7 +22,7 @@ TestSuitEntry(Graphics)
 #define		RED (0xffff0000)
 #define		GREEN (0xff00ff00)
 #define		BLUE (0xff0000ff)
-#define		WHITE (0xffffffff )
+#define		WHITE (0xffffffff)
 
 static f32	gVertexData[] =
 {
@@ -90,7 +92,7 @@ void		TestGraphics_Buffer0(int argc, char * argv[])
 					p = ( int * ) buf.pData;
 					for ( int x = 0; x < COUNT; ++x )
 					{
-						COST(p[x], iCurrentCount);
+						COST(p[ x ], iCurrentCount);
 						++iCurrentCount;
 					}
 					iEnd = NativeGetTick();
@@ -172,4 +174,47 @@ void		TestGraphics_Buffer0(int argc, char * argv[])
 	printf("2D Raw:    %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 2 ], iChksm[ 2 ], iCount[ 2 ]);
 	printf("2D Buf:    %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 3 ], iChksm[ 3 ], iCount[ 3 ]);
 	printf("2D BufRaw: %7.lld ticks (checksum: %lld records: %lld)\n", iTicks[ 4 ], iChksm[ 4 ], iCount[ 4 ]);
+}
+
+void		TestGraphics_Buffer1(int argc, char * argv[])
+{
+	const u32 W = WINDOW_WIDTH;
+	const u32 H = WINDOW_HEIGHT;
+	const u32 EDGE = 100;
+	const u32 CX[] = { W / 4, W * 3 / 4, W / 4, W * 3 / 4 };
+	const u32 CY[] = { H / 4, H / 4, H * 3 / 4, H * 3 / 4 };
+
+	Buffer1 bufColor = CreateBuffer(WINDOW_WIDTH * WINDOW_HEIGHT * BYTES_PER_PIXEL);
+	BufferView2D bv2Color = CreateBufferView2D(0, bufColor.nSize, WINDOW_WIDTH * BYTES_PER_PIXEL, BYTES_PER_PIXEL);
+
+	BufferIt2D bi2Color = CreateBufferIt2D(&bufColor, &bv2Color, 0, W, 0, H);
+	BufferIt2D bi2LT = CreateBufferIt2D(&bufColor, &bv2Color, CX[ 0 ] - EDGE, CX[ 0 ] + EDGE, CY[ 0 ] - EDGE, CY[ 0 ] + EDGE);
+	BufferIt2D bi2RT = CreateBufferIt2D(&bufColor, &bv2Color, CX[ 1 ] - EDGE, CX[ 1 ] + EDGE, CY[ 1 ] - EDGE, CY[ 1 ] + EDGE);
+	BufferIt2D bi2LB = CreateBufferIt2D(&bufColor, &bv2Color, CX[ 2 ] - EDGE, CX[ 2 ] + EDGE, CY[ 2 ] - EDGE, CY[ 2 ] + EDGE);
+	BufferIt2D bi2RB = CreateBufferIt2D(&bufColor, &bv2Color, CX[ 3 ] - EDGE, CX[ 3 ] + EDGE, CY[ 3 ] - EDGE, CY[ 3 ] + EDGE);
+
+	Buffer2DSetU32(&bi2Color, GREY);
+	Buffer2DSetU32(&bi2LT, WHITE);
+	Buffer2DSetU32(&bi2RT, RED);
+	Buffer2DSetU32(&bi2LB, GREEN);
+	Buffer2DSetU32(&bi2RB, BLUE);
+
+	if ( NativeInitialize() )
+	{
+		NativeWindow * pMain = NativeCreateWindow(L"Buffer Set Test", WINDOW_WIDTH, WINDOW_HEIGHT);
+
+		if ( pMain )
+		{
+			NativeWindowBilt(pMain, bufColor.pData, NATIVE_BLIT_BGRA);
+
+			while ( NativeGetWindowCount() > 0 )
+			{
+				NativeInputPoll();
+				Sleep(10);
+			}
+			NativeDestroyWindow(pMain);
+		}
+
+		NativeTerminate();
+	}
 }

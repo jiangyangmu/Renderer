@@ -120,8 +120,8 @@ namespace Graphics
 		{
 			--pIt2->nRCount;
 			*ppItemBegin = pIt2->pData;
+			*ppItemEnd = pIt2->pData + pIt2->nCCount * pIt2->nCStride;
 			pIt2->pData += pIt2->nRStride;
-			*ppItemEnd = pIt2->pData;
 			return true;
 		}
 		else
