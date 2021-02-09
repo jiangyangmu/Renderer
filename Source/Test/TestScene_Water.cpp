@@ -320,7 +320,7 @@ namespace Graphics
 	};
 }
 
-Ptr<Graphics::IScene>	TestScene_Water()
+Ptr<Graphics::IScene>	TestScene_Water(int argc, char * argv[])
 {
 	return Ptr<Graphics::IScene>(new Graphics::TestScene_Water());
 }

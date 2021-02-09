@@ -279,7 +279,7 @@ namespace Graphics
 	};
 }
 
-Ptr<Graphics::IScene>	TestScene_Mirror()
+Ptr<Graphics::IScene>	TestScene_Mirror(int argc, char * argv[])
 {
 	return Ptr<Graphics::IScene>(new Graphics::TestScene_Mirror());
 }

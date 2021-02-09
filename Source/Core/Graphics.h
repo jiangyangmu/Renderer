@@ -68,17 +68,21 @@ namespace Graphics
 		bi.nStride = pView->nStride;
 		return bi;
 	}
-	inline BufferIt2D	CreateBufferIt2D(Buffer1 * pBuffer, BufferView2D * pView, u32 nRCount, u32 nCCount)
+	inline BufferIt2D	CreateBufferIt2D(Buffer1 * pBuffer, BufferView2D * pView, u32 nLeft, u32 nRight, u32 nTop, u32 nBottom)
 	{
 		// check non-empty, boundary
 		BufferIt2D bi2;
-		bi2.pData = pBuffer->pData + pView->nOffset;
-		bi2.nRCount = nRCount;
-		bi2.nCCount = nCCount;
+		bi2.pData = pBuffer->pData + pView->nOffset + pView->nRStride * nTop + pView->nCStride * nLeft;
+		bi2.nRCount = nBottom - nTop;
+		bi2.nCCount = nRight - nLeft;
 		bi2.nRStride = pView->nRStride;
 		bi2.nCStride = pView->nCStride;
 		return bi2;
 	}
+
+	void			Buffer2DSetU8(BufferIt2D * pIt2, u8 value);
+	void			Buffer2DSetU32(BufferIt2D * pIt2, u32 value);
+	void			Buffer2DSetF32(BufferIt2D * pIt2, f32 value);
 
 	inline bool		BufferItGetInc(BufferIt * pIt, void ** ppItem)
 	{
@@ -94,15 +98,15 @@ namespace Graphics
 			return false;
 		}
 	}
-	inline bool		BufferIt2DGetInc(BufferIt2D * pIt, BufferIt * pItR)
+	inline bool		BufferIt2DGetInc(BufferIt2D * pIt2, BufferIt * pIt)
 	{
-		if ( pIt->nRCount > 0 )
+		if ( pIt2->nRCount > 0 )
 		{
-			--pIt->nRCount;
-			pItR->pData = pIt->pData;
-			pItR->nCount = pIt->nCCount;
-			pItR->nStride = pIt->nCStride;
-			pIt->pData += pIt->nRStride;
+			--pIt2->nRCount;
+			pIt->pData = pIt2->pData;
+			pIt->nCount = pIt2->nCCount;
+			pIt->nStride = pIt2->nCStride;
+			pIt2->pData += pIt2->nRStride;
 			return true;
 		}
 		else
@@ -110,14 +114,14 @@ namespace Graphics
 			return false;
 		}
 	}
-	inline bool		BufferIt2DGetIncRaw(BufferIt2D * pIt, void ** ppItemBegin, void ** ppItemEnd)
+	inline bool		BufferIt2DGetIncRaw(BufferIt2D * pIt2, void ** ppItemBegin, void ** ppItemEnd)
 	{
-		if ( pIt->nRCount > 0 )
+		if ( pIt2->nRCount > 0 )
 		{
-			--pIt->nRCount;
-			*ppItemBegin = pIt->pData;
-			pIt->pData += pIt->nRStride;
-			*ppItemEnd = pIt->pData;
+			--pIt2->nRCount;
+			*ppItemBegin = pIt2->pData;
+			pIt2->pData += pIt2->nRStride;
+			*ppItemEnd = pIt2->pData;
 			return true;
 		}
 		else

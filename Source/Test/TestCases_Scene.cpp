@@ -5,10 +5,15 @@
 
 using namespace Graphics;
 
+extern Ptr<IScene>	TestScene_Effects(int argc, char * argv[]);
+extern Ptr<IScene>	TestScene_Minecraft(int argc, char * argv[]);
+extern Ptr<IScene>	TestScene_Mirror(int argc, char * argv[]);
+extern Ptr<IScene>	TestScene_Water(int argc, char * argv[]);
+
 struct SceneTestCase
 {
 	const char * pName;
-	Ptr<Graphics::IScene> (*pScene)();
+	Ptr<Graphics::IScene>(*pScene)(int argc, char * argv[]);
 };
 
 static SceneTestCase	tcScene[] =
@@ -31,34 +36,32 @@ const wchar_t *		GetTitle(const char * pName)
 	return bufWndTitleW;
 }
 
-void	TestScene(int argc, char * argv[])
+void	TestSuit_Scene(int argc, char * argv[])
 {
 	NativeWindow * pWindow;
 	SceneTestCase * pCase;
 	Ptr<Graphics::IScene> scene;
 
+	pCase = TestFindCase(tcScene, TestCaseName());
+	if (!pCase)
+	{
+		printf("No test scene matches name '%s'.\n", TestCaseName());
+		TestListCase(tcScene, "scenes");
+		return;
+	}
+
 	NativeInitialize();
 	pWindow = NativeCreateWindow(GetTitle(TestCaseName()), 800, 600);
-	pCase = nullptr;
 
 	if (pWindow)
 	{
 		RenderWindow window(pWindow);
 		SceneRenderer renderer(window);
 		
-		pCase = TestFindCase(tcScene, TestCaseName());
-
-		if (pCase)
-		{
-			scene = pCase->pScene();
+		scene = pCase->pScene(argc - 1, argv + 1);
 		
-			renderer.SwitchScene(*scene);
-			RenderMainLoop(pWindow, &renderer);
-		}
-		else
-		{
-			TestListCase(tcScene, "scenes");
-		}
+		renderer.SwitchScene(*scene);
+		RenderMainLoop(pWindow, &renderer);
 	}
 
 	NativeDestroyWindow(pWindow);

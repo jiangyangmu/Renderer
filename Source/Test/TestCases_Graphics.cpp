@@ -3,6 +3,33 @@
 
 using namespace Graphics;
 
+extern void		TestGraphics_Buffer0(int argc, char * argv[]);
+
+static TestCase		cases[] =
+{
+	{"buffer0",	TestGraphics_Buffer0},
+};
+TestSuitEntry(Graphics)
+
+#define		WINDOW_WIDTH (800)
+#define		WINDOW_HEIGHT (600)
+#define		BYTES_PER_PIXEL (4) // bgra
+#define		BYTES_PER_DEPTH (4) // f32
+#define		BYTES_PER_STENCIL (1) // u8
+#define		GREY (0xff333333)
+#define		RED (0xffff0000)
+#define		GREEN (0xff00ff00)
+#define		BLUE (0xff0000ff)
+#define		WHITE (0xffffffff )
+
+static f32	gVertexData[] =
+{
+	// pos, color
+	0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+	1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+	1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+};
+
 #define		COST(A, B) (A) = (((A) + (B)) * 231) % 931;
 
 int		Max(int a, int b)
@@ -10,7 +37,7 @@ int		Max(int a, int b)
 	return a >= b ? a : b;
 }
 
-void		TestGraphics_Buffer(int argc, char * argv[])
+void		TestGraphics_Buffer0(int argc, char * argv[])
 {
 	if ( argc < 3 )
 	{
@@ -102,7 +129,7 @@ void		TestGraphics_Buffer(int argc, char * argv[])
 				case 3:
 					memset(buf.pData, 24586257, SIZE);
 					iBegin = NativeGetTick();
-					bi2 = CreateBufferIt2D(&buf, &bv2, HEIGHT, WIDTH);
+					bi2 = CreateBufferIt2D(&buf, &bv2, 0, WIDTH, 0, HEIGHT);
 					while ( BufferIt2DGetInc(&bi2, &bi) )
 					{
 						while ( BufferItGetInc(&bi, ( void ** ) ( &p )) )
@@ -118,7 +145,7 @@ void		TestGraphics_Buffer(int argc, char * argv[])
 				case 4:
 					memset(buf.pData, 24586257, SIZE);
 					iBegin = NativeGetTick();
-					bi2 = CreateBufferIt2D(&buf, &bv2, HEIGHT, WIDTH);
+					bi2 = CreateBufferIt2D(&buf, &bv2, 0, WIDTH, 0, HEIGHT);
 					while ( BufferIt2DGetIncRaw(&bi2, ( void ** ) &p, ( void ** ) &pEnd) )
 					{
 						while ( p < pEnd )

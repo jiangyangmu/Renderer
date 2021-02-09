@@ -162,7 +162,7 @@ namespace Graphics
 	};
 }
 
-Ptr<Graphics::IScene>	TestScene_Minecraft()
+Ptr<Graphics::IScene>	TestScene_Minecraft(int argc, char * argv[])
 {
 	return Ptr<Graphics::IScene>(new Graphics::TestScene_Minecraft());
 }

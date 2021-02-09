@@ -235,7 +235,7 @@ namespace Graphics
 	};
 }
 
-Ptr<Graphics::IScene>	TestScene_Effects()
+Ptr<Graphics::IScene>	TestScene_Effects(int argc, char * argv[])
 {
 	return Ptr<Graphics::IScene>(new Graphics::EffectTestScene());
 }

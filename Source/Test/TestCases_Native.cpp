@@ -1,6 +1,17 @@
 #include "TestCases.h"
 #include "../Core/Native.h"
 
+extern void		TestNative_Callbacks(int argc, char * argv[]);
+extern void		TestNative_Blit(int argc, char * argv[]);
+extern void		TestNative_MultipleWindow(int argc, char * argv[]);
+static TestCase		cases[] =
+{
+	{"callback",	TestNative_Callbacks},
+	{"blit",	TestNative_Blit},
+	{"window",	TestNative_MultipleWindow},
+};
+TestSuitEntry(Native)
+
 #define WINDOW_WIDTH	(800)
 #define WINDOW_HEIGHT	(600)
 
@@ -56,7 +67,7 @@ static void	Keyboard_Up(int keycode)
 	       isprint(keycode) ? (char)keycode : '?');
 }
 
-void		TestNative_Callbacks()
+void		TestNative_Callbacks(int argc, char * argv[])
 {
 	if ( NativeInitialize() )
 	{
@@ -78,7 +89,7 @@ void		TestNative_Callbacks()
 		NativeTerminate();
 	}
 }
-void		TestNative_Blit()
+void		TestNative_Blit(int argc, char * argv[])
 {
 	cbKeyboard.down = Keyboard_Down;
 	cbKeyboard.up = Keyboard_Up;
@@ -117,7 +128,7 @@ void		TestNative_Blit()
 		NativeTerminate();
 	}
 }
-void		TestNative_MultipleWindow()
+void		TestNative_MultipleWindow(int argc, char * argv[])
 {
 	memset(pWindowGroup, 0, sizeof(pWindowGroup));
 
