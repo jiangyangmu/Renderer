@@ -8,43 +8,48 @@ struct TestCase
 	void ( *pFunc )( );
 };
 
-static void Noop()
+struct TestSuit
 {
-}
+	const char * pName;
+	void ( *pEntry )( int, char *[] );
+};
 
 static TestCase	cases[] =
 {
-	{"scene",	Noop},
-
 	{"callback",	TestNative_Callbacks},
 	{"blit",	TestNative_Blit},
 	{"window",	TestNative_MultipleWindow},
 };
 
+static TestSuit suits[] =
+{
+	{"scene",	TestScene},
+	{"buffer",	TestGraphics_Buffer},
+};
+
 void		TestMain(int argc, char * argv[])
 {
-	TestCase * pCase;
 	const char * pName;
+	TestCase * pCase;
+	TestSuit * pSuit;
 	
 	pName = TestCaseName();
+	pCase = nullptr;
+	pSuit = nullptr;
 
-	if ( strcmp(pName, "scene") == 0 )
+	if (pCase = TestFindCase(cases, pName))
 	{
-		TestScene(argc - 1, argv + 1);
+		pCase->pFunc();
 		return;
 	}
-	else
+	if (pSuit = TestFindCase(suits, pName))
 	{
-		pCase = TestFindCase(cases, pName);
-
-		if ( pCase )
-		{
-			pCase->pFunc();
-			return;
-		}
-		
-		printf("No test case matches name '%s'.\n", pName);
+		pSuit->pEntry(argc - 1, argv + 1);
+		return;
 	}
 
-	TestListCase(cases);
+	printf("No test case or suit matches name '%s'.\n", pName);
+
+	TestListCase(cases, "cases");
+	TestListCase(suits, "suits");
 }

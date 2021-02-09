@@ -55,6 +55,9 @@
     <ClInclude Include="..\..\..\Source\Test\TestCases.h">
       <Filter>Test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Source\Core\Graphics.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Core\Buffer.cpp">
@@ -98,6 +101,12 @@
       <Filter>Test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Test\TestScene_Water.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Core\Graphics.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Test\TestCases_Graphics.cpp">
       <Filter>Test</Filter>
     </ClCompile>
   </ItemGroup>

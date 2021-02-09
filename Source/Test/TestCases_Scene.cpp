@@ -57,7 +57,7 @@ void	TestScene(int argc, char * argv[])
 		}
 		else
 		{
-			TestListCase(tcScene);
+			TestListCase(tcScene, "scenes");
 		}
 	}
 

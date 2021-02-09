@@ -165,6 +165,7 @@
     <ClInclude Include="..\..\..\Source\Core\Buffer.h" />
     <ClInclude Include="..\..\..\Source\Core\Common.h" />
     <ClInclude Include="..\..\..\Source\Core\Event.h" />
+    <ClInclude Include="..\..\..\Source\Core\Graphics.h" />
     <ClInclude Include="..\..\..\Source\Core\Native.h" />
     <ClInclude Include="..\..\..\Source\Core\Renderer.h" />
     <ClInclude Include="..\..\..\Source\Core\RenderWindow.h" />
@@ -178,6 +179,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\Core\Buffer.cpp" />
+    <ClCompile Include="..\..\..\Source\Core\Graphics.cpp" />
     <ClCompile Include="..\..\..\Source\Core\Renderer.cpp" />
     <ClCompile Include="..\..\..\Source\Core\RenderWindow.cpp" />
     <ClCompile Include="..\..\..\Source\Core\Resource.cpp" />
@@ -186,6 +188,7 @@
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Native\Win32Native.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestCases_Graphics.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases_Native.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases_Scene.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestScene_Effects.cpp" />

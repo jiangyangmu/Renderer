@@ -4,12 +4,13 @@
 
 // Entry point
 void			TestMain(int argc, char * argv[]);
-void			TestScene(int argc, char * argv[]);
 
 // Test cases
 void			TestNative_Callbacks();
 void			TestNative_Blit();
 void			TestNative_MultipleWindow();
+void			TestScene(int argc, char * argv[]);
+void			TestGraphics_Buffer(int argc, char * argv[]);
 
 // Test scenes
 Ptr<Graphics::IScene>	TestScene_Effects();
@@ -29,9 +30,9 @@ T *	_TestFindCase(T * pCases, int nCases, const char * pName)
 	return nullptr;
 }
 template <typename T>
-void	_TestListCase(T * pCases, int nCases)
+void	_TestListCase(T * pCases, int nCases, const char * pDesc)
 {
-	printf("Test cases:\n");
+	printf("Test %s:\n", pDesc);
 	while (nCases > 0)
 	{
 		printf("\t%s\n", pCases->pName);
@@ -43,5 +44,5 @@ void	_TestListCase(T * pCases, int nCases)
 	((argc >= 1 && argv[0]) ? argv[0] : "")
 #define TestFindCase(caseArray, name) \
 	_TestFindCase((caseArray), sizeof(caseArray) / sizeof((caseArray)[0]), (name))
-#define TestListCase(caseArray) \
-	_TestListCase((caseArray), sizeof(caseArray) / sizeof((caseArray)[0]))
+#define TestListCase(caseArray, desc) \
+	_TestListCase((caseArray), sizeof(caseArray) / sizeof((caseArray)[0]), (desc))
