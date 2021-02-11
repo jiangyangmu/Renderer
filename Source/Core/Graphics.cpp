@@ -38,4 +38,40 @@ namespace Graphics
 	BUFFER_SET_IMPL(U8, u8);
 	BUFFER_SET_IMPL(U32, u32);
 	BUFFER_SET_IMPL(F32, f32);
+
+	void		Buffer2DSetAtU32(const BufferRect * pRect, u32 nX, u32 nY, u32 value)
+	{
+		ASSERT(nY < pRect->nRCount && nX < pRect->nCCount);
+		u32 * pData = ( u32 * ) ( pRect->pData + pRect->nRStride * nY + pRect->nCStride * nX );
+		*pData = value;
+	}
+
+	void		Draw2DLine(const BufferRect * pRect, const u32 color, int x0, int y0, int x1, int y1)
+	{
+		int dx = abs(x1 - x0);
+		int sx = x0 < x1 ? 1 : -1;
+		int dy = -abs(y1 - y0);
+		int sy = y0 < y1 ? 1 : -1;
+		int err = dx + dy;
+		int e2;
+		while ( true )
+		{
+			Buffer2DSetAtU32(pRect, x0, y0, color);
+			if ( x0 == x1 && y0 == y1 )
+			{
+				break;
+			}
+			e2 = 2 * err;
+			if ( e2 >= dy )
+			{
+				err += dy;
+				x0 += sx;
+			}
+			if ( e2 <= dx )
+			{
+				err += dx;
+				y0 += sy;
+			}
+		}
+	}
 }

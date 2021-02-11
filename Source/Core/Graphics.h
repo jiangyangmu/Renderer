@@ -37,6 +37,14 @@ namespace Graphics
 		u32	nRStride;	// const
 		u32	nCStride;	// const
 	};
+	struct BufferRect
+	{
+		u8 *	pData;
+		u32	nRCount;	// const
+		u32	nCCount;	// const
+		u32	nRStride;	// const
+		u32	nCStride;	// const
+	};
 
 	Buffer1			CreateBuffer(u32 nSize);
 	void			DestroyBuffer(Buffer1 * pBuffer);
@@ -79,10 +87,22 @@ namespace Graphics
 		bi2.nCStride = pView->nCStride;
 		return bi2;
 	}
+	inline BufferRect	CreateBufferRect(Buffer1 * pBuffer, BufferView2D * pView, u32 nLeft, u32 nRight, u32 nTop, u32 nBottom)
+	{
+		// check non-empty, boundary
+		BufferRect br;
+		br.pData = pBuffer->pData + pView->nOffset + pView->nRStride * nTop + pView->nCStride * nLeft;
+		br.nRCount = nBottom - nTop;
+		br.nCCount = nRight - nLeft;
+		br.nRStride = pView->nRStride;
+		br.nCStride = pView->nCStride;
+		return br;
+	}
 
 	void			Buffer2DSetU8(BufferIt2D * pIt2, u8 value);
 	void			Buffer2DSetU32(BufferIt2D * pIt2, u32 value);
 	void			Buffer2DSetF32(BufferIt2D * pIt2, f32 value);
+	void			Buffer2DSetAtU32(const BufferRect * pRect, u32 nX, u32 nY, u32 value);
 
 	inline bool		BufferItGetInc(BufferIt * pIt, void ** ppItem)
 	{
@@ -129,4 +149,6 @@ namespace Graphics
 			return false;
 		}
 	}
+
+	void			Draw2DLine(const BufferRect * pRect, const u32 color, int x0, int y0, int x1, int y1);
 }
