@@ -356,12 +356,18 @@ int			NativeWindowGetHeight(NativeWindow * pWindow)
 {
 	return pWindow->nHeight;
 }
-bool			NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode)
+
+static bool		_NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode)
 {
+	const int nWidth = pWindow->nWidth;
+	const int nHeight = pWindow->nHeight;
+
 	const BYTE * pbSrc;
 	const float * pfSrc;
 	DWORD * pDst;
 	bool bBadMode;
+
+	assert(( mode & NATIVE_BLIT_COLOR_MASK ) == mode);
 
 	pDst = ( DWORD * ) pWindow->pPixels;
 	bBadMode = false;
@@ -370,13 +376,13 @@ bool			NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMod
 		case NATIVE_BLIT_BGRA:
 			memcpy(pDst,
 			       pSrc,
-			       ( size_t ) pWindow->nWidth * pWindow->nHeight * BYTES_PER_PIXEL);
+			       ( size_t ) nWidth * nHeight * BYTES_PER_PIXEL);
 			break;
 		case NATIVE_BLIT_BGR:
 			pbSrc	= ( const BYTE * ) pSrc;
-			for ( int r = 0; r < pWindow->nHeight; ++r )
+			for ( int r = 0; r < nHeight; ++r )
 			{
-				for ( int c = 0; c < pWindow->nWidth; ++c )
+				for ( int c = 0; c < nWidth; ++c )
 				{
 					*pDst = ( 0xff000000 ) |
 						( pbSrc[ 2 ] << 16 ) |
@@ -390,9 +396,9 @@ bool			NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMod
 			break;
 		case NATIVE_BLIT_F32:
 			pfSrc	= ( const float * ) pSrc;
-			for ( int r = 0; r < pWindow->nHeight; ++r )
+			for ( int r = 0; r < nHeight; ++r )
 			{
-				for ( int c = 0; c < pWindow->nWidth; ++c )
+				for ( int c = 0; c < nWidth; ++c )
 				{
 					BYTE grey = ( BYTE ) ( *pfSrc * 255.0f );
 
@@ -408,9 +414,9 @@ bool			NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMod
 			break;
 		case NATIVE_BLIT_U8:
 			pbSrc	= ( const BYTE * ) pSrc;
-			for ( int r = 0; r < pWindow->nHeight; ++r )
+			for ( int r = 0; r < nHeight; ++r )
 			{
-				for ( int c = 0; c < pWindow->nWidth; ++c )
+				for ( int c = 0; c < nWidth; ++c )
 				{
 					BYTE grey = *pbSrc;
 
@@ -429,7 +435,280 @@ bool			NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMod
 			break;
 	}
 
-	return !bBadMode && _PresentSurface(pWindow->hWnd, pWindow->hMemDC, pWindow->nWidth, pWindow->nHeight);
+	return !bBadMode;
+}
+static bool		_NativeWindowBiltFlipH(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode)
+{
+	const int nWidth = pWindow->nWidth;
+	const int nHeight = pWindow->nHeight;
+
+	const DWORD * pdSrc;
+	const BYTE * pbSrc;
+	const float * pfSrc;
+	DWORD * pDst;
+	bool bBadMode;
+
+	assert(( mode & NATIVE_BLIT_COLOR_MASK ) == mode);
+
+	pDst = ( DWORD * ) pWindow->pPixels;
+	bBadMode = false;
+	switch ( mode )
+	{
+		case NATIVE_BLIT_BGRA:
+			pdSrc = ( const DWORD * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					pDst[ r * nWidth + nWidth - 1 - c ] = pdSrc[ r * nWidth + c ];
+				}
+			}
+			break;
+		case NATIVE_BLIT_BGR:
+			pbSrc	= ( const BYTE * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					pDst[ r * nWidth + nWidth - 1 - c ] =
+						( 0xff000000 ) |
+						( pbSrc[ 2 ] << 16 ) |
+						( pbSrc[ 1 ] << 8 ) |
+						( pbSrc[ 0 ] );
+
+					pbSrc += 3;
+				}
+			}
+			break;
+		case NATIVE_BLIT_F32:
+			pfSrc	= ( const float * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					BYTE grey = ( BYTE ) ( *pfSrc * 255.0f );
+
+					pDst[ r * nWidth + nWidth - 1 - c ] =
+						( 0xff000000 ) |
+						( grey << 16 ) |
+						( grey << 8 ) |
+						( grey );
+
+					++pfSrc;
+				}
+			}
+			break;
+		case NATIVE_BLIT_U8:
+			pbSrc	= ( const BYTE * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					BYTE grey = *pbSrc;
+
+					pDst[ r * nWidth + nWidth - 1 - c ] =
+						( 0xff000000 ) |
+						( grey << 16 ) |
+						( grey << 8 ) |
+						( grey );
+
+					++pbSrc;
+				}
+			}
+			break;
+		default:
+			bBadMode = true;
+			break;
+	}
+
+	return !bBadMode;
+}
+static bool		_NativeWindowBiltFlipV(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode)
+{
+	const int nWidth = pWindow->nWidth;
+	const int nHeight = pWindow->nHeight;
+
+	const DWORD * pdSrc;
+	const BYTE * pbSrc;
+	const float * pfSrc;
+	DWORD * pDst;
+	bool bBadMode;
+
+	assert(( mode & NATIVE_BLIT_COLOR_MASK ) == mode);
+
+	pDst = ( DWORD * ) pWindow->pPixels;
+	bBadMode = false;
+	switch ( mode )
+	{
+		case NATIVE_BLIT_BGRA:
+			pdSrc = ( const DWORD * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					pDst[ ( nHeight - 1 - r ) * nWidth + c ] = pdSrc[ r * nWidth + c ];
+				}
+			}
+			break;
+		case NATIVE_BLIT_BGR:
+			pbSrc	= ( const BYTE * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					pDst[ ( nHeight - 1 - r ) * nWidth + c ] =
+						( 0xff000000 ) |
+						( pbSrc[ 2 ] << 16 ) |
+						( pbSrc[ 1 ] << 8 ) |
+						( pbSrc[ 0 ] );
+
+					pbSrc += 3;
+				}
+			}
+			break;
+		case NATIVE_BLIT_F32:
+			pfSrc	= ( const float * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					BYTE grey = ( BYTE ) ( *pfSrc * 255.0f );
+
+					pDst[ ( nHeight - 1 - r ) * nWidth + c ] =
+						( 0xff000000 ) |
+						( grey << 16 ) |
+						( grey << 8 ) |
+						( grey );
+
+					++pfSrc;
+				}
+			}
+			break;
+		case NATIVE_BLIT_U8:
+			pbSrc	= ( const BYTE * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					BYTE grey = *pbSrc;
+
+					pDst[ ( nHeight - 1 - r ) * nWidth + c ] =
+						( 0xff000000 ) |
+						( grey << 16 ) |
+						( grey << 8 ) |
+						( grey );
+
+					++pbSrc;
+				}
+			}
+			break;
+		default:
+			bBadMode = true;
+			break;
+	}
+
+	return !bBadMode;
+}
+static bool		_NativeWindowBiltFlipHV(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode)
+{
+	const int nWidth = pWindow->nWidth;
+	const int nHeight = pWindow->nHeight;
+
+	const DWORD * pdSrc;
+	const BYTE * pbSrc;
+	const float * pfSrc;
+	DWORD * pDst;
+	bool bBadMode;
+
+	assert(( mode & NATIVE_BLIT_COLOR_MASK ) == mode);
+
+	pDst = ( DWORD * ) pWindow->pPixels;
+	bBadMode = false;
+	switch ( mode )
+	{
+		case NATIVE_BLIT_BGRA:
+			pdSrc = ( const DWORD * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					pDst[ ( nHeight - 1 - r ) * nWidth + nWidth - 1 - c ] = pdSrc[ r * nWidth + c ];
+				}
+			}
+			break;
+		case NATIVE_BLIT_BGR:
+			pbSrc	= ( const BYTE * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					pDst[ ( nHeight - 1 - r ) * nWidth + nWidth - 1 - c ] =
+						( 0xff000000 ) |
+						( pbSrc[ 2 ] << 16 ) |
+						( pbSrc[ 1 ] << 8 ) |
+						( pbSrc[ 0 ] );
+
+					pbSrc += 3;
+				}
+			}
+			break;
+		case NATIVE_BLIT_F32:
+			pfSrc	= ( const float * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					BYTE grey = ( BYTE ) ( *pfSrc * 255.0f );
+
+					pDst[ ( nHeight - 1 - r ) * nWidth + nWidth - 1 - c ] =
+						( 0xff000000 ) |
+						( grey << 16 ) |
+						( grey << 8 ) |
+						( grey );
+
+					++pfSrc;
+				}
+			}
+			break;
+		case NATIVE_BLIT_U8:
+			pbSrc	= ( const BYTE * ) pSrc;
+			for ( int r = 0; r < nHeight; ++r )
+			{
+				for ( int c = 0; c < nWidth; ++c )
+				{
+					BYTE grey = *pbSrc;
+
+					pDst[ ( nHeight - 1 - r ) * nWidth + nWidth - 1 - c ] =
+						( 0xff000000 ) |
+						( grey << 16 ) |
+						( grey << 8 ) |
+						( grey );
+
+					++pbSrc;
+				}
+			}
+			break;
+		default:
+			bBadMode = true;
+			break;
+	}
+
+	return !bBadMode;
+}
+bool			NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, int mode)
+{
+	NativeBlitMode mColor = (NativeBlitMode)(mode & NATIVE_BLIT_COLOR_MASK);
+	bool bSuccess;
+
+	switch ((mode >> 30) & 3)
+	{
+		case 0: bSuccess = _NativeWindowBilt(pWindow, pSrc, mColor); break;
+		case 1: bSuccess = _NativeWindowBiltFlipH(pWindow, pSrc, mColor); break;
+		case 2: bSuccess = _NativeWindowBiltFlipV(pWindow, pSrc, mColor); break;
+		case 3: bSuccess = _NativeWindowBiltFlipHV(pWindow, pSrc, mColor); break;
+	}
+
+	return bSuccess && _PresentSurface(pWindow->hWnd, pWindow->hMemDC, pWindow->nWidth, pWindow->nHeight);
 }
 
 void			NativeRegisterWindowCallbacks(NativeWindow * pWindow, const NativeWindowCallbacks * pCallbacks)

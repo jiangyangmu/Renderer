@@ -8,8 +8,12 @@ enum NativeBlitMode
 	NATIVE_BLIT_UNKNOWN	= 0,
 	NATIVE_BLIT_BGRA	= 1,
 	NATIVE_BLIT_BGR		= 2,
-	NATIVE_BLIT_F32		= 3,
-	NATIVE_BLIT_U8		= 4,
+	NATIVE_BLIT_F32		= 4,
+	NATIVE_BLIT_U8		= 8,
+	NATIVE_BLIT_COLOR_MASK	= 15,
+	NATIVE_BLIT_FLIP_H	= 1 << 30,
+	NATIVE_BLIT_FLIP_V	= 1 << 31,
+	NATIVE_BLIT_FLIP_HV	= NATIVE_BLIT_FLIP_H | NATIVE_BLIT_FLIP_V,
 };
 
 struct NativeWindowCallbacks
@@ -49,7 +53,7 @@ void		NativeDestroyWindow(NativeWindow * pWindow);
 int		NativeGetWindowCount();
 int		NativeWindowGetWidth(NativeWindow * pWindow);
 int		NativeWindowGetHeight(NativeWindow * pWindow);
-bool		NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, NativeBlitMode mode);
+bool		NativeWindowBilt(NativeWindow * pWindow, const void * pSrc, int mode);
 
 // Input
 void		NativeRegisterWindowCallbacks(NativeWindow * pWindow, const NativeWindowCallbacks * pCallbacks);
