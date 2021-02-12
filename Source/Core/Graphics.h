@@ -99,9 +99,9 @@ namespace Graphics
 		return br;
 	}
 
-	void			Buffer2DSetU8(BufferIt2D * pIt2, u8 value);
-	void			Buffer2DSetU32(BufferIt2D * pIt2, u32 value);
-	void			Buffer2DSetF32(BufferIt2D * pIt2, f32 value);
+	void			Buffer2DSetU8(const BufferRect * pRect, u8 value);
+	void			Buffer2DSetU32(const BufferRect * pRect, u32 value);
+	void			Buffer2DSetF32(const BufferRect * pRect, f32 value);
 	void			Buffer2DSetAtU32(const BufferRect * pRect, u32 nX, u32 nY, u32 value);
 
 	inline bool		BufferItGetInc(BufferIt * pIt, void ** ppItem)
@@ -151,4 +151,8 @@ namespace Graphics
 	}
 
 	void			Draw2DLine(const BufferRect * pRect, const u32 color, int x0, int y0, int x1, int y1);
+
+	int			ClipTriangle(const int iAxis, const f32 fW, const f32 fSide, const int nVaryingsSize, const Vector4 * pInClipCoord, const void * pInVaryings, Vector4 * pOutClipCoord, void * pOutVaryings);
+	int			Clip2DTriangle(const f32 fLeft, const f32 fRight, const f32 fBottom, const f32 fTop, const int nVaryingsSize, const Vector4 * pInClipCoord, const void * pInVaryings, Vector4 * pOutClipCoord, void * pOutVaryings);
+	int			Clip3DTriangle(const f32 fLeft, const f32 fRight, const f32 fBottom, const f32 fTop, const f32 fNear, const f32 fFar, const int nVaryingsSize, const Vector4 * pInClipCoord, const void * pInVaryings, Vector4 * pOutClipCoord, void * pOutVaryings);
 }

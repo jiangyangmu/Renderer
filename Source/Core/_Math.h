@@ -42,6 +42,10 @@ namespace Graphics
 	{
 		return -C_F32_EPSILON <= value && value <= C_F32_EPSILON;
 	}
+	inline bool		F32IsNearZero(f32 value)
+	{
+		return -C_F32_EPSILON <= value && value <= C_F32_EPSILON;
+	}
 
 	// --------------------------------------------------------------------------
 	// Structures
@@ -75,7 +79,6 @@ namespace Graphics
 	{
 		union
 		{
-			Vector3 v3;
 			Vector3 xyz;
 			struct
 			{
@@ -257,6 +260,19 @@ namespace Graphics
 	{
 		*pfSin = sinf(fAngle);
 		*pfCos = cosf(fAngle);
+	}
+
+	// F32
+	inline void		F32Lerp(f32 * pDst, const f32 * pSrc1, const f32 * pSrc2, f32 t, int nCount)
+	{
+		f32 u = 1.0f - t;
+		for ( int i = 0; i < nCount; ++i )
+		{
+			*pDst = u * ( *pSrc1 ) + t * ( *pSrc2 );
+			++pDst;
+			++pSrc1;
+			++pSrc2;
+		}
 	}
 
 	// Point3
@@ -611,10 +627,31 @@ namespace Graphics
 	inline Vector3 *	V3TransformNormalStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, const Matrix44 & m);
 	inline Vector3 *	V3TransformCoordStream(Vector3 * pOutputStream, u32 iOutputStride, const Vector3 *pInputStream, u32 iInputStride, u32 iVectorCount, const Matrix44 & m);
 
+	// Vector4 - Componentwise
+	inline f32		V4GetByIndex(const Vector4 & v, int i)
+	{
+		return ((const f32 *)&v)[i];
+	}
+	inline void		V4SetByIndex(Vector4 & v, int i, f32 value)
+	{
+		( ( f32 * ) &v )[ i ] = value;
+	}
 	// Vector4 - Arithmetic
 	inline Vector4		V4Scale(Vector4 v, f32 fScale)
 	{
 		return { v.x * fScale, v.y * fScale, v.z * fScale, v.w * fScale };
+	}
+
+	// Vector4 - Geometric
+	inline Vector4		V4Transform(Vector4 v, const Matrix44 & m)
+	{
+		return
+		{
+			m._11 * v.x + m._21 * v.y + m._31 * v.z + m._41 * v.w,
+			m._12 * v.x + m._22 * v.y + m._32 * v.z + m._42 * v.w,
+			m._13 * v.x + m._23 * v.y + m._33 * v.z + m._43 * v.w,
+			m._14 * v.x + m._24 * v.y + m._34 * v.z + m._44 * v.w,
+		};
 	}
 
 	// Matrix44
