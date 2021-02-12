@@ -50,6 +50,7 @@ void		NativeTerminate();
 NativeWindow *	NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int nHeight);
 NativeWindow *	NativeCreateWindow(const wchar_t * pWindowTitle, int nWidth, int nHeight, int nLeft, int nTop);
 void		NativeDestroyWindow(NativeWindow * pWindow);
+void		NativeDestroyAllWindows();
 int		NativeGetWindowCount();
 int		NativeWindowGetWidth(NativeWindow * pWindow);
 int		NativeWindowGetHeight(NativeWindow * pWindow);

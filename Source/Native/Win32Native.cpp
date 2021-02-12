@@ -343,6 +343,17 @@ void			NativeDestroyWindow(NativeWindow * pWindow)
 
 	_ReleaseWindow(pWindow);
 }
+void			NativeDestroyAllWindows()
+{
+	for (int i = 0; i < NUM_MAX_WINDOW; ++i)
+	{
+		if (native.bWindows[i])
+		{
+			NativeDestroyWindow(native.sWindows + i);
+		}
+	}
+}
+
 int			NativeGetWindowCount()
 {
 	return NUM_MAX_WINDOW - _CountFreeWindow();
