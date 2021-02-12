@@ -358,20 +358,20 @@ void		TestGraphics_Clipping(int argc, char * argv[])
 
 					// draw clipping planes
 
-					DRAW_LINE1(brXY, RED, lt, -5.0f, lt, 5.0f);
-					DRAW_LINE1(brXY, RED, rt, -5.0f, rt, 5.0f);
-					DRAW_LINE1(brXY, GREEN, -5.0f, bt, 5.0f, bt);
-					DRAW_LINE1(brXY, GREEN, -5.0f, tp, 5.0f, tp);
+					if ( !( nClipMode & 0x1 ) ) DRAW_LINE1(brXY, RED, lt, -5.0f, lt, 5.0f);
+					if ( !( nClipMode & 0x1 ) ) DRAW_LINE1(brXY, RED, rt, -5.0f, rt, 5.0f);
+					if ( !( nClipMode & 0x2 ) ) DRAW_LINE1(brXY, GREEN, -5.0f, bt, 5.0f, bt);
+					if ( !( nClipMode & 0x2 ) ) DRAW_LINE1(brXY, GREEN, -5.0f, tp, 5.0f, tp);
 
-					DRAW_LINE1(brXZ, RED, lt, -5.0f, lt, 5.0f);
-					DRAW_LINE1(brXZ, RED, rt, -5.0f, rt, 5.0f);
-					DRAW_LINE1(brXZ, BLUE, -5.0f, nr, 5.0f, nr);
-					DRAW_LINE1(brXZ, BLUE, -5.0f, fr, 5.0f, fr);
+					if ( !( nClipMode & 0x1 ) ) DRAW_LINE1(brXZ, RED, lt, -5.0f, lt, 5.0f);
+					if ( !( nClipMode & 0x1 ) ) DRAW_LINE1(brXZ, RED, rt, -5.0f, rt, 5.0f);
+					if ( !( nClipMode & 0x4 ) ) DRAW_LINE1(brXZ, BLUE, -5.0f, nr, 5.0f, nr);
+					if ( !( nClipMode & 0x4 ) ) DRAW_LINE1(brXZ, BLUE, -5.0f, fr, 5.0f, fr);
 
-					DRAW_LINE1(brZY, BLUE, nr, -5.0f, nr, 5.0f);
-					DRAW_LINE1(brZY, BLUE, fr, -5.0f, fr, 5.0f);
-					DRAW_LINE1(brZY, GREEN, -5.0f, bt, 5.0f, bt);
-					DRAW_LINE1(brZY, GREEN, -5.0f, tp, 5.0f, tp);
+					if ( !( nClipMode & 0x4 ) ) DRAW_LINE1(brZY, BLUE, nr, -5.0f, nr, 5.0f);
+					if ( !( nClipMode & 0x4 ) ) DRAW_LINE1(brZY, BLUE, fr, -5.0f, fr, 5.0f);
+					if ( !( nClipMode & 0x2 ) ) DRAW_LINE1(brZY, GREEN, -5.0f, bt, 5.0f, bt);
+					if ( !( nClipMode & 0x2 ) ) DRAW_LINE1(brZY, GREEN, -5.0f, tp, 5.0f, tp);
 
 					// draw original triangle
 
