@@ -113,9 +113,6 @@ namespace Graphics
 		in = 0;
 		cnt = 0;
 
-		//if ( V3LengthSq(V3CrossLH(pi[ 1 ].xyz - pi[ 0 ].xyz, pi[ 2 ].xyz - pi[ 0 ].xyz)) < 0.01 )
-		//	return 0;
-
 		// X = [-W, W], Y = [-W, W], Z = [-N, F]
 		sdf[ 0 ] = side * ( V4GetByIndex(pi[ 0 ], axis) - w );
 		sdf[ 1 ] = side * ( V4GetByIndex(pi[ 1 ], axis) - w );
