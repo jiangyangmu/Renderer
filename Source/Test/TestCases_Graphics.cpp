@@ -6,12 +6,14 @@ using namespace Graphics;
 extern void		TestGraphics_Buffer0(int argc, char * argv[]);
 extern void		TestGraphics_Buffer1(int argc, char * argv[]);
 extern void		TestGraphics_Clipping(int argc, char * argv[]);
+extern void		TestGraphics_Rasterization(int argc, char * argv[]);
 
 static TestCase		cases[] =
 {
 	{"buffer0",	TestGraphics_Buffer0},
 	{"buffer1",	TestGraphics_Buffer1},
 	{"clip",	TestGraphics_Clipping},
+	{"raster",	TestGraphics_Rasterization},
 };
 TestSuitEntry(Graphics)
 
@@ -30,6 +32,16 @@ TestSuitEntry(Graphics)
 #define		COST(A, B)				(A) = (((A) + (B)) * 231) % 931;
 #define		DRAW_LINE1(br, c, x0, y0, x1, y1)	Draw2DLine(&br, (c), (x0) * (0.02f * WINDOW_WIDTH) + WINDOW_WIDTH / 4, (y0) * (0.02f * WINDOW_WIDTH) + WINDOW_HEIGHT / 4, (x1) * (0.02f * WINDOW_WIDTH) + WINDOW_WIDTH / 4, (y1) * (0.02f * WINDOW_WIDTH) + WINDOW_HEIGHT / 4)
 #define		DRAW_LINE2(br, c, p0, p1)		DRAW_LINE1(br, c, (p0).x, (p0).y, (p1).x, (p1).y)
+
+struct BaryCoord
+{
+	Vector3 dx;
+	Vector3 dy;
+	Vector3 eR;
+	Vector3 eItRow;
+	Vector3 eIt;
+
+};
 
 NativeWindow *	gpMain				= nullptr;
 Buffer1 *	gpBuf[ 3 ]			= { nullptr, nullptr, nullptr, };
@@ -50,8 +62,6 @@ static f32	Area(const Vector4 & a, const Vector4 & b, const Vector4 & c)
 }
 static void	KeyboardDown_Clipping(int keycode)
 {
-	bool bSuccess = false;
-
 	if ('0' <= keycode && keycode <= '9')
 	{
 		gClipDrawIndex = keycode - '0';
@@ -73,23 +83,47 @@ static void	KeyboardDown_Clipping(int keycode)
 		}
 	}
 }
-static void	KeyboardDown_Default(int keycode)
+static void	KeyboardDown_Rasterization(int keycode)
 {
-	bool bSuccess = false;
-
 	switch ( keycode )
 	{
-		case '1': bSuccess = gpBuf[ 0 ] && NativeWindowBilt(gpMain, gpBuf[ 0 ]->pData, NATIVE_BLIT_BGRA | NATIVE_BLIT_FLIP_V); break;
-		case '2': bSuccess = gpBuf[ 1 ] && NativeWindowBilt(gpMain, gpBuf[ 1 ]->pData, NATIVE_BLIT_F32 | NATIVE_BLIT_FLIP_V); break;
-		case '3': bSuccess = gpBuf[ 2 ] && NativeWindowBilt(gpMain, gpBuf[ 2 ]->pData, NATIVE_BLIT_U8 | NATIVE_BLIT_FLIP_V); break;
 		case 'Q': NativeDestroyAllWindows(); break;
 		default: break;
 	}
+}
 
-	printf("Key Down:   %d(%c) set color: %s\n",
-	       keycode,
-	       isprint(keycode) ? ( char ) keycode : '?',
-	       bSuccess ? "ok" : "bad");
+BaryCoord	BaryCoordCreate(const Vector2 & p0, const Vector2 & p1, const Vector2 & p2, const Vector2 & lt)
+{
+	BaryCoord bc;
+
+	bc.dx = { p2.x - p1.x, p0.x - p2.x, p1.x - p0.x };
+	bc.dy = { p2.y - p1.y, p0.y - p2.y, p1.y - p0.y };
+
+	f32 eR = EdgeFunction(p0, p1, p2);
+	eR = ( eR < 0.001f ) ? 1000.0f : ( 1.0f / eR );
+	bc.eR = V3Replicate(eR);
+
+	bc.eItRow = { EdgeFunction(p1, p2, lt), EdgeFunction(p2, p0, lt), EdgeFunction(p0, p1, lt) };
+	bc.eIt = bc.eItRow;
+
+	return bc;
+}
+void		BaryCoordIncX(BaryCoord * bc)
+{
+	bc->eIt += bc->dy;
+}
+void		BaryCoordIncY(BaryCoord * bc)
+{
+	bc->eItRow -= bc->dx;
+	bc->eIt = bc->eItRow;
+}
+bool		BaryCoordIsInside(const BaryCoord * bc)
+{
+	return V3GreaterOrEqual(bc->eIt, V3Zero());
+}
+Vector3		BaryCoordGet(const BaryCoord * bc)
+{
+	return V3Multiply(bc->eIt, bc->eR);
 }
 
 void		TestGraphics_Buffer0(int argc, char * argv[])
@@ -440,6 +474,86 @@ void		TestGraphics_Clipping(int argc, char * argv[])
 
 					NativeWindowBilt(gpMain, bufColor.pData, NATIVE_BLIT_BGRA | NATIVE_BLIT_FLIP_V);
 				}
+
+				Sleep(10);
+			}
+			NativeDestroyWindow(gpMain);
+		}
+
+		NativeTerminate();
+	}
+}
+
+void		TestGraphics_Rasterization(int argc, char * argv[])
+{
+	Buffer1 bufColor = CreateBuffer(WINDOW_WIDTH * WINDOW_HEIGHT * BYTES_PER_PIXEL);
+	BufferView2D bv2Color = CreateBufferView2D(0, bufColor.nSize, WINDOW_WIDTH * BYTES_PER_PIXEL, BYTES_PER_PIXEL);
+	BufferRect brColor = CreateBufferRect(&bufColor, &bv2Color, 0, WINDOW_WIDTH, 0, WINDOW_HEIGHT);
+
+	Buffer2DSetU32(&brColor, GREY);
+
+	Vector2 screenCoord[3] =
+	{
+		{400.0f, 300.0f},
+		{800.0f, 900.0f},
+		{1200.0f, 600.0f},
+	};
+	Vector4 screenColor[3] =
+	{
+		{0.0f, 0.0f, 1.0f, 1.0f},
+		{0.0f, 1.0f, 0.0f, 1.0f},
+		{1.0f, 0.0f, 0.0f, 1.0f},
+	};
+	const Vector2 & p0 = screenCoord[ 0 ];
+	const Vector2 & p1 = screenCoord[ 1 ];
+	const Vector2 & p2 = screenCoord[ 2 ];
+	const Vector4 & c0 = screenColor[ 0 ];
+	const Vector4 & c1 = screenColor[ 1 ];
+	const Vector4 & c2 = screenColor[ 2 ];
+
+	BBox2 bb2 = BB2Create(screenCoord[0], screenCoord[1], screenCoord[2]);
+	Vector2 lt = { bb2.xl + 0.5f, bb2.yl + 0.5f };
+	Vector2 rb = { bb2.xh + 0.5f, bb2.yh + 0.5f };
+
+	BaryCoord bc = BaryCoordCreate(p0, p1, p2, lt);
+
+	f32 fX, fY;
+	u32 nX, nY;
+	for ( fY = lt.y, nY = ( u32 ) lt.y; fY < rb.y; fY += 1.0f, ++nY, BaryCoordIncY(&bc) )
+	{
+		for ( fX = lt.x, nX = ( u32 ) lt.x; fX < rb.x; fX += 1.0f, ++nX, BaryCoordIncX(&bc) )
+		{
+			if (!BaryCoordIsInside(&bc))
+			{
+				continue;
+			}
+			Vector3 baryCoord = BaryCoordGet(&bc);
+			Vector4 color = V4Saturate(V4Scale(c0, baryCoord.x) + V4Scale(c1, baryCoord.y) + V4Scale(c2, baryCoord.z));
+			u32 bgra =( ( u32 ) ( color.x * 255.0f ) )
+				| ( ( u32 ) ( color.y * 255.0f ) << 8 )
+				| ( ( u32 ) ( color.z * 255.0f ) << 16 )
+				| ( ( u32 ) ( color.w * 255.0f ) << 24 );
+
+			Buffer2DSetAtU32(&brColor, nX, nY, bgra);
+		}
+	}
+
+	if ( NativeInitialize() )
+	{
+		gpMain = NativeCreateWindow(L"Rasterization Test (Q:quit)", WINDOW_WIDTH, WINDOW_HEIGHT);
+
+		NativeKeyboardCallbacks cbKeyboard;
+		cbKeyboard.down = KeyboardDown_Rasterization;
+		cbKeyboard.up = nullptr;
+
+		if ( gpMain )
+		{
+			NativeRegisterKeyboardCallbacks(gpMain, &cbKeyboard);
+			NativeWindowBilt(gpMain, bufColor.pData, NATIVE_BLIT_BGRA | NATIVE_BLIT_FLIP_V);
+
+			while ( NativeGetWindowCount() > 0 )
+			{
+				NativeInputPoll();
 
 				Sleep(10);
 			}

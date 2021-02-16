@@ -63,11 +63,26 @@ namespace Graphics
 	{
 		f32 x, y, z;
 
-		inline f32	Length() const
+		inline Vector3 &	operator += (const Vector3 & other)
+		{
+			x += other.x;
+			y += other.y;
+			z += other.z;
+			return *this;
+		}
+		inline Vector3 &	operator -= (const Vector3 & other)
+		{
+			x -= other.x;
+			y -= other.y;
+			z -= other.z;
+			return *this;
+		}
+
+		inline f32		Length() const
 		{
 			return sqrtf(x * x + y * y + z * z);
 		}
-		inline void	Normalize()
+		inline void		Normalize()
 		{
 			float lenReciprocal = 1.0f / Length();
 			x *= lenReciprocal;
@@ -116,6 +131,11 @@ namespace Graphics
 		};
 
 	};
+	struct BBox2
+	{
+		f32 xl, yl;
+		f32 xh, yh;
+	};
 
 	// --------------------------------------------------------------------------
 	// Operators
@@ -132,6 +152,19 @@ namespace Graphics
 	inline Vector3		operator - (const Vector3 & v0, const Vector3 & v1)
 	{
 		return { v0.x - v1.x, v0.y - v1.y, v0.z - v1.z };
+	}
+
+	inline Vector4		operator - (const Vector4 & v)
+	{
+		return { -v.x, -v.y, -v.z, -v.w };
+	}
+	inline Vector4		operator + (const Vector4 & v0, const Vector4 & v1)
+	{
+		return { v0.x + v1.x, v0.y + v1.y, v0.z + v1.z, v0.w + v1.w };
+	}
+	inline Vector4		operator - (const Vector4 & v0, const Vector4 & v1)
+	{
+		return { v0.x - v1.x, v0.y - v1.y, v0.z - v1.z, v0.w - v1.w };
 	}
 
 	inline Matrix44		operator + (const Matrix44 & m0, const Matrix44 & m1)
@@ -641,6 +674,16 @@ namespace Graphics
 	{
 		return { v.x * fScale, v.y * fScale, v.z * fScale, v.w * fScale };
 	}
+	inline Vector4		V4Saturate(Vector4 v)
+	{
+		return
+		{
+			Bound(0.0f, v.x, 1.0f),
+			Bound(0.0f, v.y, 1.0f),
+			Bound(0.0f, v.z, 1.0f),
+			Bound(0.0f, v.w, 1.0f),
+		};
+	}
 
 	// Vector4 - Geometric
 	inline Vector4		V4Transform(Vector4 v, const Matrix44 & m)
@@ -1087,6 +1130,17 @@ namespace Graphics
 	{
 		Quaternion qv = { v, 1.0f };
 		return Q4HamiltonProductLH(Q4HamiltonProductLH(q, qv), qInv).xyz;
+	}
+
+	// Bounding Box 2D
+	inline BBox2		BB2Create(const Vector2 & p0, const Vector2 & p1, const Vector2 & p2)
+	{
+		BBox2 bb2;
+		bb2.xl = Min3(p0.x, p1.x, p2.x);
+		bb2.yl = Min3(p0.y, p1.y, p2.y);
+		bb2.xh = Max3(p0.x, p1.x, p2.x);
+		bb2.yh = Max3(p0.y, p1.y, p2.y);
+		return bb2;
 	}
 
 	// Conversion
