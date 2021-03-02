@@ -46,6 +46,15 @@ namespace Graphics
 		u32	nCStride;	// const
 	};
 
+	struct BaryCoord
+	{
+		Vector3 dx;
+		Vector3 dy;
+		Vector3 eR;
+		Vector3 eItRow;
+		Vector3 eIt;
+	};
+
 	Buffer1			CreateBuffer(u32 nSize);
 	void			DestroyBuffer(Buffer1 * pBuffer);
 
@@ -150,9 +159,44 @@ namespace Graphics
 		}
 	}
 
-	void			Draw2DLine(const BufferRect * pRect, const u32 color, int x0, int y0, int x1, int y1);
+	inline BaryCoord	BaryCoordCreate(const Vector2 & p0, const Vector2 & p1, const Vector2 & p2, const Vector2 & lt)
+	{
+		BaryCoord bc;
+
+		bc.dx = { p2.x - p1.x, p0.x - p2.x, p1.x - p0.x };
+		bc.dy = { p2.y - p1.y, p0.y - p2.y, p1.y - p0.y };
+
+		f32 eR = EdgeFunction(p0, p1, p2);
+		eR = ( eR < 0.001f ) ? 1000.0f : ( 1.0f / eR );
+		bc.eR = V3Replicate(eR);
+
+		bc.eItRow = { EdgeFunction(p1, p2, lt), EdgeFunction(p2, p0, lt), EdgeFunction(p0, p1, lt) };
+		bc.eIt = bc.eItRow;
+
+		return bc;
+	}
+	inline void		BaryCoordIncX(BaryCoord * bc)
+	{
+		bc->eIt += bc->dy;
+	}
+	inline void		BaryCoordIncY(BaryCoord * bc)
+	{
+		bc->eItRow -= bc->dx;
+		bc->eIt = bc->eItRow;
+	}
+	inline bool		BaryCoordIsInside(const BaryCoord * bc)
+	{
+		return V3GreaterOrEqual(bc->eIt, V3Zero());
+	}
+	inline Vector3		BaryCoordGet(const BaryCoord * bc)
+	{
+		return V3Multiply(bc->eIt, bc->eR);
+	}
 
 	int			ClipTriangle(const int iAxis, const f32 fW, const f32 fSide, const int nVaryingsSize, const Vector4 * pInClipCoord, const void * pInVaryings, Vector4 * pOutClipCoord, void * pOutVaryings);
 	int			Clip2DTriangle(const f32 fLeft, const f32 fRight, const f32 fBottom, const f32 fTop, const int nVaryingsSize, const Vector4 * pInClipCoord, const void * pInVaryings, Vector4 * pOutClipCoord, void * pOutVaryings);
 	int			Clip3DTriangle(const f32 fLeft, const f32 fRight, const f32 fBottom, const f32 fTop, const f32 fNear, const f32 fFar, const int nVaryingsSize, const Vector4 * pInClipCoord, const void * pInVaryings, Vector4 * pOutClipCoord, void * pOutVaryings);
+
+	void			Draw2DLine(const BufferRect * pRect, const u32 color, int x0, int y0, int x1, int y1);
+	void			Draw3DTriangle(const BufferRect * pRect, Vector4 (*pVertexShader)(const void *, void *, const void *), Vector4 (*pPixelShader)(void *, const void *), const int nAttribsSize, const int nVaryingsSize, const void * pAttribs, const void * pUniform);
 }

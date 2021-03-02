@@ -2,6 +2,7 @@
 #include "Native.h"
 #include "Common.h"
 
+#define MAX_TRIANGLES_CLIP_3D	(64) // 2^6
 #define BUFFER_ALIGN_BYTES	(64)
 
 #define BUFFER_2D_SET_IMPL(name, type) \
@@ -24,6 +25,7 @@
 
 #define LERP_POS(dst, src1, src2, t)	F32Lerp((f32 *)&(dst), (const f32 *)&(src1), (const f32 *)&(src2), (t), sizeof(dst) / sizeof(f32))
 #define LERP_V(dst, src1, src2, t, n)	F32Lerp((f32 *)(dst), (const f32 *)(src1), (const f32 *)(src2), (t), (n))
+#define LERP(src1, src2, t)		V4Lerp((src1), (src2), (t))
 
 #define CLIP_TRIANGLE(axis, w, side, vbytes, pi, vi, ci, po, vo, co) \
 	do { \
@@ -257,5 +259,95 @@ namespace Graphics
 		}
 
 		return ci;
+	}
+
+	void		Draw3DTriangle(const BufferRect * pRect, Vector4(*pVertexShader)( const void *, void *, const void * ), Vector4(*pPixelShader)( void *, const void * ), const int nAttribsSize, const int nVaryingsSize, const void * pAttribs1, const void * pUniform)
+	{
+		const u8 * pAttribs;
+		u8 * pVaryings;
+		Vector4 clipCoord[3];
+		Vector4 ndcCoord[3];
+		Vector2 scnCoord[3];
+		f32 scnDepth[3];
+
+		pAttribs	= ( const u8 * ) pAttribs1;
+		pVaryings	= ( u8 * ) malloc(3 * nVaryingsSize + nVaryingsSize);
+
+		// vertex shading
+		for (int i = 0; i < 3; ++i)
+		{
+			clipCoord[i] = pVertexShader(pAttribs + i * nAttribsSize, pVaryings + i * nVaryingsSize, pUniform);
+		}
+
+		// TODO: clipping
+
+		// perspective divide
+		for (int i = 0; i < 3; ++i)
+		{
+			ndcCoord[i] = V4Scale(clipCoord[i], 1.0f / clipCoord[i].w);
+		}
+
+		// backface culling
+		if (V3CrossLH(ndcCoord[1].xyz - ndcCoord[0].xyz, ndcCoord[2].xyz - ndcCoord[0].xyz).z >= 0.0f) {
+			return;
+		}
+
+		// viewport transformation
+		for (int i = 0; i < 3; ++i)
+		{
+			scnCoord[i].x = ( ndcCoord[i].x + 1.0f ) * 0.5f * pRect->nCCount;
+			scnCoord[i].y = ( ndcCoord[i].y + 1.0f ) * 0.5f * pRect->nRCount;
+			scnDepth[i] = ( ndcCoord[i].z + 1.0f ) * 0.5f;
+		}
+
+		// rasterization
+		BBox2 bb2 = BB2Create(scnCoord[0], scnCoord[1], scnCoord[2]);
+		Vector2 lt = { bb2.xl + 0.5f, bb2.yl + 0.5f };
+		Vector2 rb = { bb2.xh + 0.5f, bb2.yh + 0.5f };
+		BaryCoord bc = BaryCoordCreate(scnCoord[0], scnCoord[1], scnCoord[2], lt);
+		f32 fX, fY;
+		u32 nX, nY;
+		for ( fY = lt.y, nY = ( u32 ) lt.y; fY < rb.y; fY += 1.0f, ++nY, BaryCoordIncY(&bc) )
+		{
+			for ( fX = lt.x, nX = ( u32 ) lt.x; fX < rb.x; fX += 1.0f, ++nX, BaryCoordIncX(&bc) )
+			{
+				if (!BaryCoordIsInside(&bc))
+				{
+					continue;
+				}
+
+				Vector3 baryCoord = BaryCoordGet(&bc);
+				
+				// z interpolation
+				f32 depth = 1.0f / (baryCoord.x / scnDepth[0] + baryCoord.y / scnDepth[1] + baryCoord.z / scnDepth[2]);
+
+				// TODO: depth stencil test
+				
+				// attributes interpolation
+				Vector3 weight = { depth * baryCoord.x / scnDepth[0], depth * baryCoord.y / scnDepth[1], depth * baryCoord.z / scnDepth[2]};
+
+				for (int i = 0; i < (nVaryingsSize / sizeof(f32)); ++i)
+				{
+					*(f32 *)(pVaryings + 3 * nVaryingsSize + i * sizeof(f32)) =
+						weight.x * *(f32 *)(pVaryings + 0 * nVaryingsSize + i * sizeof(f32)) +
+						weight.y * *(f32 *)(pVaryings + 1 * nVaryingsSize + i * sizeof(f32)) +
+						weight.z * *(f32 *)(pVaryings + 2 * nVaryingsSize + i * sizeof(f32));
+				}
+
+				// pixel shading
+				Vector4 color = pPixelShader(pVaryings + 3 * nVaryingsSize, pUniform);
+				
+				// TODO: blending
+
+				u32 bgra =( ( u32 ) ( color.x * 255.0f ) )
+					| ( ( u32 ) ( color.y * 255.0f ) << 8 )
+					| ( ( u32 ) ( color.z * 255.0f ) << 16 )
+					| ( ( u32 ) ( color.w * 255.0f ) << 24 );
+
+				Buffer2DSetAtU32(pRect, nX, nY, bgra);
+			}
+		}
+
+		free(pVaryings);
 	}
 }

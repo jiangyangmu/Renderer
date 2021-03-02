@@ -19,6 +19,7 @@ TestSuitEntry(Graphics)
 
 #define		WINDOW_WIDTH			(1600)
 #define		WINDOW_HEIGHT			(1200)
+#define		WINDOW_ASPECT_RATIO		(4.0f / 3.0f)
 #define		BYTES_PER_PIXEL			(4) // bgra
 #define		BYTES_PER_DEPTH			(4) // f32
 #define		BYTES_PER_STENCIL		(1) // u8
@@ -33,14 +34,19 @@ TestSuitEntry(Graphics)
 #define		DRAW_LINE1(br, c, x0, y0, x1, y1)	Draw2DLine(&br, (c), (x0) * (0.02f * WINDOW_WIDTH) + WINDOW_WIDTH / 4, (y0) * (0.02f * WINDOW_WIDTH) + WINDOW_HEIGHT / 4, (x1) * (0.02f * WINDOW_WIDTH) + WINDOW_WIDTH / 4, (y1) * (0.02f * WINDOW_WIDTH) + WINDOW_HEIGHT / 4)
 #define		DRAW_LINE2(br, c, p0, p1)		DRAW_LINE1(br, c, (p0).x, (p0).y, (p1).x, (p1).y)
 
-struct BaryCoord
+struct Attribs
 {
-	Vector3 dx;
-	Vector3 dy;
-	Vector3 eR;
-	Vector3 eItRow;
-	Vector3 eIt;
-
+	Vector4 pos;
+	Vector4 clr;
+};
+struct Varyings
+{
+	Vector4 clr;
+};
+struct Uniform
+{
+	Matrix44 view;
+	Matrix44 proj;
 };
 
 NativeWindow *	gpMain				= nullptr;
@@ -91,39 +97,23 @@ static void	KeyboardDown_Rasterization(int keycode)
 		default: break;
 	}
 }
-
-BaryCoord	BaryCoordCreate(const Vector2 & p0, const Vector2 & p1, const Vector2 & p2, const Vector2 & lt)
+static Vector4	VertexShadingFunc(const void * pAttribs, void * pVaryings, const void * pUniform)
 {
-	BaryCoord bc;
+	const Attribs & attribs = *(const Attribs *)pAttribs;
+	const Uniform & uniform = *(const Uniform *)pUniform;
+	Varyings & varyings = *(Varyings *)pVaryings;
 
-	bc.dx = { p2.x - p1.x, p0.x - p2.x, p1.x - p0.x };
-	bc.dy = { p2.y - p1.y, p0.y - p2.y, p1.y - p0.y };
+	varyings.clr = attribs.clr;
 
-	f32 eR = EdgeFunction(p0, p1, p2);
-	eR = ( eR < 0.001f ) ? 1000.0f : ( 1.0f / eR );
-	bc.eR = V3Replicate(eR);
-
-	bc.eItRow = { EdgeFunction(p1, p2, lt), EdgeFunction(p2, p0, lt), EdgeFunction(p0, p1, lt) };
-	bc.eIt = bc.eItRow;
-
-	return bc;
+	Vector4 clip = V4Transform(V4Transform(attribs.pos, uniform.view), uniform.proj);
+	return clip;
 }
-void		BaryCoordIncX(BaryCoord * bc)
+static Vector4	PixelShadingFunc(void * pVaryings, const void * pUniform)
 {
-	bc->eIt += bc->dy;
-}
-void		BaryCoordIncY(BaryCoord * bc)
-{
-	bc->eItRow -= bc->dx;
-	bc->eIt = bc->eItRow;
-}
-bool		BaryCoordIsInside(const BaryCoord * bc)
-{
-	return V3GreaterOrEqual(bc->eIt, V3Zero());
-}
-Vector3		BaryCoordGet(const BaryCoord * bc)
-{
-	return V3Multiply(bc->eIt, bc->eR);
+	Varyings & varyings = *(Varyings *)pVaryings;
+
+	Vector4 color = varyings.clr;
+	return color;
 }
 
 void		TestGraphics_Buffer0(int argc, char * argv[])
@@ -492,51 +482,28 @@ void		TestGraphics_Rasterization(int argc, char * argv[])
 
 	Buffer2DSetU32(&brColor, GREY);
 
-	Vector2 screenCoord[3] =
+	Attribs vertices[3] =
 	{
-		{400.0f, 300.0f},
-		{800.0f, 900.0f},
-		{1200.0f, 600.0f},
-	};
-	Vector4 screenColor[3] =
-	{
-		{0.0f, 0.0f, 1.0f, 1.0f},
-		{0.0f, 1.0f, 0.0f, 1.0f},
-		{1.0f, 0.0f, 0.0f, 1.0f},
-	};
-	const Vector2 & p0 = screenCoord[ 0 ];
-	const Vector2 & p1 = screenCoord[ 1 ];
-	const Vector2 & p2 = screenCoord[ 2 ];
-	const Vector4 & c0 = screenColor[ 0 ];
-	const Vector4 & c1 = screenColor[ 1 ];
-	const Vector4 & c2 = screenColor[ 2 ];
-
-	BBox2 bb2 = BB2Create(screenCoord[0], screenCoord[1], screenCoord[2]);
-	Vector2 lt = { bb2.xl + 0.5f, bb2.yl + 0.5f };
-	Vector2 rb = { bb2.xh + 0.5f, bb2.yh + 0.5f };
-
-	BaryCoord bc = BaryCoordCreate(p0, p1, p2, lt);
-
-	f32 fX, fY;
-	u32 nX, nY;
-	for ( fY = lt.y, nY = ( u32 ) lt.y; fY < rb.y; fY += 1.0f, ++nY, BaryCoordIncY(&bc) )
-	{
-		for ( fX = lt.x, nX = ( u32 ) lt.x; fX < rb.x; fX += 1.0f, ++nX, BaryCoordIncX(&bc) )
 		{
-			if (!BaryCoordIsInside(&bc))
-			{
-				continue;
-			}
-			Vector3 baryCoord = BaryCoordGet(&bc);
-			Vector4 color = V4Saturate(V4Scale(c0, baryCoord.x) + V4Scale(c1, baryCoord.y) + V4Scale(c2, baryCoord.z));
-			u32 bgra =( ( u32 ) ( color.x * 255.0f ) )
-				| ( ( u32 ) ( color.y * 255.0f ) << 8 )
-				| ( ( u32 ) ( color.z * 255.0f ) << 16 )
-				| ( ( u32 ) ( color.w * 255.0f ) << 24 );
+			{-1.0f, -1.0f, 3.0f, 1.0f},
+			{0.0f, 0.0f, 1.0f, 1.0f},
+		},
+		{
+			{0.0f, 1.0f, 3.0f, 1.0f},
+			{0.0f, 1.0f, 0.0f, 1.0f},
+		},
+		{
+			{1.0f, -1.0f, 3.0f, 1.0f},
+			{1.0f, 0.0f, 0.0f, 1.0f},
+		},
+	};
+	Uniform uniform =
+	{
+		M44Identity(),
+		M44PerspectiveFovLH(ConvertToRadians(90), WINDOW_ASPECT_RATIO, 0.1f, 1000.0f),
+	};
 
-			Buffer2DSetAtU32(&brColor, nX, nY, bgra);
-		}
-	}
+	Draw3DTriangle(&brColor, VertexShadingFunc, PixelShadingFunc, sizeof(Attribs), sizeof(Varyings), &vertices, &uniform);
 
 	if ( NativeInitialize() )
 	{

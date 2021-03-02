@@ -61,7 +61,15 @@ namespace Graphics
 	};
 	struct Vector3
 	{
-		f32 x, y, z;
+		union
+		{
+			Vector2 xy;
+			struct
+			{
+				f32 x, y;
+			};
+		};
+		f32 z;
 
 		inline Vector3 &	operator += (const Vector3 & other)
 		{
@@ -101,6 +109,12 @@ namespace Graphics
 			};
 		};
 		f32 w;
+
+
+		inline f32		operator [] (int i) const
+		{
+			return reinterpret_cast<const f32 *>(this)[i];
+		}
 	};
 	typedef Vector4 Quaternion;
 	struct Matrix44
@@ -694,6 +708,16 @@ namespace Graphics
 			m._12 * v.x + m._22 * v.y + m._32 * v.z + m._42 * v.w,
 			m._13 * v.x + m._23 * v.y + m._33 * v.z + m._43 * v.w,
 			m._14 * v.x + m._24 * v.y + m._34 * v.z + m._44 * v.w,
+		};
+	}
+	inline Vector4		V4Lerp(Vector4 v0, Vector4 v1, f32 t)
+	{
+		return
+		{
+			( 1.0f - t ) * v0.x + t * v1.x,
+			( 1.0f - t ) * v0.y + t * v1.y,
+			( 1.0f - t ) * v0.z + t * v1.z,
+			( 1.0f - t ) * v0.w + t * v1.w,
 		};
 	}
 
