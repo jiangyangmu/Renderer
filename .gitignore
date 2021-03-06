@@ -350,5 +350,6 @@ MigrationBackup/
 .ionide/
 
 *.ppm
-DevLog/
 *.diagsession
+DevLog/
+Deploy/
