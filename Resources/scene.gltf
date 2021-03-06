@@ -1,0 +1,57 @@
+{
+  "scenes" : [
+    {
+      "nodes" : [ 0 ]
+    }
+  ],
+  
+  "nodes" : [
+    {
+      "mesh" : 0
+    }
+  ],
+  
+  "meshes" : [
+    {
+      "primitives" : [ {
+        "attributes" : {
+          "POSITION" : 1
+        },
+        "indices" : 0
+      } ]
+    }
+  ],
+
+  "buffers" : [
+    {
+      "uri" : "Resources/scene.bin",
+      "byteLength" : 44
+    }
+  ],
+  "bufferViews" : [
+    {
+      "buffer" : 0,
+      "byteOffset" : 0,
+      "byteLength" : 6,
+    },
+    {
+      "buffer" : 0,
+      "byteOffset" : 8,
+      "byteLength" : 36,
+    }
+  ],
+  "accessors" : [
+    {
+      "bufferView" : 0,
+      "byteOffset" : 0,
+      "count" : 3,
+      "type" : "SCALAR",
+    },
+    {
+      "bufferView" : 1,
+      "byteOffset" : 0,
+      "count" : 3,
+      "type" : "VEC3",
+    }
+  ],
+}

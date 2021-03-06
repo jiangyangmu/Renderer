@@ -62,3 +62,4 @@ void			TestMain(int argc, char * argv[]);
 void			TestSuit_Native(int argc, char * argv[]);
 void			TestSuit_Scene(int argc, char * argv[]);
 void			TestSuit_Graphics(int argc, char * argv[]);
+void			TestSuit_glTF(int argc, char * argv[]);

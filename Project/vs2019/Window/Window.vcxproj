@@ -175,6 +175,7 @@
     <ClInclude Include="..\..\..\Source\Core\VisualEffects.h" />
     <ClInclude Include="..\..\..\Source\Core\_Math.h" />
     <ClInclude Include="..\..\..\Source\Includes\RendererApi.h" />
+    <ClInclude Include="..\..\..\Source\Scene\glTF.h" />
     <ClInclude Include="..\..\..\Source\Test\TestCases.h" />
   </ItemGroup>
   <ItemGroup>
@@ -187,7 +188,9 @@
     <ClCompile Include="..\..\..\Source\Core\VisualEffects.cpp" />
     <ClCompile Include="..\..\..\Source\Main.cpp" />
     <ClCompile Include="..\..\..\Source\Native\Win32Native.cpp" />
+    <ClCompile Include="..\..\..\Source\Scene\glTF.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases.cpp" />
+    <ClCompile Include="..\..\..\Source\Test\TestCases_glTF.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases_Graphics.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases_Native.cpp" />
     <ClCompile Include="..\..\..\Source\Test\TestCases_Scene.cpp" />

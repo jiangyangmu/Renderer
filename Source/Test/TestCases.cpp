@@ -5,6 +5,7 @@ static TestSuit suits[] =
 	{"native",	TestSuit_Native},
 	{"scene",	TestSuit_Scene},
 	{"graphics",	TestSuit_Graphics},
+	{"gltf",	TestSuit_glTF},
 };
 
 void		TestMain(int argc, char * argv[])
