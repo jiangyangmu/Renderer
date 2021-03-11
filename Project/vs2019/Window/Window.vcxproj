@@ -174,7 +174,6 @@
     <ClInclude Include="..\..\..\Source\Core\Unknown.h" />
     <ClInclude Include="..\..\..\Source\Core\VisualEffects.h" />
     <ClInclude Include="..\..\..\Source\Core\_Math.h" />
-    <ClInclude Include="..\..\..\Source\Includes\RendererApi.h" />
     <ClInclude Include="..\..\..\Source\Scene\glTF.h" />
     <ClInclude Include="..\..\..\Source\Test\TestCases.h" />
   </ItemGroup>

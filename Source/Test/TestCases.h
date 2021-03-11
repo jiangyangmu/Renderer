@@ -1,6 +1,9 @@
 #pragma once
 
-#include "../Includes/RendererApi.h"
+#include "../Core/RenderWindow.h"
+#include "../Core/Renderer.h"
+#include "../Core/Scene.h"
+#include "../Core/VisualEffects.h"
 
 struct TestCase
 {

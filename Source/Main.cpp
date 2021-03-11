@@ -1,5 +1,4 @@
 #include "Test/TestCases.h"
-#include "Core/Native.h"
 
 int main(int argc, char * argv[])
 {
